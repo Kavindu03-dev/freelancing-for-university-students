@@ -1,42 +1,36 @@
+/* Custom styles for FlexiHire */
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
 }
 
-@keyframes logo-spin {
+/* Custom animations */
+@keyframes fadeInUp {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(30px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.card {
-  padding: 2em;
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease-in-out;
 }
 
-.read-the-docs {
-  color: #888;
+.hover-lift:hover {
+  transform: translateY(-2px);
 }
