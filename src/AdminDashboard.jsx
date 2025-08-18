@@ -52,35 +52,35 @@ function AdminDashboard() {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
               <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Projects</p>
               <p className="text-3xl font-bold text-gray-900">{stats.totalProjects}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Revenue</p>
@@ -100,36 +100,36 @@ function AdminDashboard() {
               <p className="text-sm font-medium text-gray-600">Freelancers</p>
               <p className="text-3xl font-bold text-gray-900">{stats.totalFreelancers}</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Clients</p>
               <p className="text-3xl font-bold text-gray-900">{stats.totalClients}</p>
             </div>
-            <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
               <p className="text-3xl font-bold text-gray-900">{stats.pendingApprovals}</p>
             </div>
-            <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -139,7 +139,7 @@ function AdminDashboard() {
 
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Users</h3>
           <div className="space-y-3">
             {recentUsers.map(user => (
@@ -150,7 +150,7 @@ function AdminDashboard() {
                 </div>
                 <div className="text-right">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    user.status === 'Active' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                   }`}>
                     {user.status}
                   </span>
@@ -161,7 +161,7 @@ function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Projects</h3>
           <div className="space-y-3">
             {recentProjects.map(project => (
@@ -172,8 +172,8 @@ function AdminDashboard() {
                 </div>
                 <div className="text-right">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                    project.status === 'Completed' ? 'bg-yellow-100 text-yellow-800' : 
+                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                   }`}>
                     {project.status}
                   </span>
@@ -188,10 +188,10 @@ function AdminDashboard() {
   );
 
   const renderUsers = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium">
+        <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
           Add User
         </button>
       </div>
@@ -218,14 +218,14 @@ function AdminDashboard() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.type}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    user.status === 'Active' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                   }`}>
                     {user.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.date}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-green-600 hover:text-green-900 mr-3">Edit</button>
+                  <button className="text-yellow-600 hover:text-yellow-900 mr-3">Edit</button>
                   <button className="text-red-600 hover:text-red-900">Delete</button>
                 </td>
               </tr>
@@ -237,10 +237,10 @@ function AdminDashboard() {
   );
 
   const renderProjects = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Project Management</h3>
-        <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium">
+        <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
           Add Project
         </button>
       </div>
@@ -267,14 +267,14 @@ function AdminDashboard() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{project.budget}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                    project.status === 'Completed' ? 'bg-yellow-100 text-yellow-800' : 
+                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                   }`}>
                     {project.status}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-green-600 hover:text-green-900 mr-3">View</button>
+                  <button className="text-yellow-600 hover:text-yellow-900 mr-3">View</button>
                   <button className="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
                   <button className="text-red-600 hover:text-red-900">Delete</button>
                 </td>
@@ -287,7 +287,7 @@ function AdminDashboard() {
   );
 
   const renderSettings = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-green-100">
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Admin Settings</h3>
       
       <div className="space-y-6">
@@ -342,7 +342,7 @@ function AdminDashboard() {
                 placeholder="Confirm new password"
               />
             </div>
-            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium">
+            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
               Update Password
             </button>
           </div>
@@ -356,7 +356,7 @@ function AdminDashboard() {
                 <p className="text-sm font-medium text-gray-900">Email Notifications</p>
                 <p className="text-sm text-gray-600">Receive email notifications for important events</p>
               </div>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium">
+              <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
                 Enabled
               </button>
             </div>
@@ -376,23 +376,24 @@ function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-green-200">
+      <header className="bg-black shadow-lg border-b border-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
                 FlexiHire Admin
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">Welcome, {adminUsername}</span>
               <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-medium"
+                className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium flex items-center space-x-2"
               >
-                Logout
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>Search</span>
               </button>
             </div>
           </div>
@@ -415,7 +416,7 @@ function AdminDashboard() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-3 py-2 rounded-xl font-medium transition-colors duration-200 ${
                   activeTab === tab.id
-                    ? "bg-green-600 text-white"
+                    ? "bg-yellow-500 text-black"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >

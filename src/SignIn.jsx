@@ -35,12 +35,12 @@ function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           <Link to="/" className="inline-block">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
               FlexiHire
             </h1>
           </Link>
@@ -49,7 +49,7 @@ function SignIn() {
         </div>
 
         {/* Sign In Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-green-100">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-yellow-200">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -63,7 +63,7 @@ function SignIn() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all duration-300"
+                className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300"
                 placeholder="Enter your email"
               />
             </div>
@@ -80,7 +80,7 @@ function SignIn() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500 transition-all duration-300"
+                className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300"
                 placeholder="Enter your password"
               />
             </div>
@@ -93,7 +93,7 @@ function SignIn() {
                   type="checkbox"
                   checked={formData.rememberMe}
                   onChange={handleChange}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-green-300 rounded"
+                  className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-yellow-300 rounded"
                 />
                 <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
                   Remember me
@@ -101,7 +101,7 @@ function SignIn() {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-green-600 hover:text-green-500 transition-colors duration-200">
+                <a href="#" className="font-medium text-yellow-500 hover:text-yellow-400 transition-colors duration-200">
                   Forgot your password?
                 </a>
               </div>
@@ -110,7 +110,7 @@ function SignIn() {
             <div>
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
               >
                 Sign in
               </button>
@@ -124,7 +124,7 @@ function SignIn() {
         <div className="text-center">
           <p className="text-gray-600">
             Don't have an account?{" "}
-            <Link to="/join" className="font-semibold text-green-600 hover:text-green-500 transition-colors duration-200">
+            <Link to="/join" className="font-semibold text-yellow-500 hover:text-yellow-400 transition-colors duration-200">
               Sign up for free
             </Link>
           </p>
