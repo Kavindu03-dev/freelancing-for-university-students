@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import "./App.css";
@@ -497,13 +498,27 @@ function HomePage() {
     </div>
   );
 }
+=======
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import "./App.css";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import AdminDashboard from "./pages/AdminDashboard";
+import HomePage from "./pages/HomePage";
+>>>>>>> 87693993d22806f0057d868825aad1267bd28e8d
 
 function App() {
   return (
     <Router>
       <Routes>
+<<<<<<< HEAD
         <Route path="/signin" element={<SignIn />} />
         <Route path="/join" element={<Join />} />
+=======
+        <Route path="/signin" element={<Login />} />
+        <Route path="/join" element={<Signup />} />
+>>>>>>> 87693993d22806f0057d868825aad1267bd28e8d
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/" element={<HomePage />} />
       </Routes>
