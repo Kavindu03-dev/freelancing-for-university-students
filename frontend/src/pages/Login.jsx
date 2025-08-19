@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
-function Join() {
+function Login() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
