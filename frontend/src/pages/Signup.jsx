@@ -64,33 +64,36 @@ function Signup() {
     setLoading(true);
     
     try {
+      // Remove confirmPassword from data sent to backend
+      const { confirmPassword, ...signupData } = formData;
+      
       const response = await fetch('http://localhost:5000/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(signupData)
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        // Store user data and token
-        localStorage.setItem('userToken', result.data.token);
-        localStorage.setItem('userData', JSON.stringify(result.data));
-        
-        // Show success message
-        alert('Registration successful! Redirecting...');
-        
-        // Redirect to appropriate page based on user type
-        if (result.data.userType === 'client') {
-          window.location.href = '/client-dashboard';
+              if (result.success) {
+          // Store user data and token
+          localStorage.setItem('userToken', result.data.token);
+          localStorage.setItem('userData', JSON.stringify(result.data));
+          
+          // Show success message
+          alert('Registration successful! Redirecting...');
+          
+          // Redirect to appropriate page based on user type
+          if (result.data.userType === 'client') {
+            window.location.href = '/client-dashboard';
+          } else {
+            window.location.href = '/student/dashboard';
+          }
         } else {
-          window.location.href = '/freelancer-dashboard';
+          setError(result.message || 'Registration failed');
         }
-      } else {
-        setError(result.message || 'Registration failed');
-      }
     } catch (error) {
       console.error('Registration error:', error);
       setError('Registration failed. Please try again.');
@@ -119,6 +122,20 @@ function Signup() {
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Join FlexiHire</h2>
           <p className="text-gray-600">Create your account and start your journey</p>
+          {localStorage.getItem('userToken') && (
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  localStorage.removeItem('userToken');
+                  localStorage.removeItem('userData');
+                  window.location.href = '/';
+                }}
+                className="text-red-600 hover:text-red-700 text-sm underline"
+              >
+                Logout from another session
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}

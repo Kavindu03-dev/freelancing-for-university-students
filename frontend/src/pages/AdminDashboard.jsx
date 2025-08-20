@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../utils/auth";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -43,9 +44,7 @@ function AdminDashboard() {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    localStorage.removeItem('adminUsername');
-    navigate('/admin/login');
+    logout(navigate);
   };
 
   const renderOverview = () => (
@@ -387,6 +386,9 @@ function AdminDashboard() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <span className="text-gray-300 text-sm">
+                Welcome, {adminUsername}!
+              </span>
               <button
                 className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium flex items-center space-x-2"
               >
@@ -394,6 +396,12 @@ function AdminDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span>Search</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-medium transition-colors duration-200"
+              >
+                Logout
               </button>
             </div>
           </div>
