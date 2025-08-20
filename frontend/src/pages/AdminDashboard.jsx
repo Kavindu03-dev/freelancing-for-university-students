@@ -30,6 +30,37 @@ function AdminDashboard() {
     { id: 3, title: "Content Writing", client: "Blog Media", freelancer: "Mike Johnson", status: "Pending", budget: "$300" }
   ]);
 
+  // Mock data for pending services
+  const [pendingServices] = useState([
+    { 
+      id: 1, 
+      title: "Professional Website Development", 
+      freelancer: "Alex Johnson", 
+      category: "Web Development",
+      price: 500,
+      description: "I will create a modern, responsive website using React and Node.js.",
+      createdAt: "2024-01-16"
+    },
+    { 
+      id: 2, 
+      title: "Logo Design & Brand Identity", 
+      freelancer: "Sarah Chen", 
+      category: "Design",
+      price: 150,
+      description: "Professional logo design with brand guidelines.",
+      createdAt: "2024-01-15"
+    },
+    { 
+      id: 3, 
+      title: "Content Writing & SEO", 
+      freelancer: "Michael Rodriguez", 
+      category: "Writing",
+      price: 80,
+      description: "High-quality content writing for blogs and websites.",
+      createdAt: "2024-01-14"
+    }
+  ]);
+
   useEffect(() => {
     // Check if admin is logged in
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
@@ -285,6 +316,56 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderServices = () => (
+    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Service Approvals</h3>
+        <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+          {pendingServices.length} Pending
+        </span>
+      </div>
+      <div className="space-y-4">
+        {pendingServices.map(service => (
+          <div key={service.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">{service.title}</h4>
+                <p className="text-sm text-gray-600 mb-2">{service.description}</p>
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span>By: {service.freelancer}</span>
+                  <span>Category: {service.category}</span>
+                  <span>Price: ${service.price}</span>
+                  <span>Posted: {service.createdAt}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-3">
+              <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                Approve
+              </button>
+              <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                Reject
+              </button>
+              <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200">
+                View Details
+              </button>
+            </div>
+          </div>
+        ))}
+        
+        {pendingServices.length === 0 && (
+          <div className="text-center py-8">
+            <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No pending services</h3>
+            <p className="text-gray-500">All services have been reviewed and processed.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderSettings = () => (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-6">Admin Settings</h3>
@@ -417,6 +498,7 @@ function AdminDashboard() {
               { id: "overview", name: "Overview" },
               { id: "users", name: "Users" },
               { id: "projects", name: "Projects" },
+              { id: "services", name: "Services" },
               { id: "settings", name: "Settings" }
             ].map(tab => (
               <button
@@ -439,6 +521,7 @@ function AdminDashboard() {
           {activeTab === "overview" && renderOverview()}
           {activeTab === "users" && renderUsers()}
           {activeTab === "projects" && renderProjects()}
+          {activeTab === "services" && renderServices()}
           {activeTab === "settings" && renderSettings()}
         </div>
       </div>
