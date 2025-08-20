@@ -29,6 +29,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/student', require('./routes/student'));
 
 // Basic route
 app.get('/', (req, res) => {

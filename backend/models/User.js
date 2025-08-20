@@ -36,6 +36,45 @@ const userSchema = new mongoose.Schema({
     trim: true,
     maxlength: 500
   },
+  hourlyRate: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  experience: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
+  education: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  },
+  portfolio: [{
+    title: {
+      type: String,
+      trim: true,
+      required: true
+    },
+    description: {
+      type: String,
+      trim: true
+    },
+    link: {
+      type: String,
+      trim: true
+    },
+    image: {
+      type: String,
+      trim: true
+    }
+  }],
+  category: {
+    type: String,
+    trim: true,
+    enum: ['Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing', 'Data Analysis', 'Other']
+  },
   agreeToTerms: {
     type: Boolean,
     required: true,

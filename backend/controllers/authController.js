@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const signup = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, confirmPassword, userType, agreeToTerms } = req.body;
+    const { firstName, lastName, email, password, userType, agreeToTerms } = req.body;
 
     // Validation
     if (!firstName || !lastName || !email || !password || !userType) {
@@ -24,12 +24,8 @@ const signup = async (req, res) => {
       });
     }
 
-    if (password !== confirmPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Passwords do not match' 
-      });
-    }
+    // Note: Frontend handles password confirmation, so we don't need to validate it here
+    // The frontend removes confirmPassword before sending data to backend
 
     if (password.length < 8) {
       return res.status(400).json({ 
@@ -42,6 +38,14 @@ const signup = async (req, res) => {
       return res.status(400).json({ 
         success: false, 
         message: 'You must agree to the terms of service' 
+      });
+    }
+
+    // Validate skills array
+    if (!req.body.skills || !Array.isArray(req.body.skills) || req.body.skills.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please add at least one skill' 
       });
     }
 
@@ -72,6 +76,8 @@ const signup = async (req, res) => {
       email,
       password: hashedPassword,
       userType,
+      skills: req.body.skills || [],
+      bio: req.body.bio || '',
       agreeToTerms,
       agreeToMarketing: req.body.agreeToMarketing || false
     });
@@ -86,6 +92,10 @@ const signup = async (req, res) => {
           lastName: user.lastName,
           email: user.email,
           userType: user.userType,
+          skills: user.skills,
+          bio: user.bio,
+          agreeToTerms: user.agreeToTerms,
+          agreeToMarketing: user.agreeToMarketing,
           token: generateToken(user._id)
         }
       });
@@ -142,6 +152,10 @@ const login = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         userType: user.userType,
+        skills: user.skills,
+        bio: user.bio,
+        agreeToTerms: user.agreeToTerms,
+        agreeToMarketing: user.agreeToMarketing,
         token: generateToken(user._id)
       }
     });

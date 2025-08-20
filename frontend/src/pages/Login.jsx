@@ -53,7 +53,7 @@ function Login() {
           if (result.data.userType === 'client') {
             navigate('/client-dashboard');
           } else {
-            navigate('/freelancer-dashboard');
+            navigate('/student/dashboard');
           }
         } else {
           alert(result.message || 'Login failed');
@@ -77,6 +77,20 @@ function Login() {
           </Link>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
           <p className="text-gray-600">Sign in to your account to continue</p>
+          {localStorage.getItem('userToken') && (
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  localStorage.removeItem('userToken');
+                  localStorage.removeItem('userData');
+                  window.location.href = '/';
+                }}
+                className="text-red-600 hover:text-red-700 text-sm underline"
+              >
+                Logout from another session
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Sign In Form */}
