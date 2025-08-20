@@ -8,7 +8,33 @@ function Login() {
     rememberMe: false
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // Validation functions
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) return "Email is required";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters long";
+    return "";
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    newErrors.email = validateEmail(formData.email);
+    newErrors.password = validatePassword(formData.password);
+    
+    setErrors(newErrors);
+    return !Object.values(newErrors).some(error => error !== "");
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -16,10 +42,25 @@ function Login() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ""
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
     
     // Check if admin credentials
     if (formData.email === "admin@flexihire.com" && formData.password === "admin123") {
@@ -56,13 +97,15 @@ function Login() {
             navigate('/student/dashboard');
           }
         } else {
-          alert(result.message || 'Login failed');
+          setErrors({ general: result.message || 'Login failed' });
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        setErrors({ general: 'Login failed. Please try again.' });
       }
     }
+    
+    setIsSubmitting(false);
   };
 
   return (
@@ -95,6 +138,13 @@ function Login() {
 
         {/* Sign In Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-yellow-200">
+          {/* General Error Display */}
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+              {errors.general}
+            </div>
+          )}
+          
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -108,9 +158,16 @@ function Login() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300"
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
+                  errors.email 
+                    ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                    : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                }`}
                 placeholder="Enter your email"
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
             <div>
@@ -126,7 +183,11 @@ function Login() {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-12 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300"
+                  className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
+                    errors.password 
+                      ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                      : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                  }`}
                   placeholder="Enter your password"
                 />
                 <button
@@ -144,9 +205,12 @@ function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   )}
-                </button>
+                                  </button>
+                </div>
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                )}
               </div>
-            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -173,9 +237,14 @@ function Login() {
             <div>
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                disabled={isSubmitting}
+                className={`w-full py-3 px-4 rounded-xl font-semibold shadow-lg transition-all duration-300 transform ${
+                  isSubmitting 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black hover:shadow-xl hover:-translate-y-0.5'
+                }`}
               >
-                Sign in
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
               </button>
             </div>
 

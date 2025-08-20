@@ -14,7 +14,7 @@ If you are developing a production application, we recommend using TypeScript wi
 =======
 # FlexiHire Frontend
 
-A modern React application for connecting freelancers with clients and providing academic help services.
+A modern React application for connecting freelancers with clients.
 
 ## Project Structure
 

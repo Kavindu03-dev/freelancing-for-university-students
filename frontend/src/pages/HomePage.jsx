@@ -1,10 +1,94 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Slideshow from "../components/Slideshow";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 
 function HomePage() {
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const searchRef = useRef(null);
+
+  // Available categories
+  const categories = [
+    'Programming & Tech',
+    'Design & Creative',
+    'Digital Marketing',
+    'Writing & Translation',
+    'Video & Animation',
+    'Business',
+    'Data Analysis',
+    'Consulting',
+    'Mobile Development',
+    'UI/UX Design',
+    'Content Creation',
+    'Project Management',
+    'Web Development',
+    'Graphic Design',
+    'Content Writing',
+    'Voice Over',
+    'Translation',
+    'Social Media',
+    'SEO',
+    'E-commerce',
+    'WordPress',
+    'Photography',
+    'Audio Production',
+    'Game Development'
+  ];
+
+  // Filter categories based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredCategories([]);
+      setShowSuggestions(false);
+    } else {
+      const filtered = categories.filter(category =>
+        category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredCategories(filtered);
+      setShowSuggestions(filtered.length > 0);
+    }
+  }, [searchQuery]);
+
+  // Handle click outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Handle category selection
+  const handleCategorySelect = (category) => {
+    setSearchQuery(category);
+    setShowSuggestions(false);
+    // Here you can add navigation logic to search results page
+    console.log('Selected category:', category);
+  };
+
+  // Handle search submission
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      // Here you can add navigation logic to search results page
+      console.log('Searching for:', searchQuery);
+    }
+  };
+
+  // Handle key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black">
       {/* Navigation */}
@@ -22,18 +106,14 @@ function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-              Find the Perfect Freelancer or
-              <span className="block text-yellow-400 mt-2">Get Academic Help</span>
+              Find the Perfect Freelancer
             </h1>
             <p className="text-xl md:text-2xl mb-12 text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              Connect with talented professionals for your projects or get expert help with your academic assignments
+              Connect with talented professionals for your projects
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-10 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 Hire a Freelancer
-              </button>
-              <button className="bg-white hover:bg-gray-100 text-black px-10 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                Get Academic Help
               </button>
             </div>
           </div>
@@ -47,21 +127,52 @@ function HomePage() {
       <section className="bg-gray-100 py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl shadow-2xl p-8 border border-yellow-300">
-            <div className="flex flex-col lg:flex-row gap-6 items-center">
-              <div className="flex-1 w-full lg:w-auto">
-                <input
-                  type="text"
-                  placeholder="What service are you looking for?"
-                  className="w-full px-6 py-4 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 text-lg transition-all duration-300"
-                />
+                          <div className="flex flex-col lg:flex-row gap-6 items-center">
+                <div className="w-full relative" ref={searchRef}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="What service are you looking for?"
+                    className="w-full px-6 py-4 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 text-lg transition-all duration-300"
+                  />
+                  
+                  {/* Search Suggestions Dropdown */}
+                  {showSuggestions && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-yellow-300 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
+                      {filteredCategories.map((category, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleCategorySelect(category)}
+                          className="px-6 py-3 hover:bg-yellow-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                        >
+                          <div className="flex items-center">
+                            <svg className="w-5 h-5 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <span className="text-gray-800 font-medium">{category}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-4">
-                <button className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-                  Hire a Freelancer
-                </button>
-                <button className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-                  Get Academic Help
-                </button>
+            
+            {/* Popular Categories Quick Access */}
+            <div className="mt-6 pt-6 border-t border-yellow-200">
+              <p className="text-gray-600 text-sm mb-3">Popular categories:</p>
+              <div className="flex flex-wrap gap-2">
+                {['Web Development', 'Graphic Design', 'Content Writing', 'Digital Marketing', 'Mobile Development'].map((category, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleCategorySelect(category)}
+                    className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full text-sm font-medium transition-colors duration-200"
+                  >
+                    {category}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -110,17 +221,102 @@ function HomePage() {
               <p className="text-yellow-600 font-bold text-lg">Starting at $25</p>
             </div>
 
-            {/* Academic Help */}
+            {/* Mobile Development */}
             <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-black to-gray-800 rounded-2xl flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Academic Help</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Essays, research papers, and assignments</p>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Mobile Development</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">iOS and Android apps with modern UI/UX</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $75</p>
+            </div>
+
+            {/* Digital Marketing */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Digital Marketing</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">SEO, social media, and PPC campaigns</p>
               <p className="text-yellow-600 font-bold text-lg">Starting at $40</p>
             </div>
+
+            {/* Video & Animation */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Video & Animation</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Promotional videos, animations, and editing</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $60</p>
+            </div>
+
+            {/* Data Analysis */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Data Analysis</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Business intelligence and data visualization</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $55</p>
+            </div>
+
+            {/* UI/UX Design */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">UI/UX Design</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">User interface and experience design</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $45</p>
+            </div>
+
+            {/* Translation */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Translation</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Professional translation and localization</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $20</p>
+            </div>
+
+            {/* Voice Over */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Voice Over</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Professional voice recording and narration</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $35</p>
+            </div>
+
+            {/* Business Consulting */}
+            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-3 text-gray-800">Business Consulting</h3>
+              <p className="text-gray-600 mb-6 leading-relaxed">Strategic planning and business development</p>
+              <p className="text-yellow-600 font-bold text-lg">Starting at $80</p>
+            </div>
+
           </div>
         </div>
       </section>
@@ -171,12 +367,24 @@ function HomePage() {
               'Writing & Translation',
               'Video & Animation',
               'Business',
-              'Academic Writing',
-              'Research Papers',
-              'Essay Writing',
-              'Homework Help',
               'Data Analysis',
-              'Consulting'
+              'Consulting',
+              'Mobile Development',
+              'UI/UX Design',
+              'Content Creation',
+              'Project Management',
+              'Web Development',
+              'Graphic Design',
+              'Content Writing',
+              'Voice Over',
+              'Translation',
+              'Social Media',
+              'SEO',
+              'E-commerce',
+              'WordPress',
+              'Photography',
+              'Audio Production',
+              'Game Development'
             ].map((category, index) => (
               <div key={index} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 text-center cursor-pointer border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-1">
                 <h3 className="font-semibold text-gray-800">{category}</h3>
@@ -215,7 +423,7 @@ function HomePage() {
                   <p className="text-yellow-300">Student</p>
                 </div>
               </div>
-              <p className="text-gray-300 leading-relaxed">"The academic help service saved me during finals week. The quality of work was exceptional and delivered on time."</p>
+                              <p className="text-gray-300 leading-relaxed">"The freelancing platform helped me find amazing talent for my project. The quality of work was exceptional and delivered on time."</p>
             </div>
             
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">

@@ -74,6 +74,35 @@ function StudentManagementSystem() {
   });
   const [lastProfileLoad, setLastProfileLoad] = useState(null);
 
+  // Function to format phone number for display
+  const formatPhoneForDisplay = (phone) => {
+    if (!phone) return 'Not specified';
+    
+    // If phone already has country code (starts with +), format it nicely
+    if (phone.startsWith('+')) {
+      const countryCode = phone.substring(0, 3); // Most country codes are 2-3 digits
+      const number = phone.substring(3);
+      
+      // Format based on length
+      if (number.length === 10) {
+        // US/Canada format: (XXX) XXX-XXXX
+        return `${countryCode} (${number.substring(0, 3)}) ${number.substring(3, 6)}-${number.substring(6)}`;
+      } else if (number.length === 11) {
+        // Some countries with 11 digits
+        return `${countryCode} ${number.substring(0, 4)} ${number.substring(4, 7)} ${number.substring(7)}`;
+      } else if (number.length === 9) {
+        // Some countries with 9 digits
+        return `${countryCode} ${number.substring(0, 3)} ${number.substring(3, 6)} ${number.substring(6)}`;
+      } else {
+        // Generic format for other lengths
+        return `${countryCode} ${number}`;
+      }
+    }
+    
+    // If no country code, return as is
+    return phone;
+  };
+
   useEffect(() => {
     // Load user data from localStorage
     const userDataStr = localStorage.getItem('userData');
@@ -85,6 +114,8 @@ function StudentManagementSystem() {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         email: user.email || "",
+        phone: user.phoneNumber || "",
+        country: user.country || "",
         skills: user.skills || [],
         bio: user.bio || "",
         hourlyRate: user.hourlyRate || "",
@@ -138,6 +169,8 @@ function StudentManagementSystem() {
           firstName: profile.firstName || "",
           lastName: profile.lastName || "",
           email: profile.email || "",
+          phone: profile.phoneNumber || "",
+          country: profile.country || "",
           skills: profile.skills || [],
           bio: profile.bio || "",
           hourlyRate: profile.hourlyRate || "",
@@ -462,6 +495,22 @@ function StudentManagementSystem() {
               type="tel"
               value={profileData.phone}
               onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+              placeholder="Enter phone number with country code (e.g., +1234567890)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+            />
+            {profileData.phone && (
+              <p className="mt-1 text-xs text-gray-500">
+                Display format: {formatPhoneForDisplay(profileData.phone)}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+            <input
+              type="text"
+              value={profileData.country}
+              onChange={(e) => setProfileData(prev => ({ ...prev, country: e.target.value }))}
+              placeholder="Enter your country"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
             />
           </div>
@@ -722,7 +771,11 @@ function StudentManagementSystem() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Phone:</span>
-                  <span className="font-medium text-gray-900">{profileData.phone || 'Not specified'}</span>
+                  <span className="font-medium text-gray-900">{formatPhoneForDisplay(profileData.phone)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 text-sm">Country:</span>
+                  <span className="font-medium text-gray-900">{profileData.country || 'Not specified'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 text-sm">Location:</span>

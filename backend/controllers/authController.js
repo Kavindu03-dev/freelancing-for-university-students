@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const signup = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, userType, agreeToTerms } = req.body;
+    const { firstName, lastName, email, password, userType, agreeToTerms, phoneNumber, country } = req.body;
 
     // Validation
     if (!firstName || !lastName || !email || !password || !userType) {
@@ -76,6 +76,8 @@ const signup = async (req, res) => {
       email,
       password: hashedPassword,
       userType,
+      phoneNumber: phoneNumber || '',
+      country: country || '',
       skills: req.body.skills || [],
       bio: req.body.bio || '',
       agreeToTerms,
@@ -92,6 +94,8 @@ const signup = async (req, res) => {
           lastName: user.lastName,
           email: user.email,
           userType: user.userType,
+          phoneNumber: user.phoneNumber,
+          country: user.country,
           skills: user.skills,
           bio: user.bio,
           agreeToTerms: user.agreeToTerms,

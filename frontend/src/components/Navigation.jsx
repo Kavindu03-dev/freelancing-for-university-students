@@ -40,7 +40,6 @@ function Navigation() {
             <div className="ml-10 flex items-baseline space-x-4">
               <Link to="/" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Home</Link>
               <a href="#" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Services</a>
-              <a href="#" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">Academic Help</a>
               <a href="#" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">How it Works</a>
               <a href="#" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">About</a>
             </div>
@@ -54,34 +53,23 @@ function Navigation() {
                     Welcome, {userData?.firstName || 'User'}!
                   </span>
                   <div className="relative group">
-                    <button className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
-                      Dashboard
-                    </button>
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                      {userData?.userType === 'client' ? (
-                        <Link to="/client-dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                          Client Dashboard
-                        </Link>
-                      ) : (
-                        <Link to="/student/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                          Student Dashboard
-                        </Link>
-                      )}
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                      >
-                        Logout
-                      </button>
-                    </div>
+                    {userData?.userType === 'client' ? (
+                      <Link to="/client-dashboard" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                        Dashboard
+                      </Link>
+                    ) : (
+                      <Link to="/student/dashboard" className="text-gray-300 hover:text-yellow-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                        Dashboard
+                      </Link>
+                    )}
                   </div>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    Logout
+                  </button>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200"
-                >
-                  Logout
-                </button>
               </>
             ) : (
               <>

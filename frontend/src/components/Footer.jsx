@@ -25,7 +25,6 @@ function Footer() {
             <ul className="space-y-3 text-gray-400">
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">How to Find Work</a></li>
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Create a Profile</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Academic Services</a></li>
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Success Stories</a></li>
             </ul>
           </div>

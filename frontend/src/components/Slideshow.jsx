@@ -15,15 +15,6 @@ function Slideshow() {
     },
     {
       id: 2,
-      title: "Get Academic Help",
-      subtitle: "Expert assistance for your studies",
-      description: "Professional writers and tutors to help with essays, research papers, and assignments.",
-      image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-      cta: "Get Help",
-      color: "from-yellow-500 to-yellow-600"
-    },
-    {
-      id: 3,
       title: "Build Your Freelance Career",
       subtitle: "Start earning with your skills",
       description: "Join thousands of freelancers who are already earning on FlexiHire.",
@@ -32,7 +23,7 @@ function Slideshow() {
       color: "from-yellow-600 to-yellow-700"
     },
     {
-      id: 4,
+      id: 3,
       title: "Secure Payments",
       subtitle: "Safe and reliable transactions",
       description: "Our secure payment system ensures you get paid for your work, every time.",
@@ -90,9 +81,6 @@ function Slideshow() {
 
                 <div className="relative h-full flex items-center">
                   <div className="max-w-2xl mx-auto px-8 text-center text-white">
-                    <div className={`inline-block px-6 py-2 rounded-full bg-gradient-to-r ${slide.color} mb-6 text-sm font-semibold`}>
-                      Slide {index + 1} of {slides.length}
-                    </div>
                     <h3 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
                       {slide.title}
                     </h3>

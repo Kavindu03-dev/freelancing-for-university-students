@@ -40,7 +40,7 @@ const getStudentProfile = async (req, res) => {
 // @access  Private
 const updateStudentProfile = async (req, res) => {
   try {
-    const { firstName, lastName, bio, skills, hourlyRate, experience, education, portfolio } = req.body;
+    const { firstName, lastName, bio, skills, hourlyRate, experience, education, portfolio, phoneNumber, country } = req.body;
 
     // Find user and ensure they're a freelancer
     const user = await User.findById(req.user.id);
@@ -70,6 +70,8 @@ const updateStudentProfile = async (req, res) => {
     if (experience !== undefined) updateData.experience = experience;
     if (education !== undefined) updateData.education = education;
     if (portfolio !== undefined) updateData.portfolio = portfolio;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (country !== undefined) updateData.country = country;
 
     // Update user profile
     const updatedUser = await User.findByIdAndUpdate(
