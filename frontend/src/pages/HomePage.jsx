@@ -354,39 +354,143 @@ function HomePage() {
       </section>
 
       {/* Featured Categories */}
-      <section className="py-20">
+      <section className="py-20 bg-gradient-to-br from-gray-900 to-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">Browse by Category</h2>
+          <h2 className="text-4xl font-bold text-center mb-16 text-white">Browse by Category</h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {[
-              'Programming & Tech',
-              'Design & Creative',
-              'Digital Marketing',
-              'Writing & Translation',
-              'Video & Animation',
-              'Business',
-              'Data Analysis',
-              'Consulting',
-              'Mobile Development',
-              'UI/UX Design',
-              'Content Creation',
-              'Project Management',
-              'Web Development',
-              'Graphic Design',
-              'Content Writing',
-              'Voice Over',
-              'Translation',
-              'Social Media',
-              'SEO',
-              'E-commerce',
-              'WordPress',
-              'Photography',
-              'Audio Production',
-              'Game Development'
+              { 
+                name: 'Programming & Tech', 
+                image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=200&h=200&fit=crop&crop=center',
+                color: 'from-blue-500 to-blue-600' 
+              },
+              { 
+                name: 'Design & Creative', 
+                image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=200&h=200&fit=crop&crop=center',
+                color: 'from-purple-500 to-purple-600' 
+              },
+              { 
+                name: 'Digital Marketing', 
+                image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=200&fit=crop&crop=center',
+                color: 'from-green-500 to-green-600' 
+              },
+              { 
+                name: 'Writing & Translation', 
+                image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&h=200&fit=crop&crop=center',
+                color: 'from-yellow-500 to-yellow-600' 
+              },
+              { 
+                name: 'Video & Animation', 
+                image: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=200&h=200&fit=crop&crop=center',
+                color: 'from-red-500 to-red-600' 
+              },
+              { 
+                name: 'Business', 
+                image: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=200&h=200&fit=crop&crop=center',
+                color: 'from-indigo-500 to-indigo-600' 
+              },
+              { 
+                name: 'Data Analysis', 
+                image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200&h=200&fit=crop&crop=center',
+                color: 'from-teal-500 to-teal-600' 
+              },
+              { 
+                name: 'Consulting', 
+                image: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=200&h=200&fit=crop&crop=center',
+                color: 'from-pink-500 to-pink-600' 
+              },
+              { 
+                name: 'Mobile Development', 
+                image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=200&h=200&fit=crop&crop=center',
+                color: 'from-blue-400 to-blue-500' 
+              },
+              { 
+                name: 'UI/UX Design', 
+                image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=200&h=200&fit=crop&crop=center',
+                color: 'from-orange-500 to-orange-600' 
+              },
+              { 
+                name: 'Content Creation', 
+                image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=200&h=200&fit=crop&crop=center',
+                color: 'from-emerald-500 to-emerald-600' 
+              },
+              { 
+                name: 'Project Management', 
+                image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=center',
+                color: 'from-cyan-500 to-cyan-600' 
+              },
+              { 
+                name: 'Web Development', 
+                image: 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=200&h=200&fit=crop&crop=center',
+                color: 'from-blue-600 to-blue-700' 
+              },
+              { 
+                name: 'Graphic Design', 
+                image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=200&h=200&fit=crop&crop=center',
+                color: 'from-violet-500 to-violet-600' 
+              },
+              { 
+                name: 'Content Writing', 
+                image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&h=200&fit=crop&crop=center',
+                color: 'from-amber-500 to-amber-600' 
+              },
+              { 
+                name: 'Voice Over', 
+                image: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=200&h=200&fit=crop&crop=center',
+                color: 'from-rose-500 to-rose-600' 
+              },
+              { 
+                name: 'Translation', 
+                image: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=200&h=200&fit=crop&crop=center',
+                color: 'from-sky-500 to-sky-600' 
+              },
+              { 
+                name: 'Social Media', 
+                image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=200&h=200&fit=crop&crop=center',
+                color: 'from-fuchsia-500 to-fuchsia-600' 
+              },
+              { 
+                name: 'SEO', 
+                image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200&h=200&fit=crop&crop=center',
+                color: 'from-lime-500 to-lime-600' 
+              },
+              { 
+                name: 'E-commerce', 
+                image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200&h=200&fit=crop&crop=center',
+                color: 'from-orange-400 to-orange-500' 
+              },
+              { 
+                name: 'WordPress', 
+                image: 'https://images.unsplash.com/photo-1547658719-da2b51169166?w=200&h=200&fit=crop&crop=center',
+                color: 'from-blue-500 to-blue-600' 
+              },
+              { 
+                name: 'Photography', 
+                image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=200&fit=crop&crop=center',
+                color: 'from-gray-500 to-gray-600' 
+              },
+              { 
+                name: 'Audio Production', 
+                image: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=200&h=200&fit=crop&crop=center',
+                color: 'from-purple-400 to-purple-500' 
+              },
+              { 
+                name: 'Game Development', 
+                image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=200&h=200&fit=crop&crop=center',
+                color: 'from-green-400 to-green-500' 
+              }
             ].map((category, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 text-center cursor-pointer border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-1">
-                <h3 className="font-semibold text-gray-800">{category}</h3>
+              <div key={index} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 text-center cursor-pointer border border-gray-200 hover:border-yellow-400 transform hover:-translate-y-1">
+                <div className="w-16 h-16 rounded-xl overflow-hidden mx-auto mb-4">
+                  <img 
+                    src={category.image} 
+                    alt={category.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <h3 className="font-semibold text-gray-800 text-sm">{category.name}</h3>
               </div>
             ))}
           </div>
