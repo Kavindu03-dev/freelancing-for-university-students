@@ -7,6 +7,9 @@ export const logout = (navigate) => {
   localStorage.removeItem('adminLoggedIn');
   localStorage.removeItem('adminUsername');
   
+  // Dispatch auth change event
+  window.dispatchEvent(new Event('authStateChanged'));
+  
   // Redirect to home page
   if (navigate) {
     navigate('/');
@@ -37,5 +40,13 @@ export const getUserData = () => {
 
 export const getAuthToken = () => {
   return localStorage.getItem('userToken');
+};
+
+export const setAuthData = (token, userData) => {
+  localStorage.setItem('userToken', token);
+  localStorage.setItem('userData', JSON.stringify(userData));
+  
+  // Dispatch auth change event
+  window.dispatchEvent(new Event('authStateChanged'));
 };
 

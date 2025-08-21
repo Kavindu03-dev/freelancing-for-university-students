@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Slideshow from "../components/Slideshow";
-import Navigation from "../components/Navigation";
+
 import Footer from "../components/Footer";
 
 function HomePage() {
@@ -91,8 +91,7 @@ function HomePage() {
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black">
-      {/* Navigation */}
-      <Navigation />
+      {/* Header is now rendered globally in App.jsx */}
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white overflow-hidden">

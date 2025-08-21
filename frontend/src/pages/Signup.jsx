@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { setAuthData } from "../utils/auth";
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -874,9 +875,8 @@ function Signup() {
       const result = await response.json();
 
               if (result.success) {
-          // Store user data and token
-          localStorage.setItem('userToken', result.data.token);
-          localStorage.setItem('userData', JSON.stringify(result.data));
+          // Store user data and token using the utility function
+          setAuthData(result.data.token, result.data);
           
           // Show success message
           alert('Registration successful! Redirecting...');
