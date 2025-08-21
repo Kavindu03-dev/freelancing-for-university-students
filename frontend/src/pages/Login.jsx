@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { setAuthData } from "../utils/auth";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -67,6 +68,8 @@ function Login() {
       // Store admin session
       localStorage.setItem('adminLoggedIn', 'true');
       localStorage.setItem('adminUsername', 'admin');
+      // Dispatch auth change event for admin login
+      window.dispatchEvent(new Event('authStateChanged'));
       // Redirect to admin dashboard
       navigate('/admin/dashboard');
     } else {
@@ -86,9 +89,8 @@ function Login() {
         const result = await response.json();
 
         if (result.success) {
-          // Store user data and token
-          localStorage.setItem('userToken', result.data.token);
-          localStorage.setItem('userData', JSON.stringify(result.data));
+          // Store user data and token using the utility function
+          setAuthData(result.data.token, result.data);
           
           // Redirect to appropriate page based on user type
           if (result.data.userType === 'client') {
