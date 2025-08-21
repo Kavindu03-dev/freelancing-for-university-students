@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -189,16 +190,15 @@ function ServicesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 py-16">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Find the Perfect Service
             </h1>
-            <p className="text-xl md:text-2xl text-yellow-100 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
               Discover talented freelancers offering professional services at competitive prices
             </p>
             
@@ -210,7 +210,7 @@ function ServicesPage() {
                   placeholder="Search for services, skills, or freelancers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-6 py-4 text-lg rounded-full border-2 border-white/20 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-white/40 backdrop-blur-sm"
+                  className="w-full px-6 py-4 text-lg rounded-full border-2 border-yellow-500 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-yellow-400 backdrop-blur-sm"
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <svg className="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@ function ServicesPage() {
             {isFreelancer && (
               <button
                 onClick={() => setShowPostJobModal(true)}
-                className="bg-white text-yellow-600 px-8 py-3 rounded-full font-semibold hover:bg-yellow-50 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="bg-yellow-500 text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 Post Your Service
               </button>
@@ -234,17 +234,17 @@ function ServicesPage() {
       </section>
 
       {/* Category Filter */}
-      <section className="py-8 bg-gray-900">
+      <section className="py-8 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-2 rounded-full font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
                   selectedCategory === category
-                    ? 'bg-yellow-500 text-black'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    ? 'bg-yellow-500 text-black shadow-lg'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
               >
                 {category}
@@ -255,20 +255,20 @@ function ServicesPage() {
       </section>
 
       {/* Services Grid */}
-      <section className="py-16 bg-black">
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
               Available Services
             </h2>
-            <p className="text-gray-300">
+            <p className="text-gray-600">
               {filteredServices.length} services found
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredServices.map((service) => (
-              <div key={service.id} className="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+              <div key={service.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-200 relative">
                 {/* Status Badge */}
                 {service.status === 'pending' && (
                   <div className="absolute top-4 right-4 z-10">
@@ -287,11 +287,11 @@ function ServicesPage() {
 
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-white">{service.title}</h3>
-                    <span className="text-2xl font-bold text-yellow-400">${service.price}</span>
+                    <h3 className="text-xl font-semibold text-gray-800">{service.title}</h3>
+                    <span className="text-2xl font-bold text-green-600">${service.price}</span>
                   </div>
 
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">
+                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">
                     {service.description}
                   </p>
 
@@ -302,30 +302,30 @@ function ServicesPage() {
                       className="w-10 h-10 rounded-full mr-3"
                     />
                     <div>
-                      <p className="text-white font-medium">{service.freelancer.name}</p>
+                      <p className="text-gray-800 font-medium">{service.freelancer.name}</p>
                       <div className="flex items-center">
                         <div className="flex text-yellow-400">
                           {[...Array(5)].map((_, i) => (
-                            <svg key={i} className={`w-4 h-4 ${i < Math.floor(service.freelancer.rating) ? 'text-yellow-400' : 'text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <svg key={i} className={`w-4 h-4 ${i < Math.floor(service.freelancer.rating) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                           ))}
                         </div>
-                        <span className="text-gray-400 text-sm ml-2">
+                        <span className="text-gray-500 text-sm ml-2">
                           ({service.freelancer.reviews})
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center text-sm text-gray-400">
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center text-sm text-gray-500">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Duration: {service.duration}
                     </div>
-                    <div className="flex items-center text-sm text-gray-400">
+                    <div className="flex items-center text-sm text-gray-500">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
@@ -333,11 +333,11 @@ function ServicesPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="space-y-2">
                     {isClient && service.status === 'approved' && (
                       <button
                         onClick={() => handleHire(service)}
-                        className="flex-1 bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
+                        className="w-full bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
                       >
                         Hire Now
                       </button>
@@ -347,13 +347,13 @@ function ServicesPage() {
                       <>
                         <button
                           onClick={() => handleApproveService(service.id)}
-                          className="flex-1 bg-green-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-400 transition-colors duration-300"
+                          className="w-full bg-green-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-green-400 transition-colors duration-300 mb-2"
                         >
                           Approve
                         </button>
                         <button
                           onClick={() => handleRejectService(service.id)}
-                          className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-400 transition-colors duration-300"
+                          className="w-full bg-red-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-red-400 transition-colors duration-300"
                         >
                           Reject
                         </button>
@@ -362,7 +362,7 @@ function ServicesPage() {
 
                     <Link
                       to={`/service/${service.id}`}
-                      className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-600 transition-colors duration-300 text-center"
+                      className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300 text-center block"
                     >
                       View Details
                     </Link>
@@ -374,25 +374,81 @@ function ServicesPage() {
 
           {filteredServices.length === 0 && (
             <div className="text-center py-16">
-              <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
               </svg>
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">No services found</h3>
-              <p className="text-gray-500">Try adjusting your search or category filter</p>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">No services found</h3>
+              <p className="text-gray-400">Try adjusting your search or category filter</p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Featured Categories */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">Most Popular Service Categories</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {categories.slice(1, 7).map((category, index) => (
+              <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                    <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">{category}</h3>
+                    <p className="text-sm text-gray-500">Professional services</p>
+                  </div>
+                </div>
+                
+                <Link
+                  to={`/services?category=${encodeURIComponent(category)}`}
+                  className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-300 text-center block"
+                >
+                  Explore {category}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-bold mb-6">Ready to Hire Top Talent?</h2>
+          <p className="text-xl mb-8 text-gray-300">
+            Connect with skilled freelancers who can bring your projects to life
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              to="/services"
+              className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105"
+            >
+              Browse Services
+            </Link>
+            <Link
+              to="/join"
+              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-full font-semibold transition-all duration-300"
+            >
+              Join as Freelancer
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Post Job Modal */}
       {showPostJobModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">Post Your Service</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Post Your Service</h2>
               <button
                 onClick={() => setShowPostJobModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-gray-600"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -402,7 +458,7 @@ function ServicesPage() {
 
             <form onSubmit={handlePostJob} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Service Title
                 </label>
                 <input
@@ -410,13 +466,13 @@ function ServicesPage() {
                   required
                   value={jobForm.title}
                   onChange={(e) => setJobForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                   placeholder="e.g., Professional Website Development"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -424,21 +480,21 @@ function ServicesPage() {
                   rows={4}
                   value={jobForm.description}
                   onChange={(e) => setJobForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                   placeholder="Describe your service in detail..."
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category
                   </label>
                   <select
                     required
                     value={jobForm.category}
                     onChange={(e) => setJobForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-yellow-500"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                   >
                     <option value="">Select Category</option>
                     {categories.slice(1).map(category => (
@@ -448,7 +504,7 @@ function ServicesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Price ($)
                   </label>
                   <input
@@ -457,7 +513,7 @@ function ServicesPage() {
                     min="1"
                     value={jobForm.price}
                     onChange={(e) => setJobForm(prev => ({ ...prev, price: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                     placeholder="100"
                   />
                 </div>
@@ -465,7 +521,7 @@ function ServicesPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Duration
                   </label>
                   <input
@@ -473,13 +529,13 @@ function ServicesPage() {
                     required
                     value={jobForm.duration}
                     onChange={(e) => setJobForm(prev => ({ ...prev, duration: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                     placeholder="e.g., 2 weeks"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Skills Required
                   </label>
                   <input
@@ -487,21 +543,21 @@ function ServicesPage() {
                     required
                     value={jobForm.skills}
                     onChange={(e) => setJobForm(prev => ({ ...prev, skills: e.target.value }))}
-                    className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                     placeholder="e.g., React, Node.js, MongoDB"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Portfolio Link (Optional)
                 </label>
                 <input
                   type="url"
                   value={jobForm.portfolio}
                   onChange={(e) => setJobForm(prev => ({ ...prev, portfolio: e.target.value }))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                   placeholder="https://your-portfolio.com"
                 />
               </div>
@@ -516,7 +572,7 @@ function ServicesPage() {
                 <button
                   type="button"
                   onClick={() => setShowPostJobModal(false)}
-                  className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-500 transition-colors duration-300"
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
                 >
                   Cancel
                 </button>
@@ -529,27 +585,27 @@ function ServicesPage() {
       {/* Hire Modal */}
       {showHireModal && selectedService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl p-8 max-w-md w-full">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-4">Confirm Hire</h2>
-              <p className="text-gray-300 mb-6">
-                Are you sure you want to hire <span className="text-yellow-400 font-semibold">{selectedService.freelancer.name}</span> for <span className="text-yellow-400 font-semibold">{selectedService.title}</span>?
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Confirm Hire</h2>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to hire <span className="text-yellow-600 font-semibold">{selectedService.freelancer.name}</span> for <span className="text-yellow-600 font-semibold">{selectedService.title}</span>?
               </p>
               
-              <div className="bg-gray-700 rounded-lg p-4 mb-6">
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-300">Service Price:</span>
-                  <span className="text-2xl font-bold text-yellow-400">${selectedService.price}</span>
+                  <span className="text-gray-600">Service Price:</span>
+                  <span className="text-2xl font-bold text-green-600">${selectedService.price}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-300">Duration:</span>
-                  <span className="text-white">{selectedService.duration}</span>
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="text-gray-800">{selectedService.duration}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-300">Freelancer Rating:</span>
+                  <span className="text-gray-600">Freelancer Rating:</span>
                   <div className="flex items-center">
-                    <span className="text-yellow-400 mr-1">{selectedService.freelancer.rating}</span>
-                    <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <span className="text-yellow-600 mr-1">{selectedService.freelancer.rating}</span>
+                    <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   </div>
@@ -565,7 +621,7 @@ function ServicesPage() {
                 </button>
                 <button
                   onClick={() => setShowHireModal(false)}
-                  className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-500 transition-colors duration-300"
+                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-300"
                 >
                   Cancel
                 </button>
@@ -574,6 +630,8 @@ function ServicesPage() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }
