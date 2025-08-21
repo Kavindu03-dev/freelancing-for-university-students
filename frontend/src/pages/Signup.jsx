@@ -907,8 +907,82 @@ function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto flex items-start justify-center">
+        {/* Left Side - Image */}
+        <div className="hidden lg:block w-1/2 pr-12 sticky top-24 relative">
+          <div className="relative space-y-6">
+            {/* Main Image */}
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80" 
+                alt="Diverse team of freelancers collaborating"
+                className="w-full h-[600px] object-cover"
+              />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60"></div>
+              
+              {/* Content overlay */}
+              <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-6">
+                <h3 className="text-2xl font-bold mb-3 text-center">Join FlexiHire Today!</h3>
+                <p className="text-base text-center leading-relaxed">
+                  Start your freelancing journey with thousands of professionals
+                </p>
+              </div>
+            </div>
+            
+            {/* Secondary Image */}
+            <div className="relative rounded-2xl overflow-hidden shadow-xl">
+              <img 
+                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1528&q=80" 
+                alt="Female freelancer working remotely"
+                className="w-full h-64 object-cover"
+              />
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/80 to-yellow-400/80"></div>
+              
+              {/* Success Story overlay */}
+              <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-4">
+                <div className="text-center">
+                  <div className="text-lg font-bold mb-1">"Best Decision Ever!"</div>
+                  <div className="text-sm opacity-90">- Sarah, Graphic Designer</div>
+                  <div className="text-xs mt-2 opacity-80">Earning $5K+/month</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Floating profile images */}
+            <div className="absolute -right-4 top-20">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg">
+                <img 
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80" 
+                  alt="Successful freelancer"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
+            <div className="absolute -left-2 bottom-32">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lg">
+                <img 
+                  src="https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80" 
+                  alt="Professional freelancer"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            {/* Decorative elements */}
+            <div className="absolute -top-4 -right-4 w-20 h-20 bg-yellow-300 rounded-full opacity-20"></div>
+            <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-yellow-400 rounded-full opacity-30"></div>
+          </div>
+          
+          {/* Additional floating elements */}
+          <div className="absolute top-20 right-0 w-12 h-12 bg-yellow-200 rounded-full opacity-40 animate-pulse"></div>
+          <div className="absolute bottom-20 left-0 w-8 h-8 bg-yellow-300 rounded-full opacity-30 animate-bounce"></div>
+        </div>
+
+        {/* Right Side - Signup Form */}
+        <div className="w-full lg:w-1/2">
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-block">
@@ -961,7 +1035,7 @@ function Signup() {
         )}
 
         {/* Registration Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-yellow-200">
+        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
           {/* Error Display */}
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
@@ -988,7 +1062,7 @@ function Signup() {
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                         errors.firstName 
                           ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                       }`}
                       placeholder="Enter your first name"
                     />
@@ -1011,7 +1085,7 @@ function Signup() {
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                         errors.lastName 
                           ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                       }`}
                       placeholder="Enter your last name"
                     />
@@ -1036,7 +1110,7 @@ function Signup() {
                     className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                       errors.email 
                         ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                        : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                        : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                     }`}
                     placeholder="Enter your email"
                   />
@@ -1060,7 +1134,7 @@ function Signup() {
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                         errors.country 
                           ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                       }`}
                     >
                       <option value="">Select your country</option>
@@ -1245,7 +1319,7 @@ function Signup() {
                         className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                           errors.phoneNumber 
                             ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                            : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                            : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                         } ${formData.country ? 'pl-12' : ''}`}
                         placeholder={formData.country ? `Enter ${getMaxDigits(formData.country)} digits` : "Select country first"}
                         disabled={!formData.country}
@@ -1293,7 +1367,7 @@ function Signup() {
                       className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                         errors.password 
                           ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                       }`}
                       placeholder="Create a strong password"
                     />
@@ -1402,7 +1476,7 @@ function Signup() {
                       className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                         errors.confirmPassword 
                           ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-yellow-300 focus:ring-yellow-200 focus:border-yellow-500'
+                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                       }`}
                       placeholder="Confirm your password"
                     />
@@ -1447,7 +1521,7 @@ function Signup() {
                     I want to join as a:
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'client' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-yellow-300'}`}>
+                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'client' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}>
                       <input
                         type="radio"
                         name="userType"
@@ -1467,7 +1541,7 @@ function Signup() {
                       </div>
                     </label>
 
-                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'freelancer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-yellow-300'}`}>
+                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'freelancer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}>
                       <input
                         type="radio"
                         name="userType"
@@ -1494,7 +1568,7 @@ function Signup() {
                   <label htmlFor="skills" className="block text-sm font-semibold text-gray-700 mb-2">
                     Skills {formData.userType === 'freelancer' ? '(What services do you offer?)' : '(What skills are you looking for?)'}
                   </label>
-                  <div className="flex flex-wrap gap-2 p-3 border-2 border-yellow-300 rounded-xl min-h-[60px]">
+                  <div className="flex flex-wrap gap-2 p-3 border-2 border-gray-300 rounded-xl min-h-[60px]">
                     {formData.skills.map((skill, index) => (
                       <span key={index} className="bg-yellow-100 px-3 py-1 rounded-full text-sm flex items-center gap-2">
                         {skill}
@@ -1600,7 +1674,7 @@ function Signup() {
                     rows="3"
                     value={formData.bio}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300 resize-none"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-gray-200 focus:border-gray-500 transition-all duration-300 resize-none"
                     placeholder={formData.userType === 'freelancer' ? "Describe your experience, expertise, and what services you offer..." : "Describe your project, company, or what you're looking for..."}
                     maxLength="500"
                   />
@@ -1621,7 +1695,7 @@ function Signup() {
                       required
                       checked={formData.agreeToTerms}
                       onChange={handleChange}
-                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-yellow-300 rounded mt-1"
+                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded mt-1"
                     />
                     <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-700">
                       I agree to the{" "}
@@ -1642,7 +1716,7 @@ function Signup() {
                       type="checkbox"
                       checked={formData.agreeToMarketing}
                       onChange={handleChange}
-                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-yellow-300 rounded mt-1"
+                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded mt-1"
                     />
                     <label htmlFor="agreeToMarketing" className="ml-2 block text-sm text-gray-700">
                       I agree to receive marketing communications from FlexiHire
@@ -1681,6 +1755,7 @@ function Signup() {
               Sign in
             </Link>
           </p>
+        </div>
         </div>
       </div>
     </div>
