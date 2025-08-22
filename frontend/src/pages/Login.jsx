@@ -92,12 +92,8 @@ function Login() {
           // Store user data and token using the utility function
           setAuthData(result.data.token, result.data);
           
-          // Redirect to appropriate page based on user type
-          if (result.data.userType === 'client') {
-            navigate('/client-dashboard');
-          } else {
-            navigate('/student/dashboard');
-          }
+          // Redirect to profile page for all users
+          navigate('/profile');
         } else {
           setErrors({ general: result.message || 'Login failed' });
         }
