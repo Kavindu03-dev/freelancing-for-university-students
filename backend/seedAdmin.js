@@ -12,7 +12,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/flexihire
 const seedAdmin = async () => {
   try {
     // Check if admin already exists
-    const existingAdmin = await Admin.findOne({ email: 'admin@flexihire.com' });
+    const existingAdmin = await Admin.findOne({ email: 'admin@gmail.com' });
     
     if (existingAdmin) {
       console.log('Admin user already exists!');
@@ -28,7 +28,7 @@ const seedAdmin = async () => {
 
     // Create new admin user
     const adminUser = new Admin({
-      email: 'admin@flexihire.com',
+      email: 'admin@gmail.com',
       password: hashedPassword
     });
 
@@ -36,7 +36,7 @@ const seedAdmin = async () => {
     await adminUser.save();
     
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@flexihire.com');
+    console.log('📧 Email: admin@gmail.com');
     console.log('🔑 Password: admin123');
     console.log('🆔 ID:', adminUser._id);
     console.log('📅 Created at:', adminUser.createdAt);
