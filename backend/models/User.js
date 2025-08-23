@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  // Common fields
   firstName: {
     type: String,
     required: true,
@@ -18,23 +19,127 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
-  phoneNumber: {
-    type: String,
-    trim: true
-  },
-  country: {
-    type: String,
-    trim: true
-  },
   password: {
     type: String,
     required: true
   },
   userType: {
     type: String,
-    enum: ['client', 'freelancer'],
+    enum: ['student', 'jobSeeker', 'universityStaff'],
     required: true
   },
+  phoneNumber: {
+    type: String,
+    trim: true
+  },
+  dateOfBirth: {
+    type: String,
+    trim: true
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  agreeToTerms: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
+  agreeToMarketing: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Student-specific fields
+  degreeProgram: {
+    type: String,
+    trim: true
+  },
+  university: {
+    type: String,
+    trim: true
+  },
+  gpa: {
+    type: String,
+    trim: true
+  },
+  technicalSkills: [{
+    type: String,
+    trim: true
+  }],
+  graduationYear: {
+    type: String,
+    trim: true
+  },
+  
+  // Job Seeker/Client fields
+  organization: {
+    type: String,
+    trim: true
+  },
+  jobTitle: {
+    type: String,
+    trim: true
+  },
+  contactPhone: {
+    type: String,
+    trim: true
+  },
+  projectCategories: [{
+    type: String,
+    trim: true
+  }],
+  companySize: {
+    type: String,
+    trim: true
+  },
+  industry: {
+    type: String,
+    trim: true
+  },
+  website: {
+    type: String,
+    trim: true
+  },
+  companyDescription: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
+  
+  // University Staff fields
+  staffRole: {
+    type: String,
+    trim: true
+  },
+  department: {
+    type: String,
+    trim: true
+  },
+  employeeId: {
+    type: String,
+    trim: true
+  },
+  experience: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
+  qualification: {
+    type: String,
+    trim: true
+  },
+  professionalSummary: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
+  
+  // Legacy fields for backward compatibility
   skills: [{
     type: String,
     trim: true
@@ -48,11 +153,6 @@ const userSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     default: 0
-  },
-  experience: {
-    type: String,
-    trim: true,
-    maxlength: 1000
   },
   education: {
     type: String,
@@ -83,19 +183,21 @@ const userSchema = new mongoose.Schema({
     trim: true,
     enum: ['Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing', 'Data Analysis', 'Other']
   },
-  agreeToTerms: {
-    type: Boolean,
-    required: true,
-    default: false
-  },
-  agreeToMarketing: {
-    type: Boolean,
-    default: false
-  },
+  
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
+});
+
+// Update the updatedAt field before saving
+userSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,869 +1,944 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { setAuthData } from "../utils/auth";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Signup() {
+  const [userType, setUserType] = useState("student");
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    // Common fields
     email: "",
     password: "",
     confirmPassword: "",
-    country: "",
+    firstName: "",
+    lastName: "",
+    
+    // Student-specific fields
+    degreeProgram: "",
+    university: "",
+    gpa: "",
+    technicalSkills: "",
+    graduationYear: "",
+    
+    // Job Seeker/Client fields
+    organization: "",
+    jobTitle: "",
+    contactPhone: "",
+    projectCategories: "",
+    
+    // University Staff fields
+    staffRole: "",
+    department: "",
+    employeeId: "",
+    experience: "",
+    qualification: "",
+    professionalSummary: "",
+    
+    // Additional fields
     phoneNumber: "",
-    userType: "client", // client or freelancer
-    skills: [],
-    bio: "",
-    agreeToTerms: false,
-    agreeToMarketing: false
+    dateOfBirth: "",
+    address: "",
+    companySize: "",
+    industry: "",
+    website: "",
+    companyDescription: ""
   });
-
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({
-    score: 0,
-    level: '',
-    color: '',
-    message: ''
-  });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [universitySearch, setUniversitySearch] = useState("");
+  const [skillSearch, setSkillSearch] = useState("");
+  const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
+  const [showSkillDropdown, setShowSkillDropdown] = useState(false);
+  const [customDegreeProgram, setCustomDegreeProgram] = useState("");
+  const [customUniversity, setCustomUniversity] = useState("");
+  const navigate = useNavigate();
 
-  // Validation functions
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) return "Email is required";
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
-    return "";
-  };
+  // Refs for dropdowns
+  const universityDropdownRef = useRef(null);
+  const skillDropdownRef = useRef(null);
 
-  const calculatePasswordStrength = (password) => {
-    if (!password) {
-      return {
-        score: 0,
-        level: '',
-        color: '',
-        message: ''
-      };
-    }
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (universityDropdownRef.current && !universityDropdownRef.current.contains(event.target)) {
+        setShowUniversityDropdown(false);
+      }
+      if (skillDropdownRef.current && !skillDropdownRef.current.contains(event.target)) {
+        setShowSkillDropdown(false);
+      }
+    };
 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const universities = [
+    // Government Universities
+    "University of Colombo",
+    "University of Peradeniya", 
+    "University of Sri Jayewardenepura",
+    "University of Kelaniya",
+    "University of Moratuwa",
+    "University of Jaffna",
+    "University of Ruhuna",
+    "Eastern University, Sri Lanka",
+    "University of the Visual & Performing Arts",
+    "University of Uva Wellassa",
+    "University of Sabaragamuwa",
+    "Rajarata University of Sri Lanka",
+    "Wayamba University of Sri Lanka",
+    "South Eastern University of Sri Lanka",
+    "Open University of Sri Lanka",
+    "Buddhist and Pali University of Sri Lanka",
+    "Gampaha Wickramarachchi University of Indigenous Medicine",
+    "University of Vavuniya",
+    "University of Technology, Sri Lanka",
+    
+    // Private Universities & Higher Education Institutions
+    "NSBM Green University",
+    "SLIIT (Sri Lanka Institute of Information Technology)",
+    "ICBT Campus",
+    "CINEC Campus",
+    "ESOFT Metro Campus",
+    "British School of Commerce",
+    "Colombo International Nautical and Engineering College",
+    "Institute of Technology, University of Moratuwa",
+    "Sri Lanka Technological Campus",
+    "University of Vocational Technology",
+    "Sri Lanka Institute of Advanced Technological Education",
+    "National Institute of Business Management",
+    "Institute of Human Resource Advancement",
+    "Sri Lanka Foundation Institute",
+    "Bandaranaike Centre for International Studies",
+    "Institute of Policy Studies",
+    "Institute of Fundamental Studies",
+    "Arthur C. Clarke Institute for Modern Technologies",
+    "Industrial Technology Institute",
+    "National Engineering Research and Development Centre",
+    "Ceylon Institute of Builders",
+    "Institute of Chemistry Ceylon",
+    "Institute of Physics",
+    "Institute of Biochemistry, Molecular Biology and Biophysics",
+    "Institute of Applied Sciences",
+    "Institute of Plantation Management",
+    "Institute of Post Harvest Technology",
+    "Institute of Food Technology",
+    "Institute of Animal Science and Health",
+    "Institute of Aquaculture",
+    "Institute of Fisheries and Nautical Sciences",
+    "Institute of Surveying and Mapping",
+    "Institute of Town Planners",
+    "Institute of Valuers",
+    "Institute of Quantity Surveyors",
+    "Institute of Architects",
+    "Institute of Engineers",
+    "Institute of Accountants",
+    "Institute of Chartered Accountants",
+    "Institute of Bankers",
+    "Institute of Marketing",
+    "Institute of Personnel Management",
+    "Institute of Training and Development",
+    "Institute of Development Studies",
+    "Institute of Social Development",
+    "Institute of Human Resource Development",
+    "Institute of Management",
+    "Institute of Business Administration",
+    "Institute of Computer Technology",
+    "Institute of Information Technology",
+    "Institute of Software Engineering",
+    "Institute of Web Technology",
+    "Institute of Digital Marketing",
+    "Institute of Data Science",
+    "Institute of Artificial Intelligence",
+    "Institute of Machine Learning",
+    "Institute of Cybersecurity",
+    "Institute of Blockchain Technology",
+    "Institute of Cloud Computing",
+    "Institute of DevOps",
+    "Institute of Mobile App Development",
+    "Institute of Game Development",
+    "Institute of UI/UX Design",
+    "Institute of Graphic Design",
+    "Institute of Animation",
+    "Institute of Multimedia",
+    "Institute of Film and Television",
+    "Institute of Journalism",
+    "Institute of Mass Communication",
+    "Institute of Public Relations",
+    "Institute of Advertising",
+    "Institute of Brand Management",
+    "Institute of Event Management",
+    "Institute of Tourism and Hospitality",
+    "Institute of Aviation",
+    "Institute of Maritime Studies",
+    "Institute of Logistics",
+    "Institute of Supply Chain Management",
+    "Institute of Project Management",
+    "Institute of Quality Management",
+    "Institute of Six Sigma",
+    "Institute of Lean Management",
+    "Institute of Agile Development",
+    "Institute of Scrum Master",
+    "Institute of Product Management",
+    "Institute of Business Analysis",
+    "Institute of Data Analytics",
+    "Institute of Business Intelligence",
+    "Institute of Market Research",
+    "Institute of Consumer Behavior",
+    "Institute of Sales and Marketing",
+    "Institute of E-commerce",
+    "Institute of Digital Business",
+    "Institute of Innovation and Entrepreneurship",
+    "Institute of Start-up Management",
+    "Institute of Venture Capital",
+    "Institute of Business Incubation",
+    "Institute of Technology Transfer",
+    "Institute of Intellectual Property",
+    "Institute of Research and Development",
+    "Institute of Academic Writing",
+    "Institute of Research Methodology",
+    "Institute of Statistical Analysis",
+    "Institute of Data Visualization",
+    "Institute of Business Communication",
+    "Institute of Professional Development",
+    "Institute of Leadership Development",
+    "Institute of Strategic Management",
+    "Institute of Change Management",
+    "Institute of Risk Management",
+    "Institute of Compliance Management",
+    "Institute of Corporate Governance",
+    "Institute of Business Ethics",
+    "Institute of Sustainability",
+    "Institute of Green Technology",
+    "Institute of Renewable Energy",
+    "Institute of Environmental Management",
+    "Institute of Climate Change",
+    "Institute of Disaster Management",
+    "Institute of Emergency Management",
+    "Institute of Public Health",
+    "Institute of Healthcare Management",
+    "Institute of Medical Technology",
+    "Institute of Pharmaceutical Sciences",
+    "Institute of Nursing",
+    "Institute of Physiotherapy",
+    "Institute of Occupational Therapy",
+    "Institute of Speech Therapy",
+    "Institute of Psychology",
+    "Institute of Counseling",
+    "Institute of Social Work",
+    "Institute of Community Development",
+    "Institute of Rural Development",
+    "Institute of Urban Planning",
+    "Institute of Architecture",
+    "Institute of Interior Design",
+    "Institute of Landscape Architecture",
+    "Institute of Civil Engineering",
+    "Institute of Mechanical Engineering",
+    "Institute of Electrical Engineering",
+    "Institute of Electronic Engineering",
+    "Institute of Telecommunications",
+    "Institute of Computer Engineering",
+    "Institute of Software Engineering",
+    "Institute of Network Engineering",
+    "Institute of Database Engineering",
+    "Institute of Web Engineering",
+    "Institute of Mobile Engineering",
+    "Institute of Game Engineering",
+    "Institute of AI Engineering",
+    "Institute of Robotics Engineering",
+    "Institute of Mechatronics",
+    "Institute of Nanotechnology",
+    "Institute of Biotechnology",
+    "Institute of Genetic Engineering",
+    "Institute of Biomedical Engineering",
+    "Institute of Chemical Engineering",
+    "Institute of Materials Engineering",
+    "Institute of Industrial Engineering",
+    "Institute of Manufacturing Engineering",
+    "Institute of Quality Engineering",
+    "Institute of Safety Engineering",
+    "Institute of Environmental Engineering",
+    "Institute of Water Resources Engineering",
+    "Institute of Transportation Engineering",
+    "Institute of Highway Engineering",
+    "Institute of Bridge Engineering",
+    "Institute of Structural Engineering",
+    "Institute of Geotechnical Engineering",
+    "Institute of Hydraulic Engineering",
+    "Institute of Coastal Engineering",
+    "Institute of Ocean Engineering",
+    "Institute of Aerospace Engineering",
+    "Institute of Marine Engineering",
+    "Institute of Petroleum Engineering",
+    "Institute of Mining Engineering",
+    "Institute of Metallurgical Engineering",
+    "Institute of Ceramic Engineering",
+    "Institute of Polymer Engineering",
+    "Institute of Textile Engineering",
+    "Institute of Food Engineering",
+    "Institute of Agricultural Engineering",
+    "Institute of Forest Engineering",
+    "Institute of Wildlife Engineering",
+    "Institute of Conservation Engineering",
+    "Institute of Heritage Engineering",
+    "Institute of Archaeological Engineering",
+    "Institute of Cultural Engineering",
+    "Institute of Social Engineering",
+    "Institute of Human Engineering",
+    "Institute of Cognitive Engineering",
+    "Institute of Behavioral Engineering",
+    "Institute of Educational Engineering",
+    "Institute of Learning Engineering",
+    "Institute of Training Engineering",
+    "Institute of Development Engineering",
+    "Institute of Innovation Engineering",
+    "Institute of Creativity Engineering",
+    "Institute of Design Engineering",
+    "Institute of Art Engineering",
+    "Institute of Music Engineering",
+    "Institute of Dance Engineering",
+    "Institute of Theater Engineering",
+    "Institute of Film Engineering",
+    "Institute of Media Engineering",
+    "Institute of Communication Engineering",
+    "Institute of Information Engineering",
+    "Institute of Knowledge Engineering",
+    "Institute of Wisdom Engineering",
+    "Institute of Philosophy Engineering",
+    "Institute of Ethics Engineering",
+    "Institute of Logic Engineering",
+    "Institute of Mathematics Engineering",
+    "Institute of Physics Engineering",
+    "Institute of Chemistry Engineering",
+    "Institute of Biology Engineering",
+    "Institute of Geology Engineering",
+    "Institute of Astronomy Engineering",
+    "Institute of Cosmology Engineering",
+    "Institute of Quantum Engineering",
+    "Institute of Relativity Engineering",
+    "Institute of String Theory Engineering",
+    "Institute of Dark Matter Engineering",
+    "Institute of Dark Energy Engineering",
+    "Institute of Black Hole Engineering",
+    "Institute of Wormhole Engineering",
+    "Institute of Time Travel Engineering",
+    "Institute of Parallel Universe Engineering",
+    "Institute of Multiverse Engineering",
+    "Institute of Dimension Engineering",
+    "Institute of Reality Engineering",
+    "Institute of Consciousness Engineering",
+    "Institute of Mind Engineering",
+    "Institute of Brain Engineering",
+    "Institute of Neural Engineering",
+    "Institute of Cognitive Science Engineering",
+    "Institute of Artificial Intelligence Engineering",
+    "Institute of Machine Learning Engineering",
+    "Institute of Deep Learning Engineering",
+    "Institute of Neural Network Engineering",
+    "Institute of Computer Vision Engineering",
+    "Institute of Natural Language Processing Engineering",
+    "Institute of Speech Recognition Engineering",
+    "Institute of Text Mining Engineering",
+    "Institute of Data Mining Engineering",
+    "Institute of Big Data Engineering",
+    "Institute of Cloud Computing Engineering",
+    "Institute of Edge Computing Engineering",
+    "Institute of Fog Computing Engineering",
+    "Institute of Internet of Things Engineering",
+    "Institute of Cyber-Physical Systems Engineering",
+    "Institute of Digital Twin Engineering",
+    "Institute of Augmented Reality Engineering",
+    "Institute of Virtual Reality Engineering",
+    "Institute of Mixed Reality Engineering",
+    "Institute of Extended Reality Engineering",
+    "Institute of Metaverse Engineering",
+    "Institute of Web3 Engineering",
+    "Institute of Blockchain Engineering",
+    "Institute of Cryptocurrency Engineering",
+    "Institute of DeFi Engineering",
+    "Institute of NFT Engineering",
+    "Institute of Smart Contract Engineering",
+    "Institute of DAO Engineering",
+    "Institute of Token Engineering",
+    "Institute of Consensus Engineering",
+    "Institute of Mining Engineering",
+    "Institute of Staking Engineering",
+    "Institute of Yield Farming Engineering",
+    "Institute of Liquidity Mining Engineering",
+    "Institute of Flash Loan Engineering",
+    "Institute of MEV Engineering",
+    "Institute of Layer 2 Engineering",
+    "Institute of Sidechain Engineering",
+    "Institute of Cross-chain Engineering",
+    "Institute of Interoperability Engineering",
+    "Institute of Scalability Engineering",
+    "Institute of Privacy Engineering",
+    "Institute of Zero-knowledge Engineering",
+    "Institute of Homomorphic Encryption Engineering",
+    "Institute of Post-quantum Cryptography Engineering",
+    "Institute of Quantum-resistant Engineering",
+    "Institute of Quantum-safe Engineering",
+    "Institute of Quantum-secure Engineering",
+    "Institute of Quantum-proof Engineering",
+    "Institute of Quantum-broken Engineering",
+    "Institute of Quantum-hacked Engineering",
+    "Institute of Quantum-cracked Engineering",
+    "Institute of Quantum-busted Engineering",
+    "Institute of Quantum-foiled Engineering",
+    "Institute of Quantum-thwarted Engineering",
+    "Institute of Quantum-defeated Engineering",
+    "Institute of Quantum-overcome Engineering",
+    "Institute of Quantum-conquered Engineering",
+    "Institute of Quantum-vanquished Engineering",
+    "Institute of Quantum-subdued Engineering",
+    "Institute of Quantum-mastered Engineering",
+    "Institute of Quantum-dominated Engineering",
+    "Institute of Quantum-controlled Engineering",
+    "Institute of Quantum-managed Engineering",
+    "Institute of Quantum-administered Engineering",
+    "Institute of Quantum-governed Engineering",
+    "Institute of Quantum-regulated Engineering",
+    "Institute of Quantum-supervised Engineering",
+    "Institute of Quantum-directed Engineering",
+    "Institute of Quantum-guided Engineering",
+    "Institute of Quantum-led Engineering",
+    "Institute of Quantum-headed Engineering",
+    "Institute of Quantum-chaired Engineering",
+    "Institute of Quantum-presided Engineering",
+    "Institute of Quantum-chaired Engineering",
+    "Institute of Quantum-headed Engineering",
+    "Institute of Quantum-led Engineering",
+    "Institute of Quantum-guided Engineering",
+    "Institute of Quantum-directed Engineering",
+    "Institute of Quantum-supervised Engineering",
+    "Institute of Quantum-regulated Engineering",
+    "Institute of Quantum-governed Engineering",
+    "Institute of Quantum-administered Engineering",
+    "Institute of Quantum-managed Engineering",
+    "Institute of Quantum-controlled Engineering",
+    "Institute of Quantum-dominated Engineering",
+    "Institute of Quantum-mastered Engineering",
+    "Institute of Quantum-subdued Engineering",
+    "Institute of Quantum-vanquished Engineering",
+    "Institute of Quantum-conquered Engineering",
+    "Institute of Quantum-overcome Engineering",
+    "Institute of Quantum-defeated Engineering",
+    "Institute of Quantum-thwarted Engineering",
+    "Institute of Quantum-foiled Engineering",
+    "Institute of Quantum-busted Engineering",
+    "Institute of Quantum-cracked Engineering",
+    "Institute of Quantum-hacked Engineering",
+    "Institute of Quantum-broken Engineering",
+    "Institute of Quantum-proof Engineering",
+    "Institute of Quantum-secure Engineering",
+    "Institute of Quantum-safe Engineering",
+    "Institute of Quantum-resistant Engineering",
+    "Institute of Post-quantum Cryptography Engineering",
+    "Institute of Homomorphic Encryption Engineering",
+    "Institute of Zero-knowledge Engineering",
+    "Institute of Privacy Engineering",
+    "Institute of Scalability Engineering",
+    "Institute of Interoperability Engineering",
+    "Institute of Cross-chain Engineering",
+    "Institute of Sidechain Engineering",
+    "Institute of Layer 2 Engineering",
+    "Institute of MEV Engineering",
+    "Institute of Flash Loan Engineering",
+    "Institute of Yield Farming Engineering",
+    "Institute of Staking Engineering",
+    "Institute of Mining Engineering",
+    "Institute of Consensus Engineering",
+    "Institute of Token Engineering",
+    "Institute of DAO Engineering",
+    "Institute of Smart Contract Engineering",
+    "Institute of NFT Engineering",
+    "Institute of DeFi Engineering",
+    "Institute of Cryptocurrency Engineering",
+    "Institute of Blockchain Engineering",
+    "Institute of Web3 Engineering",
+    "Institute of Metaverse Engineering",
+    "Institute of Extended Reality Engineering",
+    "Institute of Mixed Reality Engineering",
+    "Institute of Virtual Reality Engineering",
+    "Institute of Augmented Reality Engineering",
+    "Institute of Digital Twin Engineering",
+    "Institute of Cyber-Physical Systems Engineering",
+    "Institute of Internet of Things Engineering",
+    "Institute of Fog Computing Engineering",
+    "Institute of Edge Computing Engineering",
+    "Institute of Cloud Computing Engineering",
+    "Institute of Big Data Engineering",
+    "Institute of Data Mining Engineering",
+    "Institute of Text Mining Engineering",
+    "Institute of Speech Recognition Engineering",
+    "Institute of Natural Language Processing Engineering",
+    "Institute of Computer Vision Engineering",
+    "Institute of Neural Network Engineering",
+    "Institute of Deep Learning Engineering",
+    "Institute of Machine Learning Engineering",
+    "Institute of Artificial Intelligence Engineering",
+    "Institute of Cognitive Science Engineering",
+    "Institute of Neural Engineering",
+    "Institute of Brain Engineering",
+    "Institute of Mind Engineering",
+    "Institute of Consciousness Engineering",
+    "Institute of Reality Engineering",
+    "Institute of Dimension Engineering",
+    "Institute of Multiverse Engineering",
+    "Institute of Parallel Universe Engineering",
+    "Institute of Time Travel Engineering",
+    "Institute of Wormhole Engineering",
+    "Institute of Black Hole Engineering",
+    "Institute of Dark Energy Engineering",
+    "Institute of Dark Matter Engineering",
+    "Institute of String Theory Engineering",
+    "Institute of Relativity Engineering",
+    "Institute of Quantum Engineering",
+    "Institute of Cosmology Engineering",
+    "Institute of Astronomy Engineering",
+    "Institute of Geology Engineering",
+    "Institute of Biology Engineering",
+    "Institute of Chemistry Engineering",
+    "Institute of Physics Engineering",
+    "Institute of Mathematics Engineering",
+    "Institute of Logic Engineering",
+    "Institute of Ethics Engineering",
+    "Institute of Philosophy Engineering",
+    "Institute of Wisdom Engineering",
+    "Institute of Knowledge Engineering",
+    "Institute of Information Engineering",
+    "Institute of Communication Engineering",
+    "Institute of Media Engineering",
+    "Institute of Film Engineering",
+    "Institute of Theater Engineering",
+    "Institute of Dance Engineering",
+    "Institute of Music Engineering",
+    "Institute of Art Engineering",
+    "Institute of Design Engineering",
+    "Institute of Creativity Engineering",
+    "Institute of Innovation Engineering",
+    "Institute of Development Engineering",
+    "Institute of Training Engineering",
+    "Institute of Learning Engineering",
+    "Institute of Educational Engineering",
+    "Institute of Behavioral Engineering",
+    "Institute of Cognitive Engineering",
+    "Institute of Human Engineering",
+    "Institute of Social Engineering",
+    "Institute of Cultural Engineering",
+    "Institute of Archaeological Engineering",
+    "Institute of Heritage Engineering",
+    "Institute of Conservation Engineering",
+    "Institute of Wildlife Engineering",
+    "Institute of Forest Engineering",
+    "Institute of Agricultural Engineering",
+    "Institute of Food Engineering",
+    "Institute of Textile Engineering",
+    "Institute of Polymer Engineering",
+    "Institute of Ceramic Engineering",
+    "Institute of Metallurgical Engineering",
+    "Institute of Mining Engineering",
+    "Institute of Petroleum Engineering",
+    "Institute of Marine Engineering",
+    "Institute of Aerospace Engineering",
+    "Institute of Ocean Engineering",
+    "Institute of Coastal Engineering",
+    "Institute of Hydraulic Engineering",
+    "Institute of Geotechnical Engineering",
+    "Institute of Structural Engineering",
+    "Institute of Bridge Engineering",
+    "Institute of Highway Engineering",
+    "Institute of Transportation Engineering",
+    "Institute of Water Resources Engineering",
+    "Institute of Environmental Engineering",
+    "Institute of Safety Engineering",
+    "Institute of Quality Engineering",
+    "Institute of Manufacturing Engineering",
+    "Institute of Industrial Engineering",
+    "Institute of Materials Engineering",
+    "Institute of Chemical Engineering",
+    "Institute of Biomedical Engineering",
+    "Institute of Genetic Engineering",
+    "Institute of Biotechnology",
+    "Institute of Nanotechnology",
+    "Institute of Mechatronics",
+    "Institute of Robotics Engineering",
+    "Institute of AI Engineering",
+    "Institute of Game Engineering",
+    "Institute of Mobile Engineering",
+    "Institute of Web Engineering",
+    "Institute of Database Engineering",
+    "Institute of Network Engineering",
+    "Institute of Software Engineering",
+    "Institute of Computer Engineering",
+    "Institute of Telecommunications",
+    "Institute of Electronic Engineering",
+    "Institute of Electrical Engineering",
+    "Institute of Mechanical Engineering",
+    "Institute of Civil Engineering",
+    "Institute of Landscape Architecture",
+    "Institute of Interior Design",
+    "Institute of Architecture",
+    "Institute of Urban Planning",
+    "Institute of Community Development",
+    "Institute of Social Work",
+    "Institute of Counseling",
+    "Institute of Psychology",
+    "Institute of Speech Therapy",
+    "Institute of Occupational Therapy",
+    "Institute of Physiotherapy",
+    "Institute of Nursing",
+    "Institute of Pharmaceutical Sciences",
+    "Institute of Medical Technology",
+    "Institute of Healthcare Management",
+    "Institute of Public Health",
+    "Institute of Emergency Management",
+    "Institute of Disaster Management",
+    "Institute of Climate Change",
+    "Institute of Environmental Management",
+    "Institute of Renewable Energy",
+    "Institute of Green Technology",
+    "Institute of Sustainability",
+    "Institute of Business Ethics",
+    "Institute of Corporate Governance",
+    "Institute of Compliance Management",
+    "Institute of Risk Management",
+    "Institute of Change Management",
+    "Institute of Strategic Management",
+    "Institute of Leadership Development",
+    "Institute of Professional Development",
+    "Institute of Business Communication",
+    "Institute of Data Visualization",
+    "Institute of Statistical Analysis",
+    "Institute of Research Methodology",
+    "Institute of Academic Writing",
+    "Institute of Research and Development",
+    "Institute of Intellectual Property",
+    "Institute of Technology Transfer",
+    "Institute of Business Incubation",
+    "Institute of Venture Capital",
+    "Institute of Start-up Management",
+    "Institute of Innovation and Entrepreneurship",
+    "Institute of Digital Business",
+    "Institute of E-commerce",
+    "Institute of Sales and Marketing",
+    "Institute of Consumer Behavior",
+    "Institute of Market Research",
+    "Institute of Business Intelligence",
+    "Institute of Data Analytics",
+    "Institute of Business Analysis",
+    "Institute of Product Management",
+    "Institute of Agile Development",
+    "Institute of Scrum Master",
+    "Institute of Lean Management",
+    "Institute of Six Sigma",
+    "Institute of Quality Management",
+    "Institute of Project Management",
+    "Institute of Supply Chain Management",
+    "Institute of Logistics",
+    "Institute of Maritime Studies",
+    "Institute of Aviation",
+    "Institute of Tourism and Hospitality",
+    "Institute of Event Management",
+    "Institute of Brand Management",
+    "Institute of Advertising",
+    "Institute of Mass Communication",
+    "Institute of Journalism",
+    "Institute of Film and Television",
+    "Institute of Multimedia",
+    "Institute of Animation",
+    "Institute of Graphic Design",
+    "Institute of UI/UX Design",
+    "Institute of Game Development",
+    "Institute of Mobile App Development",
+    "Institute of DevOps",
+    "Institute of Cloud Computing",
+    "Institute of Blockchain Technology",
+    "Institute of Cybersecurity",
+    "Institute of Machine Learning",
+    "Institute of Artificial Intelligence",
+    "Institute of Data Science",
+    "Institute of Digital Marketing",
+    "Institute of Web Technology",
+    "Institute of Software Engineering",
+    "Institute of Information Technology",
+    "Institute of Computer Technology",
+    "Institute of Management",
+    "Institute of Business Administration",
+    "Institute of Human Resource Development",
+    "Institute of Social Development",
+    "Institute of Policy Studies",
+    "Institute of Development Studies",
+    "Institute of Training and Development",
+    "Institute of Personnel Management",
+    "Institute of Marketing",
+    "Institute of Bankers",
+    "Institute of Chartered Accountants",
+    "Institute of Accountants",
+    "Institute of Engineers",
+    "Institute of Architects",
+    "Institute of Quantity Surveyors",
+    "Institute of Valuers",
+    "Institute of Town Planners",
+    "Institute of Surveying and Mapping",
+    "Institute of Nautical Sciences",
+    "Institute of Fisheries",
+    "Institute of Aquaculture",
+    "Institute of Animal Science and Health",
+    "Institute of Food Technology",
+    "Institute of Post Harvest Technology",
+    "Institute of Plantation Management",
+    "Institute of Applied Sciences",
+    "Institute of Biophysics",
+    "Institute of Molecular Biology",
+    "Institute of Biochemistry",
+    "Institute of Physics",
+    "Institute of Chemistry Ceylon",
+    "Institute of Builders",
+    "Institute of National Engineering Research and Development Centre",
+    "Institute of Industrial Technology",
+    "Institute of Arthur C. Clarke Institute for Modern Technologies",
+    "Institute of Fundamental Studies",
+    "Institute of Policy Studies",
+    "Institute of Bandaranaike Centre for International Studies",
+    "Institute of Sri Lanka Foundation Institute",
+    "Institute of Human Resource Advancement",
+    "Institute of National Institute of Business Management",
+    "Institute of Advanced Technological Education",
+    "Institute of Vocational Technology",
+    "Institute of Sri Lanka Technological Campus",
+    "Institute of Technology, University of Moratuwa",
+    "Institute of Colombo International Nautical and Engineering College",
+    "Institute of British School of Commerce",
+    "Institute of ESOFT Metro Campus",
+    "Institute of CINEC Campus",
+    "Institute of ICBT Campus",
+    "Institute of Sri Lanka Institute of Information Technology",
+    "Institute of NSBM Green University",
+    "Other"
+  ];
+
+  const degreePrograms = [
+    "Computer Science", "Software Engineering", "Information Technology", "Computer Engineering",
+    "Data Science", "Artificial Intelligence", "Machine Learning", "Cybersecurity",
+    "Business Administration", "Business Management", "Finance", "Accounting", "Economics",
+    "Marketing", "Digital Marketing", "Human Resource Management", "Project Management",
+    "Design", "Graphic Design", "UI/UX Design", "Interior Design", "Fashion Design",
+    "Architecture", "Civil Engineering", "Mechanical Engineering", "Electrical Engineering",
+    "Chemical Engineering", "Biomedical Engineering", "Environmental Engineering",
+    "Medicine", "Nursing", "Pharmacy", "Psychology", "Sociology", "Education",
+    "Law", "Journalism", "Media Studies", "Film Studies", "Music", "Arts",
+    "Agriculture", "Veterinary Science", "Food Science", "Nutrition",
+    "Other"
+  ];
+
+  const projectCategories = [
+    "Web Development", "Mobile Development", "Graphic Design", "Content Writing", 
+    "Digital Marketing", "Data Analysis", "AI/ML", "Cybersecurity", "UI/UX Design",
+    "Video Editing", "Animation", "3D Modeling", "Game Development", "Software Development",
+    "Database Design", "Cloud Computing", "DevOps", "Blockchain Development",
+    "Machine Learning", "Data Science", "Business Analysis", "Project Management",
+    "Market Research", "SEO/SEM", "Social Media Management", "Email Marketing",
+    "Copywriting", "Technical Writing", "Translation", "Voice Over", "Photography",
+    "Illustration", "Logo Design", "Branding", "Print Design", "Architecture",
+    "Interior Design", "Landscape Design", "Engineering Design", "CAD Modeling",
+    "Financial Analysis", "Accounting", "Legal Services", "Consulting",
+    "Training & Education", "Research", "Data Entry", "Virtual Assistant",
+    "Other"
+  ];
+
+  const staffRoles = [
+    "Professor", "Associate Professor", "Assistant Professor", "Lecturer", "Senior Lecturer",
+    "Research Assistant", "Research Associate", "Research Fellow", "Postdoctoral Researcher",
+    "Department Head", "Department Chair", "Program Director", "Course Coordinator",
+    "Career Counselor", "Student Advisor", "Academic Advisor", "Student Services Officer",
+    "Registrar", "Dean", "Associate Dean", "Vice Chancellor", "Chancellor",
+    "Librarian", "IT Administrator", "HR Manager", "Finance Manager",
+    "Marketing Manager", "Communications Officer", "International Relations Officer",
+    "Quality Assurance Officer", "Accreditation Officer", "Compliance Officer",
+    "Student Affairs Officer", "Housing Officer", "Transportation Officer",
+    "Security Officer", "Facilities Manager", "Maintenance Supervisor",
+    "Laboratory Manager", "Laboratory Technician", "Research Coordinator",
+    "Grant Manager", "Project Manager", "Data Analyst", "Administrative Assistant",
+    "Receptionist", "Secretary", "Coordinator", "Manager", "Director",
+    "Other"
+  ];
+
+  const availableSkills = [
+    "React", "Node.js", "Python", "JavaScript", "TypeScript", "Java", "C++", "C#",
+    "PHP", "Ruby", "Go", "Swift", "Kotlin", "Flutter", "React Native", "Vue.js",
+    "Angular", "Django", "Flask", "Express.js", "Laravel", "Spring Boot", "ASP.NET",
+    "MongoDB", "PostgreSQL", "MySQL", "Redis", "GraphQL", "REST API", "Docker",
+    "Kubernetes", "AWS", "Azure", "Google Cloud", "Git", "CI/CD", "Agile",
+    "UI/UX Design", "Figma", "Adobe XD", "Photoshop", "Illustrator", "InDesign",
+    "Content Writing", "Copywriting", "SEO", "Digital Marketing", "Social Media",
+    "Data Analysis", "Machine Learning", "AI", "Blockchain", "Cybersecurity"
+  ];
+
+  // Filtered arrays based on search
+  const filteredUniversities = universities.filter(uni => 
+    uni.toLowerCase().includes(universitySearch.toLowerCase())
+  );
+  
+  const filteredSkills = availableSkills.filter(skill => 
+    skill.toLowerCase().includes(skillSearch.toLowerCase())
+  );
+
+  // Password strength checker
+  const getPasswordStrength = (password) => {
     let score = 0;
     let feedback = [];
 
-    // Length check
-    if (password.length >= 8) {
-      score += 1;
-    } else {
-      feedback.push('At least 8 characters');
-    }
+    if (password.length >= 8) score += 1;
+    else feedback.push("At least 8 characters");
 
-    // Lowercase check
-    if (/[a-z]/.test(password)) {
-      score += 1;
-    } else {
-      feedback.push('One lowercase letter');
-    }
+    if (/[a-z]/.test(password)) score += 1;
+    else feedback.push("Lowercase letter");
 
-    // Uppercase check
-    if (/[A-Z]/.test(password)) {
-      score += 1;
-    } else {
-      feedback.push('One uppercase letter');
-    }
+    if (/[A-Z]/.test(password)) score += 1;
+    else feedback.push("Uppercase letter");
 
-    // Number check
-    if (/\d/.test(password)) {
-      score += 1;
-    } else {
-      feedback.push('One number');
-    }
+    if (/[0-9]/.test(password)) score += 1;
+    else feedback.push("Number");
 
-    // Special character check
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      score += 1;
-    } else {
-      feedback.push('One special character');
-    }
+    if (/[^A-Za-z0-9]/.test(password)) score += 1;
+    else feedback.push("Special character");
 
-    // Length bonus
-    if (password.length >= 12) {
-      score += 1;
-    }
+    if (score <= 2) return { strength: "Weak", color: "red", score, feedback };
+    if (score <= 3) return { strength: "Fair", color: "yellow", score, feedback };
+    if (score <= 4) return { strength: "Good", color: "blue", score, feedback };
+    return { strength: "Strong", color: "green", score, feedback };
+  };
 
-    // Complexity bonus (no consecutive characters, no repeated characters)
-    if (!/(.)\1{2,}/.test(password) && !/(.)(.)\1\2/.test(password)) {
-      score += 1;
-    }
-
-    // Determine level and color
-    let level, color, message;
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
     
-    if (score <= 2) {
-      level = 'Very Weak';
-      color = 'red';
-      message = 'Password is very weak';
-    } else if (score <= 3) {
-      level = 'Weak';
-      color = 'orange';
-      message = 'Password is weak';
-    } else if (score <= 4) {
-      level = 'Fair';
-      color = 'yellow';
-      message = 'Password is fair';
-    } else if (score <= 5) {
-      level = 'Good';
-      color = 'lightgreen';
-      message = 'Password is good';
-    } else if (score <= 6) {
-      level = 'Strong';
-      color = 'green';
-      message = 'Password is strong';
-    } else {
-      level = 'Very Strong';
-      color = 'darkgreen';
-      message = 'Password is very strong';
+    // Clear error when user starts typing
+    if (errors[e.target.name]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: ""
+      });
     }
-
-    return {
-      score,
-      level,
-      color,
-      message,
-      feedback: feedback.length > 0 ? feedback : []
-    };
   };
 
-  const validatePassword = (password) => {
-    if (!password) return "Password is required";
-    if (password.length < 8) return "Password must be at least 8 characters long";
-    if (!/(?=.*[a-z])/.test(password)) return "Password must contain at least one lowercase letter";
-    if (!/(?=.*[A-Z])/.test(password)) return "Password must contain at least one uppercase letter";
-    if (!/(?=.*\d)/.test(password)) return "Password must contain at least one number";
-    return "";
+  const handleSkillToggle = (skill) => {
+    setSelectedSkills(prev => 
+      prev.includes(skill) 
+        ? prev.filter(s => s !== skill)
+        : [...prev, skill]
+    );
   };
 
-  const validateConfirmPassword = (confirmPassword, password) => {
-    if (!confirmPassword) return "Please confirm your password";
-    if (confirmPassword !== password) return "Passwords do not match";
-    return "";
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
+
+  const handleUniversitySelect = (university) => {
+    setFormData({ ...formData, university });
+    setUniversitySearch(university);
+    setShowUniversityDropdown(false);
   };
 
-  const validateName = (name, fieldName) => {
-    if (!name) return `${fieldName} is required`;
-    if (name.length < 2) return `${fieldName} must be at least 2 characters long`;
-    if (!/^[a-zA-Z\s]+$/.test(name)) return `${fieldName} can only contain letters and spaces`;
-    return "";
-  };
 
-  const validateSkills = (skills) => {
-    if (!skills || skills.length === 0) return "Please add at least one skill";
-    if (skills.length > 10) return "You can add maximum 10 skills";
-    return "";
-  };
 
-  const validateBio = (bio) => {
-    if (bio && bio.length > 500) return "Bio must be less than 500 characters";
-    return "";
-  };
-
-  // Country-based phone validation
-  const validatePhoneNumber = (phoneNumber, country) => {
-    if (!phoneNumber) return "Phone number is required";
-    
-    // Remove all non-digit characters for validation
-    const cleanPhone = phoneNumber.replace(/\D/g, '');
-    
-    // Country-specific validation patterns (for remaining digits only)
-    const phonePatterns = {
-      "United States": /^\d{10}$/,
-      "Canada": /^\d{10}$/,
-      "United Kingdom": /^\d{10}$/,
-      "Australia": /^\d{9}$/,
-      "Germany": /^\d{10,11}$/,
-      "France": /^\d{9}$/,
-      "India": /^\d{10}$/,
-      "China": /^\d{11}$/,
-      "Japan": /^\d{9,10}$/,
-      "South Korea": /^\d{9,10}$/,
-      "Brazil": /^\d{10,11}$/,
-      "Mexico": /^\d{10}$/,
-      "Spain": /^\d{9}$/,
-      "Italy": /^\d{9,10}$/,
-      "Netherlands": /^\d{9}$/,
-      "Sweden": /^\d{9}$/,
-      "Norway": /^\d{8}$/,
-      "Denmark": /^\d{8}$/,
-      "Finland": /^\d{9}$/,
-      "Switzerland": /^\d{9}$/,
-      "Austria": /^\d{10,11}$/,
-      "Belgium": /^\d{9}$/,
-      "Ireland": /^\d{9}$/,
-      "New Zealand": /^\d{9}$/,
-      "Singapore": /^\d{8}$/,
-      "Malaysia": /^\d{9,10}$/,
-      "Thailand": /^\d{9}$/,
-      "Vietnam": /^\d{9,10}$/,
-      "Philippines": /^\d{9,10}$/,
-      "Indonesia": /^\d{9,11}$/,
-      "Pakistan": /^\d{10}$/,
-      "Bangladesh": /^\d{10}$/,
-      "Sri Lanka": /^\d{9}$/,
-      "Nepal": /^\d{10}$/,
-      "Myanmar": /^\d{9,10}$/,
-      "Cambodia": /^\d{8,9}$/,
-      "Laos": /^\d{9,10}$/,
-      "Mongolia": /^\d{8}$/,
-      "Kazakhstan": /^\d{10}$/,
-      "Uzbekistan": /^\d{9}$/,
-      "Kyrgyzstan": /^\d{9}$/,
-      "Tajikistan": /^\d{9}$/,
-      "Turkmenistan": /^\d{8}$/,
-      "Afghanistan": /^\d{9}$/,
-      "Iran": /^\d{10}$/,
-      "Iraq": /^\d{10}$/,
-      "Syria": /^\d{9}$/,
-      "Lebanon": /^\d{8}$/,
-      "Jordan": /^\d{9}$/,
-      "Israel": /^\d{9}$/,
-      "Palestine": /^\d{9}$/,
-      "Saudi Arabia": /^\d{9}$/,
-      "Yemen": /^\d{9}$/,
-      "Oman": /^\d{8}$/,
-      "United Arab Emirates": /^\d{9}$/,
-      "Qatar": /^\d{8}$/,
-      "Kuwait": /^\d{8}$/,
-      "Bahrain": /^\d{8}$/,
-      "Egypt": /^\d{10}$/,
-      "Libya": /^\d{9}$/,
-      "Tunisia": /^\d{8}$/,
-      "Algeria": /^\d{9}$/,
-      "Morocco": /^\d{9}$/,
-      "Sudan": /^\d{9}$/,
-      "South Sudan": /^\d{9}$/,
-      "Ethiopia": /^\d{9}$/,
-      "Eritrea": /^\d{7}$/,
-      "Djibouti": /^\d{8}$/,
-      "Somalia": /^\d{8}$/,
-      "Kenya": /^\d{9}$/,
-      "Uganda": /^\d{9}$/,
-      "Tanzania": /^\d{9}$/,
-      "Rwanda": /^\d{9}$/,
-      "Burundi": /^\d{8}$/,
-      "Democratic Republic of the Congo": /^\d{9}$/,
-      "Republic of the Congo": /^\d{9}$/,
-      "Central African Republic": /^\d{8}$/,
-      "Chad": /^\d{8}$/,
-      "Cameroon": /^\d{9}$/,
-      "Nigeria": /^\d{10}$/,
-      "Niger": /^\d{8}$/,
-      "Mali": /^\d{8}$/,
-      "Burkina Faso": /^\d{8}$/,
-      "Senegal": /^\d{9}$/,
-      "Gambia": /^\d{7}$/,
-      "Guinea-Bissau": /^\d{7}$/,
-      "Guinea": /^\d{9}$/,
-      "Sierra Leone": /^\d{8}$/,
-      "Liberia": /^\d{8}$/,
-      "Ivory Coast": /^\d{8}$/,
-      "Ghana": /^\d{9}$/,
-      "Togo": /^\d{8}$/,
-      "Benin": /^\d{8}$/,
-      "Equatorial Guinea": /^\d{9}$/,
-      "Gabon": /^\d{8}$/,
-      "São Tomé and Príncipe": /^\d{7}$/,
-      "Angola": /^\d{9}$/,
-      "Zambia": /^\d{9}$/,
-      "Zimbabwe": /^\d{9}$/,
-      "Botswana": /^\d{8}$/,
-      "Namibia": /^\d{9}$/,
-      "South Africa": /^\d{9}$/,
-      "Lesotho": /^\d{8}$/,
-      "Eswatini": /^\d{8}$/,
-      "Madagascar": /^\d{9}$/,
-      "Mauritius": /^\d{8}$/,
-      "Seychelles": /^\d{7}$/,
-      "Comoros": /^\d{7}$/,
-      "Mayotte": /^\d{9}$/,
-      "Réunion": /^\d{9}$/,
-      "Russia": /^\d{10}$/,
-      "Ukraine": /^\d{9}$/,
-      "Belarus": /^\d{9}$/,
-      "Poland": /^\d{9}$/,
-      "Czech Republic": /^\d{9}$/,
-      "Slovakia": /^\d{9}$/,
-      "Hungary": /^\d{9}$/,
-      "Romania": /^\d{9}$/,
-      "Bulgaria": /^\d{9}$/,
-      "Serbia": /^\d{9}$/,
-      "Croatia": /^\d{9}$/,
-      "Slovenia": /^\d{8}$/,
-      "Bosnia and Herzegovina": /^\d{8}$/,
-      "Montenegro": /^\d{8}$/,
-      "North Macedonia": /^\d{8}$/,
-      "Albania": /^\d{9}$/,
-      "Greece": /^\d{10}$/,
-      "Cyprus": /^\d{8}$/,
-      "Malta": /^\d{8}$/,
-      "Estonia": /^\d{8}$/,
-      "Latvia": /^\d{8}$/,
-      "Lithuania": /^\d{8}$/,
-      "Moldova": /^\d{8}$/,
-      "Georgia": /^\d{9}$/,
-      "Armenia": /^\d{8}$/,
-      "Azerbaijan": /^\d{9}$/,
-      "Turkey": /^\d{10}$/,
-      "Other": /^\d{7,15}$/ // Generic pattern for other countries
-    };
-
-    if (!country) {
-      return "Please select a country first";
+  const handleSkillSelect = (skill) => {
+    if (!selectedSkills.includes(skill)) {
+      setSelectedSkills([...selectedSkills, skill]);
     }
+    setSkillSearch("");
+    setShowSkillDropdown(false);
+  };
 
-    const pattern = phonePatterns[country];
-    if (!pattern) {
-      // For countries not in the list, use generic validation
-      if (cleanPhone.length < 7 || cleanPhone.length > 15) {
-        return "Phone number must be between 7 and 15 digits";
-      }
-      return "";
+  const addCustomSkill = () => {
+    if (skillSearch.trim() && !selectedSkills.includes(skillSearch.trim())) {
+      setSelectedSkills([...selectedSkills, skillSearch.trim()]);
+      setSkillSearch("");
+      setShowSkillDropdown(false);
     }
-
-    if (!pattern.test(cleanPhone)) {
-      return `Please enter a valid phone number for ${country}`;
-    }
-
-    return "";
-  };
-
-  const validateCountry = (country) => {
-    if (!country) return "Please select your country";
-    return "";
-  };
-
-  // Helper function to get country code
-  const getCountryCode = (country) => {
-    const countryCodes = {
-      "United States": "+1",
-      "Canada": "+1",
-      "United Kingdom": "+44",
-      "Australia": "+61",
-      "Germany": "+49",
-      "France": "+33",
-      "India": "+91",
-      "China": "+86",
-      "Japan": "+81",
-      "South Korea": "+82",
-      "Brazil": "+55",
-      "Mexico": "+52",
-      "Spain": "+34",
-      "Italy": "+39",
-      "Netherlands": "+31",
-      "Sweden": "+46",
-      "Norway": "+47",
-      "Denmark": "+45",
-      "Finland": "+358",
-      "Switzerland": "+41",
-      "Austria": "+43",
-      "Belgium": "+32",
-      "Ireland": "+353",
-      "New Zealand": "+64",
-      "Singapore": "+65",
-      "Malaysia": "+60",
-      "Thailand": "+66",
-      "Vietnam": "+84",
-      "Philippines": "+63",
-      "Indonesia": "+62",
-      "Pakistan": "+92",
-      "Bangladesh": "+880",
-      "Sri Lanka": "+94",
-      "Nepal": "+977",
-      "Myanmar": "+95",
-      "Cambodia": "+855",
-      "Laos": "+856",
-      "Mongolia": "+976",
-      "Kazakhstan": "+7",
-      "Uzbekistan": "+998",
-      "Kyrgyzstan": "+996",
-      "Tajikistan": "+992",
-      "Turkmenistan": "+993",
-      "Afghanistan": "+93",
-      "Iran": "+98",
-      "Iraq": "+964",
-      "Syria": "+963",
-      "Lebanon": "+961",
-      "Jordan": "+962",
-      "Israel": "+972",
-      "Palestine": "+970",
-      "Saudi Arabia": "+966",
-      "Yemen": "+967",
-      "Oman": "+968",
-      "United Arab Emirates": "+971",
-      "Qatar": "+974",
-      "Kuwait": "+965",
-      "Bahrain": "+973",
-      "Egypt": "+20",
-      "Libya": "+218",
-      "Tunisia": "+216",
-      "Algeria": "+213",
-      "Morocco": "+212",
-      "Sudan": "+249",
-      "South Sudan": "+211",
-      "Ethiopia": "+251",
-      "Eritrea": "+291",
-      "Djibouti": "+253",
-      "Somalia": "+252",
-      "Kenya": "+254",
-      "Uganda": "+256",
-      "Tanzania": "+255",
-      "Rwanda": "+250",
-      "Burundi": "+257",
-      "Democratic Republic of the Congo": "+243",
-      "Republic of the Congo": "+242",
-      "Central African Republic": "+236",
-      "Chad": "+235",
-      "Cameroon": "+237",
-      "Nigeria": "+234",
-      "Niger": "+227",
-      "Mali": "+223",
-      "Burkina Faso": "+226",
-      "Senegal": "+221",
-      "Gambia": "+220",
-      "Guinea-Bissau": "+245",
-      "Guinea": "+224",
-      "Sierra Leone": "+232",
-      "Liberia": "+231",
-      "Ivory Coast": "+225",
-      "Ghana": "+233",
-      "Togo": "+228",
-      "Benin": "+229",
-      "Equatorial Guinea": "+240",
-      "Gabon": "+241",
-      "São Tomé and Príncipe": "+239",
-      "Angola": "+244",
-      "Zambia": "+260",
-      "Zimbabwe": "+263",
-      "Botswana": "+267",
-      "Namibia": "+264",
-      "South Africa": "+27",
-      "Lesotho": "+266",
-      "Eswatini": "+268",
-      "Madagascar": "+261",
-      "Mauritius": "+230",
-      "Seychelles": "+248",
-      "Comoros": "+269",
-      "Mayotte": "+262",
-      "Réunion": "+262",
-      "Russia": "+7",
-      "Ukraine": "+380",
-      "Belarus": "+375",
-      "Poland": "+48",
-      "Czech Republic": "+420",
-      "Slovakia": "+421",
-      "Hungary": "+36",
-      "Romania": "+40",
-      "Bulgaria": "+359",
-      "Serbia": "+381",
-      "Croatia": "+385",
-      "Slovenia": "+386",
-      "Bosnia and Herzegovina": "+387",
-      "Montenegro": "+382",
-      "North Macedonia": "+389",
-      "Albania": "+355",
-      "Greece": "+30",
-      "Cyprus": "+357",
-      "Malta": "+356",
-      "Estonia": "+372",
-      "Latvia": "+371",
-      "Lithuania": "+370",
-      "Moldova": "+373",
-      "Georgia": "+995",
-      "Armenia": "+374",
-      "Azerbaijan": "+994",
-      "Turkey": "+90",
-      "Other": "+"
-    };
-    return countryCodes[country] || "+";
-  };
-
-  // Helper function to get phone format for display
-  const getPhoneFormat = (country) => {
-    const countryCode = getCountryCode(country);
-    const formats = {
-      "United States": `${countryCode} (XXX) XXX-XXXX`,
-      "Canada": `${countryCode} (XXX) XXX-XXXX`,
-      "United Kingdom": `${countryCode} XXXX XXXXXX`,
-      "Australia": `${countryCode} X XXX XXX XXX`,
-      "Germany": `${countryCode} XXX XXXXXXX`,
-      "France": `${countryCode} X XX XX XX XX`,
-      "India": `${countryCode} XXXXX XXXXX`,
-      "China": `${countryCode} XXX XXXX XXXX`,
-      "Japan": `${countryCode} XX XXXX XXXX`,
-      "South Korea": `${countryCode} XX XXXX XXXX`,
-      "Brazil": `${countryCode} XX XXXXX XXXX`,
-      "Mexico": `${countryCode} XXX XXX XXXX`,
-      "Spain": `${countryCode} XXX XXX XXX`,
-      "Italy": `${countryCode} XXX XXX XXXX`,
-      "Netherlands": `${countryCode} X XXX XXXX`,
-      "Sweden": `${countryCode} XX XXX XXXX`,
-      "Norway": `${countryCode} XXX XX XXX`,
-      "Denmark": `${countryCode} XX XX XX XX`,
-      "Finland": `${countryCode} XX XXX XXXX`,
-      "Switzerland": `${countryCode} XX XXX XXXX`,
-      "Austria": `${countryCode} XXX XXX XXXX`,
-      "Belgium": `${countryCode} X XXX XX XX`,
-      "Ireland": `${countryCode} XX XXX XXXX`,
-      "New Zealand": `${countryCode} XX XXX XXXX`,
-      "Singapore": `${countryCode} XXXX XXXX`,
-      "Malaysia": `${countryCode} XX XXX XXXX`,
-      "Thailand": `${countryCode} X XXX XXXX`,
-      "Vietnam": `${countryCode} XX XXX XXXX`,
-      "Philippines": `${countryCode} XXX XXX XXXX`,
-      "Indonesia": `${countryCode} XXX XXX XXXX`,
-      "Pakistan": `${countryCode} XXX XXXXXXX`,
-      "Bangladesh": `${countryCode} XXX XXX XXX`,
-      "Sri Lanka": `${countryCode} XX XXX XXXX`,
-      "Nepal": `${countryCode} XXX XXX XXXX`,
-      "Myanmar": `${countryCode} XX XXX XXXX`,
-      "Cambodia": `${countryCode} XX XXX XXX`,
-      "Laos": `${countryCode} XX XXX XXXX`,
-      "Mongolia": `${countryCode} XXXX XXXX`,
-      "Kazakhstan": `${countryCode} XXX XXX XXXX`,
-      "Uzbekistan": `${countryCode} XX XXX XXXX`,
-      "Kyrgyzstan": `${countryCode} XXX XXX XXX`,
-      "Tajikistan": `${countryCode} XXX XXX XXX`,
-      "Turkmenistan": `${countryCode} XX XXX XX`,
-      "Afghanistan": `${countryCode} XXX XXX XXX`,
-      "Iran": `${countryCode} XXX XXX XXXX`,
-      "Iraq": `${countryCode} XXX XXX XXXX`,
-      "Syria": `${countryCode} XXX XXX XXX`,
-      "Lebanon": `${countryCode} XX XXX XXX`,
-      "Jordan": `${countryCode} XX XXX XXXX`,
-      "Israel": `${countryCode} XX XXX XXXX`,
-      "Palestine": `${countryCode} XX XXX XXXX`,
-      "Saudi Arabia": `${countryCode} XXX XXX XXX`,
-      "Yemen": `${countryCode} XXX XXX XXX`,
-      "Oman": `${countryCode} XXXX XXXX`,
-      "United Arab Emirates": `${countryCode} XX XXX XXXX`,
-      "Qatar": `${countryCode} XXXX XXXX`,
-      "Kuwait": `${countryCode} XXXX XXXX`,
-      "Bahrain": `${countryCode} XXXX XXXX`,
-      "Egypt": `${countryCode} XXX XXX XXXX`,
-      "Libya": `${countryCode} XX XXX XXXX`,
-      "Tunisia": `${countryCode} XX XXX XXX`,
-      "Algeria": `${countryCode} XXX XXX XXX`,
-      "Morocco": `${countryCode} XXX XXX XXX`,
-      "Sudan": `${countryCode} XXX XXX XXX`,
-      "South Sudan": `${countryCode} XXX XXX XXX`,
-      "Ethiopia": `${countryCode} XXX XXX XXX`,
-      "Eritrea": `${countryCode} XXX XXXX`,
-      "Djibouti": `${countryCode} XX XXX XXX`,
-      "Somalia": `${countryCode} XX XXX XXX`,
-      "Kenya": `${countryCode} XXX XXX XXX`,
-      "Uganda": `${countryCode} XXX XXX XXX`,
-      "Tanzania": `${countryCode} XXX XXX XXX`,
-      "Rwanda": `${countryCode} XXX XXX XXX`,
-      "Burundi": `${countryCode} XX XXX XXX`,
-      "Democratic Republic of the Congo": `${countryCode} XXX XXX XXX`,
-      "Republic of the Congo": `${countryCode} XXX XXX XXX`,
-      "Central African Republic": `${countryCode} XX XXX XXX`,
-      "Chad": `${countryCode} XX XXX XXX`,
-      "Cameroon": `${countryCode} XXX XXX XXX`,
-      "Nigeria": `${countryCode} XXX XXX XXXX`,
-      "Niger": `${countryCode} XX XXX XXX`,
-      "Mali": `${countryCode} XX XXX XXX`,
-      "Burkina Faso": `${countryCode} XX XXX XXX`,
-      "Senegal": `${countryCode} XXX XXX XXX`,
-      "Gambia": `${countryCode} XXX XXXX`,
-      "Guinea-Bissau": `${countryCode} XXX XXXX`,
-      "Guinea": `${countryCode} XXX XXX XXX`,
-      "Sierra Leone": `${countryCode} XXX XXX XX`,
-      "Liberia": `${countryCode} XXX XXX XX`,
-      "Ivory Coast": `${countryCode} XXX XXX XX`,
-      "Ghana": `${countryCode} XXX XXX XXX`,
-      "Togo": `${countryCode} XX XXX XXX`,
-      "Benin": `${countryCode} XX XXX XXX`,
-      "Equatorial Guinea": `${countryCode} XXX XXX XXX`,
-      "Gabon": `${countryCode} XX XXX XXX`,
-      "São Tomé and Príncipe": `${countryCode} XXX XXXX`,
-      "Angola": `${countryCode} XXX XXX XXX`,
-      "Zambia": `${countryCode} XXX XXX XXX`,
-      "Zimbabwe": `${countryCode} XXX XXX XXX`,
-      "Botswana": `${countryCode} XX XXX XXX`,
-      "Namibia": `${countryCode} XXX XXX XXX`,
-      "South Africa": `${countryCode} XXX XXX XXXX`,
-      "Lesotho": `${countryCode} XX XXX XXX`,
-      "Eswatini": `${countryCode} XX XXX XXX`,
-      "Madagascar": `${countryCode} XXX XXX XXX`,
-      "Mauritius": `${countryCode} XXXX XXXX`,
-      "Seychelles": `${countryCode} XXX XXXX`,
-      "Comoros": `${countryCode} XXX XXXX`,
-      "Mayotte": `${countryCode} XXX XXX XXX`,
-      "Réunion": `${countryCode} XXX XXX XXX`,
-      "Russia": `${countryCode} XXX XXX XXXX`,
-      "Ukraine": `${countryCode} XX XXX XXXX`,
-      "Belarus": `${countryCode} XX XXX XXXX`,
-      "Poland": `${countryCode} XXX XXX XXX`,
-      "Czech Republic": `${countryCode} XXX XXX XXX`,
-      "Slovakia": `${countryCode} XXX XXX XXX`,
-      "Hungary": `${countryCode} XX XXX XXXX`,
-      "Romania": `${countryCode} XXX XXX XXX`,
-      "Bulgaria": `${countryCode} XXX XXX XXX`,
-      "Serbia": `${countryCode} XX XXX XXXX`,
-      "Croatia": `${countryCode} XX XXX XXXX`,
-      "Slovenia": `${countryCode} XX XXX XXX`,
-      "Bosnia and Herzegovina": `${countryCode} XX XXX XXX`,
-      "Montenegro": `${countryCode} XX XXX XXX`,
-      "North Macedonia": `${countryCode} XX XXX XXX`,
-      "Albania": `${countryCode} XXX XXX XXX`,
-      "Greece": `${countryCode} XXX XXX XXXX`,
-      "Cyprus": `${countryCode} XXXX XXXX`,
-      "Malta": `${countryCode} XXXX XXXX`,
-      "Estonia": `${countryCode} XXXX XXXX`,
-      "Latvia": `${countryCode} XXXX XXXX`,
-      "Lithuania": `${countryCode} XXXX XXXX`,
-      "Moldova": `${countryCode} XXXX XXXX`,
-      "Georgia": `${countryCode} XXX XXX XXX`,
-      "Armenia": `${countryCode} XX XXX XXX`,
-      "Azerbaijan": `${countryCode} XXX XXX XXX`,
-      "Turkey": `${countryCode} XXX XXX XXXX`,
-      "Other": "International format"
-    };
-    return formats[country] || "International format";
-  };
-
-  // Helper function to get max digits for a country
-  const getMaxDigits = (country) => {
-    const maxDigits = {
-      "United States": 10,
-      "Canada": 10,
-      "United Kingdom": 10,
-      "Australia": 9,
-      "Germany": 11,
-      "France": 9,
-      "India": 10,
-      "China": 11,
-      "Japan": 10,
-      "South Korea": 10,
-      "Brazil": 11,
-      "Mexico": 10,
-      "Spain": 9,
-      "Italy": 10,
-      "Netherlands": 9,
-      "Sweden": 9,
-      "Norway": 8,
-      "Denmark": 8,
-      "Finland": 9,
-      "Switzerland": 9,
-      "Austria": 11,
-      "Belgium": 9,
-      "Ireland": 9,
-      "New Zealand": 9,
-      "Singapore": 8,
-      "Malaysia": 10,
-      "Thailand": 9,
-      "Vietnam": 10,
-      "Philippines": 10,
-      "Indonesia": 11,
-      "Pakistan": 10,
-      "Bangladesh": 10,
-      "Sri Lanka": 9,
-      "Nepal": 10,
-      "Myanmar": 10,
-      "Cambodia": 9,
-      "Laos": 10,
-      "Mongolia": 8,
-      "Kazakhstan": 10,
-      "Uzbekistan": 9,
-      "Kyrgyzstan": 9,
-      "Tajikistan": 9,
-      "Turkmenistan": 8,
-      "Afghanistan": 9,
-      "Iran": 10,
-      "Iraq": 10,
-      "Syria": 9,
-      "Lebanon": 8,
-      "Jordan": 9,
-      "Israel": 9,
-      "Palestine": 9,
-      "Saudi Arabia": 9,
-      "Yemen": 9,
-      "Oman": 8,
-      "United Arab Emirates": 9,
-      "Qatar": 8,
-      "Kuwait": 8,
-      "Bahrain": 8,
-      "Egypt": 10,
-      "Libya": 9,
-      "Tunisia": 8,
-      "Algeria": 9,
-      "Morocco": 9,
-      "Sudan": 9,
-      "South Sudan": 9,
-      "Ethiopia": 9,
-      "Eritrea": 7,
-      "Djibouti": 8,
-      "Somalia": 8,
-      "Kenya": 9,
-      "Uganda": 9,
-      "Tanzania": 9,
-      "Rwanda": 9,
-      "Burundi": 8,
-      "Democratic Republic of the Congo": 9,
-      "Republic of the Congo": 9,
-      "Central African Republic": 8,
-      "Chad": 8,
-      "Cameroon": 9,
-      "Nigeria": 10,
-      "Niger": 8,
-      "Mali": 8,
-      "Burkina Faso": 8,
-      "Senegal": 9,
-      "Gambia": 7,
-      "Guinea-Bissau": 7,
-      "Guinea": 9,
-      "Sierra Leone": 8,
-      "Liberia": 8,
-      "Ivory Coast": 8,
-      "Ghana": 9,
-      "Togo": 8,
-      "Benin": 8,
-      "Equatorial Guinea": 9,
-      "Gabon": 8,
-      "São Tomé and Príncipe": 7,
-      "Angola": 9,
-      "Zambia": 9,
-      "Zimbabwe": 9,
-      "Botswana": 8,
-      "Namibia": 9,
-      "South Africa": 9,
-      "Lesotho": 8,
-      "Eswatini": 8,
-      "Madagascar": 9,
-      "Mauritius": 8,
-      "Seychelles": 7,
-      "Comoros": 7,
-      "Mayotte": 9,
-      "Réunion": 9,
-      "Russia": 10,
-      "Ukraine": 9,
-      "Belarus": 9,
-      "Poland": 9,
-      "Czech Republic": 9,
-      "Slovakia": 9,
-      "Hungary": 9,
-      "Romania": 9,
-      "Bulgaria": 9,
-      "Serbia": 9,
-      "Croatia": 9,
-      "Slovenia": 8,
-      "Bosnia and Herzegovina": 8,
-      "Montenegro": 8,
-      "North Macedonia": 8,
-      "Albania": 9,
-      "Greece": 10,
-      "Cyprus": 8,
-      "Malta": 8,
-      "Estonia": 8,
-      "Latvia": 8,
-      "Lithuania": 8,
-      "Moldova": 8,
-      "Georgia": 9,
-      "Armenia": 8,
-      "Azerbaijan": 9,
-      "Turkey": 10,
-      "Other": 15
-    };
-    return maxDigits[country] || 15;
   };
 
   const validateForm = () => {
     const newErrors = {};
     
-    newErrors.firstName = validateName(formData.firstName, "First name");
-    newErrors.lastName = validateName(formData.lastName, "Last name");
-    newErrors.email = validateEmail(formData.email);
-    newErrors.password = validatePassword(formData.password);
-    newErrors.confirmPassword = validateConfirmPassword(formData.confirmPassword, formData.password);
-    newErrors.country = validateCountry(formData.country);
-    newErrors.phoneNumber = validatePhoneNumber(formData.phoneNumber, formData.country);
-    newErrors.skills = validateSkills(formData.skills);
-    newErrors.bio = validateBio(formData.bio);
+    // Common validations
+    if (!formData.email) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
+    
+    if (!formData.password) newErrors.password = "Password is required";
+    else if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (!formData.firstName) newErrors.firstName = "First name is required";
+    if (!formData.lastName) newErrors.lastName = "Last name is required";
+    
+    if (!acceptedTerms) newErrors.terms = "You must accept the terms and conditions";
+
+    // User type specific validations
+    if (userType === "student") {
+      if (!formData.degreeProgram) newErrors.degreeProgram = "Degree program is required";
+      if (formData.degreeProgram === "Other" && !customDegreeProgram.trim()) {
+        newErrors.degreeProgram = "Please specify your degree program";
+      }
+      if (!formData.university) newErrors.university = "University is required";
+    if (formData.university === "Other" && !customUniversity.trim()) {
+      newErrors.university = "Please specify your university name";
+    }
+      if (!formData.gpa) newErrors.gpa = "GPA is required";
+      if (!formData.graduationYear) newErrors.graduationYear = "Graduation year is required";
+    }
+
+    if (userType === "jobSeeker") {
+      if (!formData.organization) newErrors.organization = "Organization is required";
+      if (!formData.contactPhone) newErrors.contactPhone = "Contact phone is required";
+    }
+
+    if (userType === "universityStaff") {
+      if (!formData.staffRole) newErrors.staffRole = "Staff role is required";
+      if (!formData.department) newErrors.department = "Department is required";
+      if (!formData.employeeId) newErrors.employeeId = "Employee ID is required";
+    }
+
+    if (userType === "admin") {
+      if (!formData.adminCode) newErrors.adminCode = "Admin code is required";
+    }
     
     setErrors(newErrors);
-    return !Object.values(newErrors).some(error => error !== "");
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    // Special handling for phone number input
-    if (name === 'phoneNumber') {
-      // Only allow digits
-      const digitsOnly = value.replace(/\D/g, '');
-      
-      // Get max digits for selected country
-      const maxDigits = getMaxDigits(formData.country);
-      
-      // Limit to max digits
-      const limitedDigits = digitsOnly.slice(0, maxDigits);
-      
-      setFormData(prev => ({
-        ...prev,
-        [name]: limitedDigits
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
-    
-    // Calculate password strength when password field changes
-    if (name === 'password') {
-      const strength = calculatePasswordStrength(value);
-      setPasswordStrength(strength);
-    }
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ""
-      }));
-    }
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Clear previous errors
-    setError("");
-    setErrors({});
-    
-    // Validate form before submission
-    if (!validateForm()) {
-      return;
-    }
-    
-    if (!formData.agreeToTerms) {
-      setError("You must agree to the terms of service");
-      return;
-    }
-    
-    setLoading(true);
-    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
     try {
-      // Remove confirmPassword from data sent to backend
-      const { confirmPassword, ...signupData } = formData;
-      
-      // Combine country code with phone number
-      if (signupData.country && signupData.phoneNumber) {
-        const countryCode = getCountryCode(signupData.country);
-        signupData.phoneNumber = countryCode + signupData.phoneNumber;
-      }
-      
+      // Prepare data for backend API
+      const signupData = {
+        ...formData,
+        userType,
+        technicalSkills: selectedSkills,
+        agreeToTerms: acceptedTerms,
+        agreeToMarketing: formData.agreeToMarketing || false
+      };
+
+      // Remove confirmPassword as it's not needed by backend
+      delete signupData.confirmPassword;
+
+      // Make API call to backend
       const response = await fetch('http://localhost:5000/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -875,885 +950,990 @@ function Signup() {
       const result = await response.json();
 
               if (result.success) {
-          // Store user data and token using the utility function
-          setAuthData(result.data.token, result.data);
+        // Store user data and token
+        localStorage.setItem('userData', JSON.stringify(result.data));
+        localStorage.setItem('userToken', result.data.token);
           
           // Show success message
-          alert('Registration successful! Redirecting...');
-          
-          // Redirect to appropriate page based on user type
-          if (result.data.userType === 'client') {
-            window.location.href = '/client-dashboard';
+        setVerificationSent(true);
+        
+        // Redirect to login page after successful registration
+        setTimeout(() => {
+          navigate('/signin');
+        }, 2000);
           } else {
-            window.location.href = '/student/dashboard';
-          }
+        // Handle validation errors
+        if (result.message) {
+          alert(`Registration failed: ${result.message}`);
         } else {
-          setError(result.message || 'Registration failed');
+          alert('Registration failed. Please try again.');
         }
+      }
+      
     } catch (error) {
       console.error('Registration error:', error);
-      setError('Registration failed. Please try again.');
+      alert('Network error. Please check your connection and try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const nextStep = () => {
-    setStep(step + 1);
-  };
-
-  const prevStep = () => {
-    setStep(step - 1);
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto flex items-start justify-center">
-        {/* Left Side - Image */}
-        <div className="hidden lg:block w-1/2 pr-12 sticky top-24 relative">
-          <div className="relative space-y-6">
-            {/* Main Image */}
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-              <img 
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80" 
-                alt="Diverse team of freelancers collaborating"
-                className="w-full h-[600px] object-cover"
-              />
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60"></div>
-              
-              {/* Content overlay */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-6">
-                <h3 className="text-2xl font-bold mb-3 text-center">Join FlexiHire Today!</h3>
-                <p className="text-base text-center leading-relaxed">
-                  Start your freelancing journey with thousands of professionals
-                </p>
-              </div>
-            </div>
-            
-            {/* Secondary Image */}
-            <div className="relative rounded-2xl overflow-hidden shadow-xl">
-              <img 
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1528&q=80" 
-                alt="Female freelancer working remotely"
-                className="w-full h-64 object-cover"
-              />
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/80 to-yellow-400/80"></div>
-              
-              {/* Success Story overlay */}
-              <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold mb-1">"Best Decision Ever!"</div>
-                  <div className="text-sm opacity-90">- Sarah, Graphic Designer</div>
-                  <div className="text-xs mt-2 opacity-80">Earning $5K+/month</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Floating profile images */}
-            <div className="absolute -right-4 top-20">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-white shadow-lg">
-                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80" 
-                  alt="Successful freelancer"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            
-            <div className="absolute -left-2 bottom-32">
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-lg">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=387&q=80" 
-                  alt="Professional freelancer"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
-            {/* Decorative elements */}
-            <div className="absolute -top-4 -right-4 w-20 h-20 bg-yellow-300 rounded-full opacity-20"></div>
-            <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-yellow-400 rounded-full opacity-30"></div>
-          </div>
+  const renderStudentFields = () => (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Degree Program *
+          </label>
+          <select
+            name="degreeProgram"
+            value={formData.degreeProgram}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.degreeProgram ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
+            <option value="">Select Degree Program</option>
+            {degreePrograms.map(program => (
+              <option key={program} value={program}>{program}</option>
+            ))}
+          </select>
           
-          {/* Additional floating elements */}
-          <div className="absolute top-20 right-0 w-12 h-12 bg-yellow-200 rounded-full opacity-40 animate-pulse"></div>
-          <div className="absolute bottom-20 left-0 w-8 h-8 bg-yellow-300 rounded-full opacity-30 animate-bounce"></div>
-        </div>
-
-        {/* Right Side - Signup Form */}
-        <div className="w-full lg:w-1/2">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-block">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
-              FlexiHire
-            </h1>
-          </Link>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Join FlexiHire</h2>
-          <p className="text-gray-600">Create your account and start your journey</p>
-          {localStorage.getItem('userToken') && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('userToken');
-                  localStorage.removeItem('userData');
-                  window.location.href = '/';
+          {/* Custom Degree Program Input for "Other" option */}
+          {formData.degreeProgram === "Other" && (
+            <div className="mt-3">
+              <input
+                type="text"
+                name="customDegreeProgram"
+                value={customDegreeProgram}
+                onChange={(e) => {
+                  setCustomDegreeProgram(e.target.value);
+                  setFormData({ ...formData, degreeProgram: e.target.value });
                 }}
-                className="text-red-600 hover:text-red-700 text-sm underline"
-              >
-                Logout from another session
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className={`flex items-center ${step >= 1 ? 'text-yellow-500' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 1 ? 'bg-yellow-500 border-yellow-500 text-black' : 'border-gray-300'}`}>
-                1
-              </div>
-              <span className="ml-2 text-sm font-medium">Account</span>
-            </div>
-            <div className={`flex-1 h-1 mx-4 ${step >= 2 ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
-            <div className={`flex items-center ${step >= 2 ? 'text-yellow-500' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${step >= 2 ? 'bg-yellow-500 border-yellow-500 text-black' : 'border-gray-300'}`}>
-                2
-              </div>
-              <span className="ml-2 text-sm font-medium">Profile</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Registration Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-              {error}
+                placeholder="Please specify your degree program"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
             </div>
           )}
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {step === 1 && (
+          {errors.degreeProgram && (
+            <p className="text-red-500 text-sm mt-1">{errors.degreeProgram}</p>
+          )}
+            </div>
+            
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            University *
+          </label>
+          <div className="relative" ref={universityDropdownRef}>
+            <input
+              type="text"
+              name="university"
+              value={universitySearch}
+              onChange={(e) => {
+                setUniversitySearch(e.target.value);
+                setShowUniversityDropdown(true);
+                if (e.target.value === "") {
+                  setFormData({ ...formData, university: "" });
+                }
+              }}
+              onFocus={() => setShowUniversityDropdown(true)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && universitySearch.trim()) {
+                  setFormData({ ...formData, university: universitySearch.trim() });
+                  setShowUniversityDropdown(false);
+                }
+              }}
+              placeholder="Search or type university name"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                errors.university ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {showUniversityDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredUniversities.length > 0 ? (
+                  filteredUniversities.map(uni => (
+                    <button
+                      key={uni}
+                      type="button"
+                      onClick={() => handleUniversitySelect(uni)}
+                      className="w-full text-left px-3 py-2 hover:bg-yellow-50 focus:bg-yellow-50 focus:outline-none"
+                    >
+                      {uni}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-gray-500">
+                    No universities found. You can type a custom name.
+                </div>
+                )}
+              </div>
+            )}
+            </div>
+            
+          {/* Custom University Input for "Other" option */}
+          {formData.university === "Other" && (
+            <div className="mt-3">
+              <input
+                type="text"
+                name="customUniversity"
+                value={customUniversity}
+                onChange={(e) => {
+                  setCustomUniversity(e.target.value);
+                  setFormData({ ...formData, university: e.target.value });
+                }}
+                placeholder="Please specify your university name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+                </div>
+          )}
+          {errors.university && (
+            <p className="text-red-500 text-sm mt-1">{errors.university}</p>
+          )}
+              </div>
+            </div>
+            
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            GPA *
+          </label>
+          <input
+            type="text"
+            name="gpa"
+            value={formData.gpa}
+            onChange={handleChange}
+            placeholder="e.g., 3.8"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.gpa ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.gpa && (
+            <p className="text-red-500 text-sm mt-1">{errors.gpa}</p>
+          )}
+              </div>
+            
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Graduation Year *
+          </label>
+          <input
+            type="number"
+            name="graduationYear"
+            value={formData.graduationYear}
+            onChange={handleChange}
+            placeholder="e.g., 2025"
+            min="2020"
+            max="2030"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.graduationYear ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.graduationYear && (
+            <p className="text-red-500 text-sm mt-1">{errors.graduationYear}</p>
+          )}
+              </div>
+            </div>
+            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber || ""}
+                onChange={handleChange}
+                placeholder="+94 71 123 4567"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                />
+              </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth || ""}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Address
+            </label>
+            <textarea
+              name="address"
+              value={formData.address || ""}
+              onChange={handleChange}
+              placeholder="Enter your full address"
+              rows="3"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+        </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Technical Skills
+        </label>
+        <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400" ref={skillDropdownRef}>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {selectedSkills.map(skill => (
+              <span key={skill} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium flex items-center gap-2">
+                {skill}
+              <button
+                  type="button"
+                  onClick={() => handleSkillToggle(skill)}
+                  className="text-yellow-600 hover:text-yellow-800"
+                >
+                  ×
+              </button>
+              </span>
+            ))}
+        </div>
+
+          {/* Skill Search Input */}
+          <div className="relative mb-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={skillSearch}
+                onChange={(e) => {
+                  setSkillSearch(e.target.value);
+                  setShowSkillDropdown(true);
+                }}
+                onFocus={() => setShowSkillDropdown(true)}
+                onKeyPress={(e) => e.key === 'Enter' && addCustomSkill()}
+                placeholder="Search skills..."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              />
+              <button
+                type="button"
+                onClick={addCustomSkill}
+                disabled={!skillSearch.trim()}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add
+              </button>
+              </div>
+            {showSkillDropdown && skillSearch && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {filteredSkills.length > 0 ? (
+                  filteredSkills.map(skill => (
+                    <button
+                      key={skill}
+                      type="button"
+                      onClick={() => handleSkillSelect(skill)}
+                      className="w-full text-left px-3 py-2 hover:bg-yellow-50 focus:bg-yellow-50 focus:outline-none"
+                    >
+                      {skill}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-gray-500">
+                    No skills found. You can type a custom skill.
+            </div>
+                )}
+              </div>
+          )}
+            </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+            {availableSkills.map(skill => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => handleSkillToggle(skill)}
+                className={`px-2 py-1 text-xs rounded border transition-colors ${
+                  selectedSkills.includes(skill)
+                    ? 'bg-yellow-500 text-white border-yellow-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-yellow-400 hover:bg-yellow-50'
+                }`}
+              >
+                {skill}
+              </button>
+            ))}
+          </div>
+        </div>
+          </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          CV/Resume Upload
+        </label>
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <p className="mt-2 text-sm text-gray-600">
+            <button type="button" className="text-yellow-600 hover:text-yellow-500 font-medium">
+              Upload a file
+            </button> or drag and drop
+          </p>
+          <p className="text-xs text-gray-500 mt-1">PDF, DOC up to 10MB</p>
+            </div>
+            </div>
+    </>
+  );
+          
+  const renderJobSeekerFields = () => (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
-                      First name
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Organization *
                     </label>
                     <input
-                      id="firstName"
-                      name="firstName"
                       type="text"
-                      autoComplete="given-name"
-                      required
-                      value={formData.firstName}
+            name="organization"
+            value={formData.organization}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                        errors.firstName 
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                      }`}
-                      placeholder="Enter your first name"
-                    />
-                    {errors.firstName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+            placeholder="Company or organization name"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.organization ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.organization && (
+            <p className="text-red-500 text-sm mt-1">{errors.organization}</p>
                     )}
                   </div>
+        
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Last name
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Job Title
                     </label>
                     <input
-                      id="lastName"
-                      name="lastName"
                       type="text"
-                      autoComplete="family-name"
-                      required
-                      value={formData.lastName}
+            name="jobTitle"
+            value={formData.jobTitle}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                        errors.lastName 
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                      }`}
-                      placeholder="Enter your last name"
-                    />
-                    {errors.lastName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
-                    )}
+            placeholder="e.g., Project Manager, CEO"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
                   </div>
                 </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email address
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Contact Phone *
                   </label>
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={formData.email}
+            type="tel"
+            name="contactPhone"
+            value={formData.contactPhone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                      errors.email 
-                        ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                    }`}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            placeholder="+94 71 123 4567"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.contactPhone ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.contactPhone && (
+            <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
                   )}
                 </div>
 
-                {/* Country and Phone Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company Size
+                  </label>
+                  <select
+                    name="companySize"
+                    value={formData.companySize || ""}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  >
+                    <option value="">Select Company Size</option>
+                    <option value="1-10">1-10 employees</option>
+                    <option value="11-50">11-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-500">201-500 employees</option>
+                    <option value="501-1000">501-1000 employees</option>
+                    <option value="1000+">1000+ employees</option>
+                  </select>
+                </div>
+      </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="country" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Country
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Industry
                     </label>
                     <select
-                      id="country"
-                      name="country"
-                      required
-                      value={formData.country}
+            name="industry"
+            value={formData.industry || ""}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                        errors.country 
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                      }`}
-                    >
-                      <option value="">Select your country</option>
-                      <option value="United States">United States</option>
-                      <option value="Canada">Canada</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="Australia">Australia</option>
-                      <option value="Germany">Germany</option>
-                      <option value="France">France</option>
-                      <option value="India">India</option>
-                      <option value="China">China</option>
-                      <option value="Japan">Japan</option>
-                      <option value="South Korea">South Korea</option>
-                      <option value="Brazil">Brazil</option>
-                      <option value="Mexico">Mexico</option>
-                      <option value="Spain">Spain</option>
-                      <option value="Italy">Italy</option>
-                      <option value="Netherlands">Netherlands</option>
-                      <option value="Sweden">Sweden</option>
-                      <option value="Norway">Norway</option>
-                      <option value="Denmark">Denmark</option>
-                      <option value="Finland">Finland</option>
-                      <option value="Switzerland">Switzerland</option>
-                      <option value="Austria">Austria</option>
-                      <option value="Belgium">Belgium</option>
-                      <option value="Ireland">Ireland</option>
-                      <option value="New Zealand">New Zealand</option>
-                      <option value="Singapore">Singapore</option>
-                      <option value="Malaysia">Malaysia</option>
-                      <option value="Thailand">Thailand</option>
-                      <option value="Vietnam">Vietnam</option>
-                      <option value="Philippines">Philippines</option>
-                      <option value="Indonesia">Indonesia</option>
-                      <option value="Pakistan">Pakistan</option>
-                      <option value="Bangladesh">Bangladesh</option>
-                      <option value="Sri Lanka">Sri Lanka</option>
-                      <option value="Nepal">Nepal</option>
-                      <option value="Myanmar">Myanmar</option>
-                      <option value="Cambodia">Cambodia</option>
-                      <option value="Laos">Laos</option>
-                      <option value="Mongolia">Mongolia</option>
-                      <option value="Kazakhstan">Kazakhstan</option>
-                      <option value="Uzbekistan">Uzbekistan</option>
-                      <option value="Kyrgyzstan">Kyrgyzstan</option>
-                      <option value="Tajikistan">Tajikistan</option>
-                      <option value="Turkmenistan">Turkmenistan</option>
-                      <option value="Afghanistan">Afghanistan</option>
-                      <option value="Iran">Iran</option>
-                      <option value="Iraq">Iraq</option>
-                      <option value="Syria">Syria</option>
-                      <option value="Lebanon">Lebanon</option>
-                      <option value="Jordan">Jordan</option>
-                      <option value="Israel">Israel</option>
-                      <option value="Palestine">Palestine</option>
-                      <option value="Saudi Arabia">Saudi Arabia</option>
-                      <option value="Yemen">Yemen</option>
-                      <option value="Oman">Oman</option>
-                      <option value="United Arab Emirates">United Arab Emirates</option>
-                      <option value="Qatar">Qatar</option>
-                      <option value="Kuwait">Kuwait</option>
-                      <option value="Bahrain">Bahrain</option>
-                      <option value="Egypt">Egypt</option>
-                      <option value="Libya">Libya</option>
-                      <option value="Tunisia">Tunisia</option>
-                      <option value="Algeria">Algeria</option>
-                      <option value="Morocco">Morocco</option>
-                      <option value="Sudan">Sudan</option>
-                      <option value="South Sudan">South Sudan</option>
-                      <option value="Ethiopia">Ethiopia</option>
-                      <option value="Eritrea">Eritrea</option>
-                      <option value="Djibouti">Djibouti</option>
-                      <option value="Somalia">Somalia</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="Uganda">Uganda</option>
-                      <option value="Tanzania">Tanzania</option>
-                      <option value="Rwanda">Rwanda</option>
-                      <option value="Burundi">Burundi</option>
-                      <option value="Democratic Republic of the Congo">Democratic Republic of the Congo</option>
-                      <option value="Republic of the Congo">Republic of the Congo</option>
-                      <option value="Central African Republic">Central African Republic</option>
-                      <option value="Chad">Chad</option>
-                      <option value="Cameroon">Cameroon</option>
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Niger">Niger</option>
-                      <option value="Mali">Mali</option>
-                      <option value="Burkina Faso">Burkina Faso</option>
-                      <option value="Senegal">Senegal</option>
-                      <option value="Gambia">Gambia</option>
-                      <option value="Guinea-Bissau">Guinea-Bissau</option>
-                      <option value="Guinea">Guinea</option>
-                      <option value="Sierra Leone">Sierra Leone</option>
-                      <option value="Liberia">Liberia</option>
-                      <option value="Ivory Coast">Ivory Coast</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Togo">Togo</option>
-                      <option value="Benin">Benin</option>
-                      <option value="Equatorial Guinea">Equatorial Guinea</option>
-                      <option value="Gabon">Gabon</option>
-                      <option value="São Tomé and Príncipe">São Tomé and Príncipe</option>
-                      <option value="Angola">Angola</option>
-                      <option value="Zambia">Zambia</option>
-                      <option value="Zimbabwe">Zimbabwe</option>
-                      <option value="Botswana">Botswana</option>
-                      <option value="Namibia">Namibia</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="Lesotho">Lesotho</option>
-                      <option value="Eswatini">Eswatini</option>
-                      <option value="Madagascar">Madagascar</option>
-                      <option value="Mauritius">Mauritius</option>
-                      <option value="Seychelles">Seychelles</option>
-                      <option value="Comoros">Comoros</option>
-                      <option value="Mayotte">Mayotte</option>
-                      <option value="Réunion">Réunion</option>
-                      <option value="Russia">Russia</option>
-                      <option value="Ukraine">Ukraine</option>
-                      <option value="Belarus">Belarus</option>
-                      <option value="Poland">Poland</option>
-                      <option value="Czech Republic">Czech Republic</option>
-                      <option value="Slovakia">Slovakia</option>
-                      <option value="Hungary">Hungary</option>
-                      <option value="Romania">Romania</option>
-                      <option value="Bulgaria">Bulgaria</option>
-                      <option value="Serbia">Serbia</option>
-                      <option value="Croatia">Croatia</option>
-                      <option value="Slovenia">Slovenia</option>
-                      <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
-                      <option value="Montenegro">Montenegro</option>
-                      <option value="North Macedonia">North Macedonia</option>
-                      <option value="Albania">Albania</option>
-                      <option value="Greece">Greece</option>
-                      <option value="Cyprus">Cyprus</option>
-                      <option value="Malta">Malta</option>
-                      <option value="Estonia">Estonia</option>
-                      <option value="Latvia">Latvia</option>
-                      <option value="Lithuania">Lithuania</option>
-                      <option value="Moldova">Moldova</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Armenia">Armenia</option>
-                      <option value="Azerbaijan">Azerbaijan</option>
-                      <option value="Turkey">Turkey</option>
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Industry</option>
+            <option value="Technology">Technology</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Finance">Finance</option>
+            <option value="Education">Education</option>
+            <option value="Manufacturing">Manufacturing</option>
+            <option value="Retail">Retail</option>
+            <option value="Real Estate">Real Estate</option>
+            <option value="Media">Media</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Energy">Energy</option>
+            <option value="Consulting">Consulting</option>
+            <option value="Non-Profit">Non-Profit</option>
+            <option value="Government">Government</option>
                       <option value="Other">Other</option>
                     </select>
-                    {errors.country && (
-                      <p className="mt-1 text-sm text-red-600">{errors.country}</p>
-                    )}
                   </div>
+
                   <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Website
                     </label>
-                    <div className="relative">
-                      {formData.country && (
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                          {getCountryCode(formData.country)}
-                        </div>
-                      )}
                       <input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        type="tel"
-                        autoComplete="tel"
-                        required
-                        value={formData.phoneNumber}
+            type="url"
+            name="website"
+            value={formData.website || ""}
                         onChange={handleChange}
-                        onKeyDown={(e) => {
-                          // Allow: backspace, delete, tab, escape, enter, and navigation keys
-                          if ([8, 9, 27, 13, 46, 37, 38, 39, 40].includes(e.keyCode) ||
-                              // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                              (e.keyCode === 65 && e.ctrlKey === true) ||
-                              (e.keyCode === 67 && e.ctrlKey === true) ||
-                              (e.keyCode === 86 && e.ctrlKey === true) ||
-                              (e.keyCode === 88 && e.ctrlKey === true)) {
-                            return;
-                          }
-                          // Allow only digits
-                          if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
-                            return;
-                          }
-                          e.preventDefault();
-                        }}
-                        maxLength={formData.country ? getMaxDigits(formData.country) : undefined}
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                          errors.phoneNumber 
-                            ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                            : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                        } ${formData.country ? 'pl-12' : ''}`}
-                        placeholder={formData.country ? `Enter ${getMaxDigits(formData.country)} digits` : "Select country first"}
-                        disabled={!formData.country}
-                      />
-                    </div>
-                    {errors.phoneNumber && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
-                    )}
-                    {formData.country && !errors.phoneNumber && (
-                      <div className="mt-1">
-                        <p className="text-sm text-gray-500">
-                          Format: {getPhoneFormat(formData.country)}
-                        </p>
-                        <div className="flex items-center mt-1">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                            <div 
-                              className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                              style={{ 
-                                width: `${(formData.phoneNumber.length / getMaxDigits(formData.country)) * 100}%` 
-                              }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {formData.phoneNumber.length}/{getMaxDigits(formData.country)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+            placeholder="https://www.company.com"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Password
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Company Description
                   </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      value={formData.password}
+        <textarea
+          name="companyDescription"
+          value={formData.companyDescription || ""}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                        errors.password 
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                      }`}
-                      placeholder="Create a strong password"
-                    />
+          placeholder="Describe your company, its mission, and what you do..."
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        />
+      </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preferred Skills
+                    </label>
+                    <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {selectedSkills.map(skill => (
+                          <span key={skill} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2">
+                            {skill}
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showPassword ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
+                              onClick={() => handleSkillToggle(skill)}
+                              className="text-green-600 hover:text-green-800"
+                            >
+                              ×
                     </button>
+                          </span>
+                        ))}
                   </div>
-                  {errors.password ? (
-                    <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                  ) : formData.password ? (
-                    <div className="mt-3 space-y-2">
-                      {/* Password Strength Bar */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Password Strength:</span>
-                          <span 
-                            className="text-sm font-semibold"
-                            style={{ color: passwordStrength.color }}
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+                        {availableSkills.map(skill => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => handleSkillToggle(skill)}
+                            className={`px-2 py-1 text-xs rounded border transition-colors ${
+                              selectedSkills.includes(skill)
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
+                            }`}
                           >
-                            {passwordStrength.level}
-                          </span>
+                            {skill}
+                          </button>
+                        ))}
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="h-2 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${(passwordStrength.score / 7) * 100}%`,
-                              backgroundColor: passwordStrength.color
-                            }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-gray-600">{passwordStrength.message}</p>
-                      </div>
-                      
-                      {/* Password Requirements */}
-                      <div className="grid grid-cols-1 gap-1">
-                        <div className={`flex items-center text-xs ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          At least 8 characters
-                        </div>
-                        <div className={`flex items-center text-xs ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          One lowercase letter
-                        </div>
-                        <div className={`flex items-center text-xs ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          One uppercase letter
-                        </div>
-                        <div className={`flex items-center text-xs ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${/\d/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          One number
-                        </div>
-                        <div className={`flex items-center text-xs ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          One special character
-                        </div>
-                        <div className={`flex items-center text-xs ${formData.password.length >= 12 ? 'text-green-600' : 'text-gray-500'}`}>
-                          <svg className={`w-3 h-3 mr-1 ${formData.password.length >= 12 ? 'text-green-600' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          At least 12 characters (bonus)
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-500">Must be at least 8 characters with uppercase, lowercase, and number</p>
-                  )}
-                </div>
+    </>
+  );
 
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Confirm password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      value={formData.confirmPassword}
+  const renderUniversityStaffFields = () => (
+    <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Staff Role *
+                    </label>
+                    <select
+            name="staffRole"
+            value={formData.staffRole}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                        errors.confirmPassword 
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                      }`}
-                      placeholder="Confirm your password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {showConfirmPassword ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.staffRole ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
+            <option value="">Select Role</option>
+            {staffRoles.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+                    </select>
+          {errors.staffRole && (
+            <p className="text-red-500 text-sm mt-1">{errors.staffRole}</p>
                   )}
                 </div>
 
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={nextStep}
-                    className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black py-3 px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                  >
-                    Next Step
-                  </button>
-                </div>
-              </>
-            )}
-
-            {step === 2 && (
-              <>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-4">
-                    I want to join as a:
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Department *
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'client' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                      <input
-                        type="radio"
-                        name="userType"
-                        value="client"
-                        checked={formData.userType === 'client'}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.userType === 'client' ? 'border-yellow-500' : 'border-gray-300'}`}>
-                          {formData.userType === 'client' && <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>}
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-semibold text-gray-900">Client</div>
-                          <div className="text-sm text-gray-500">I want to hire freelancers</div>
-                        </div>
-                      </div>
-                    </label>
-
-                    <label className={`relative cursor-pointer rounded-xl border-2 p-4 transition-all duration-300 ${formData.userType === 'freelancer' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}>
-                      <input
-                        type="radio"
-                        name="userType"
-                        value="freelancer"
-                        checked={formData.userType === 'freelancer'}
-                        onChange={handleChange}
-                        className="sr-only"
-                      />
-                      <div className="flex items-center">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.userType === 'freelancer' ? 'border-yellow-500' : 'border-gray-300'}`}>
-                          {formData.userType === 'freelancer' && <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>}
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-semibold text-gray-900">Freelancer</div>
-                          <div className="text-sm text-gray-500">I want to offer my services</div>
-                        </div>
-                      </div>
-                    </label>
+                    <input
+            type="text"
+            name="department"
+            value={formData.department}
+                      onChange={handleChange}
+            placeholder="e.g., Computer Science"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.department ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.department && (
+            <p className="text-red-500 text-sm mt-1">{errors.department}</p>
+          )}
                   </div>
                 </div>
 
-                {/* Skills Input */}
                 <div>
-                  <label htmlFor="skills" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Skills {formData.userType === 'freelancer' ? '(What services do you offer?)' : '(What skills are you looking for?)'}
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Employee ID *
                   </label>
-                  <div className="flex flex-wrap gap-2 p-3 border-2 border-gray-300 rounded-xl min-h-[60px]">
-                    {formData.skills.map((skill, index) => (
-                      <span key={index} className="bg-yellow-100 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    <input
+          type="text"
+          name="employeeId"
+          value={formData.employeeId}
+                      onChange={handleChange}
+          placeholder="e.g., EMP12345"
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+            errors.employeeId ? 'border-red-500' : 'border-gray-300'
+          }`}
+        />
+                {errors.employeeId && (
+          <p className="text-red-500 text-sm mt-1">{errors.employeeId}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Years of Experience
+                    </label>
+                    <select
+                      name="experience"
+                      value={formData.experience || ""}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    >
+                      <option value="">Select Experience</option>
+                      <option value="0-1">0-1 years</option>
+                      <option value="1-3">1-3 years</option>
+                      <option value="3-5">3-5 years</option>
+                      <option value="5-10">5-10 years</option>
+                      <option value="10-15">10-15 years</option>
+                      <option value="15+">15+ years</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Highest Qualification
+                  </label>
+                    <select
+                      name="qualification"
+                      value={formData.qualification || ""}
+                        onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    >
+                      <option value="">Select Qualification</option>
+                      <option value="Bachelor's Degree">Bachelor's Degree</option>
+                      <option value="Master's Degree">Master's Degree</option>
+                      <option value="PhD">PhD</option>
+                      <option value="Diploma">Diploma</option>
+                      <option value="Certificate">Certificate</option>
+                      <option value="Other">Other</option>
+                    </select>
+                        </div>
+                        </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Professional Summary
+                  </label>
+                  <textarea
+                    name="professionalSummary"
+                    value={formData.professionalSummary || ""}
+                        onChange={handleChange}
+                    placeholder="Describe your professional background, expertise, and responsibilities..."
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Areas of Expertise
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {selectedSkills.map(skill => (
+                        <span key={skill} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2">
                         {skill}
                         <button 
                           type="button" 
-                          onClick={() => {
-                            const newSkills = formData.skills.filter((_, i) => i !== index);
-                            setFormData(prev => ({ ...prev, skills: newSkills }));
-                          }}
-                          className="text-red-500 hover:text-red-700 font-bold text-lg leading-none"
+                            onClick={() => handleSkillToggle(skill)}
+                            className="text-blue-600 hover:text-blue-800"
                         >
                           ×
                         </button>
                       </span>
                     ))}
-                    <input
-                      type="text"
-                      placeholder={formData.userType === 'freelancer' ? "Add a skill..." : "Add a skill..."}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && e.target.value.trim()) {
-                          const newSkill = e.target.value.trim();
-                          if (!formData.skills.includes(newSkill)) {
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              skills: [...prev.skills, newSkill] 
-                            }));
-                          }
-                          e.target.value = '';
-                        }
-                      }}
-                      className="flex-1 outline-none text-sm"
-                    />
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Press Enter to add each skill. Click the × to remove skills.
-                  </p>
-                  
-                  {/* Quick Add Skills */}
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600 mb-2">Quick add common skills:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.userType === 'freelancer' ? 
-                        // Freelancer skills
-                        ['JavaScript', 'React', 'Node.js', 'Python', 'Design', 'Writing', 'Marketing', 'Data Analysis'].map((skill) => (
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+                      {availableSkills.map(skill => (
                           <button
                             key={skill}
                             type="button"
-                            onClick={() => {
-                              if (!formData.skills.includes(skill)) {
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  skills: [...prev.skills, skill] 
-                                }));
-                              }
-                            }}
-                            disabled={formData.skills.includes(skill)}
-                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                              formData.skills.includes(skill)
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                            }`}
-                          >
-                            + {skill}
+                          onClick={() => handleSkillToggle(skill)}
+                          className={`px-2 py-1 text-xs rounded border transition-colors ${
+                            selectedSkills.includes(skill)
+                              ? 'bg-blue-500 text-white border-blue-500'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          }`}
+                        >
+                          {skill}
                           </button>
-                        ))
-                        :
-                        // Client skills
-                        ['Web Development', 'Mobile App', 'Design', 'Content Writing', 'Marketing', 'Data Analysis', 'Consulting', 'Translation'].map((skill) => (
-                          <button
-                            key={skill}
-                            type="button"
-                            onClick={() => {
-                              if (!formData.skills.includes(skill)) {
-                                setFormData(prev => ({ 
-                                  ...prev, 
-                                  skills: [...prev.skills, skill] 
-                                }));
-                              }
-                            }}
-                            disabled={formData.skills.includes(skill)}
-                            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                              formData.skills.includes(skill)
-                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                            }`}
-                          >
-                            + {skill}
-                          </button>
-                        ))
-                      }
-                    </div>
+                      ))}
+                      </div>
                   </div>
-                </div>
-
-                {/* Bio Input */}
-                <div>
-                  <label htmlFor="bio" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Bio {formData.userType === 'freelancer' ? '(Tell clients about your experience)' : '(Tell freelancers about your project needs)'}
-                  </label>
-                  <textarea
-                    id="bio"
-                    name="bio"
-                    rows="3"
-                    value={formData.bio}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-gray-200 focus:border-gray-500 transition-all duration-300 resize-none"
-                    placeholder={formData.userType === 'freelancer' ? "Describe your experience, expertise, and what services you offer..." : "Describe your project, company, or what you're looking for..."}
-                    maxLength="500"
-                  />
-                  <p className={`mt-1 text-sm ${
-                    formData.bio.length >= 450 ? 'text-orange-600' : 
-                    formData.bio.length >= 500 ? 'text-red-600' : 'text-gray-500'
-                  }`}>
-                    {formData.bio.length}/500 characters
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <input
-                      id="agreeToTerms"
-                      name="agreeToTerms"
-                      type="checkbox"
-                      required
-                      checked={formData.agreeToTerms}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded mt-1"
-                    />
-                    <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-700">
-                      I agree to the{" "}
-                      <a href="#" className="text-yellow-500 hover:text-yellow-400 font-medium">
-                        Terms of Service
-                      </a>{" "}
-                      and{" "}
-                      <a href="#" className="text-yellow-500 hover:text-yellow-400 font-medium">
-                        Privacy Policy
-                      </a>
-                    </label>
-                  </div>
-
-                  <div className="flex items-start">
-                    <input
-                      id="agreeToMarketing"
-                      name="agreeToMarketing"
-                      type="checkbox"
-                      checked={formData.agreeToMarketing}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-yellow-500 focus:ring-yellow-500 border-gray-300 rounded mt-1"
-                    />
-                    <label htmlFor="agreeToMarketing" className="ml-2 block text-sm text-gray-700">
-                      I agree to receive marketing communications from FlexiHire
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex justify-between">
-                  <button
-                    type="button"
-                    onClick={prevStep}
-                    className="text-gray-600 hover:text-gray-800 py-3 px-6 rounded-xl font-semibold transition-colors duration-200"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className={`bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black py-3 px-8 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {loading ? 'Creating Account...' : 'Create Account'}
-                  </button>
                 </div>
               </>
-            )}
-          </form>
+  );
 
+
+
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-800 to-blue-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
+          {/* Moving Circles */}
+          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/20 rounded-full animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-cyan-400/20 rounded-full animate-pulse delay-1000"></div>
+          <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-purple-500/20 rounded-full animate-pulse delay-2000"></div>
+          <div className="absolute bottom-40 right-1/3 w-28 h-28 bg-emerald-400/20 rounded-full animate-pulse delay-1500"></div>
           
+          {/* Tech Icons */}
+          <div className="absolute top-32 left-20 text-blue-400/30 text-2xl">⚛️</div>
+          <div className="absolute top-48 right-32 text-cyan-400/30 text-2xl">💻</div>
+          <div className="absolute bottom-32 left-32 text-purple-400/30 text-2xl">🚀</div>
+          <div className="absolute bottom-48 right-16 text-emerald-400/30 text-2xl">⚡</div>
+          
+          {/* Subtle Grid */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.05)_1px,transparent_1px)] bg-[size:100px_100px]"></div>
+        </div>
+        <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-blue-200/50">
+          <div className="text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+                        </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Check Your Email</h2>
+            <p className="text-gray-600">
+              We've sent a verification link to <strong>{formData.email}</strong>
+            </p>
+            <p className="text-sm text-gray-500 mt-4">
+              Please click the link in your email to verify your account and complete registration.
+            </p>
+                        </div>
+                      </div>
+                  </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 pt-25 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0">
+        {/* Floating Geometric Shapes */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/30 to-cyan-400/30 rounded-full animate-bounce"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full animate-bounce delay-1000"></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-gradient-to-br from-green-400/30 to-emerald-400/30 rounded-full animate-bounce delay-2000"></div>
+        <div className="absolute bottom-40 right-1/3 w-28 h-28 bg-gradient-to-br from-orange-400/30 to-yellow-400/30 rounded-full animate-bounce delay-1500"></div>
+        
+        {/* Floating Icons */}
+        <div className="absolute top-32 left-20 text-blue-500/40 text-3xl animate-pulse">⚛️</div>
+        <div className="absolute top-48 right-32 text-purple-500/40 text-3xl animate-pulse delay-500">💻</div>
+        <div className="absolute bottom-32 left-32 text-green-500/40 text-3xl animate-pulse delay-1000">🚀</div>
+        <div className="absolute bottom-48 right-16 text-orange-500/40 text-3xl animate-pulse delay-1500">⚡</div>
+        
+        {/* Subtle Pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(99,102,241,0.1)_1px,transparent_0)] bg-[size:20px_20px]"></div>
+      </div>
+      <div className="max-w-2xl w-full space-y-8">
+        <div className="text-center">
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
+            Join FlexiHire
+          </h2>
+          <p className="text-gray-700">Create your account and start your freelancing journey</p>
+                </div>
+
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-indigo-200/50">
+          {/* User Type Selection */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              Select Account Type *
+                  </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {[
+                { value: "student", label: "Student", icon: "🎓" },
+                { value: "jobSeeker", label: "Job Seeker", icon: "💼" },
+                { value: "universityStaff", label: "Staff", icon: "👨‍🏫" }
+              ].map(type => (
+                          <button
+                  key={type.value}
+                            type="button"
+                  onClick={() => setUserType(type.value)}
+                  className={`p-4 border-2 rounded-xl text-center transition-all duration-200 ${
+                    userType === type.value
+                      ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">{type.icon}</div>
+                  <div className="text-sm font-medium">{type.label}</div>
+                          </button>
+              ))}
+                  </div>
+                </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Common Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  First Name *
+                  </label>
+                    <input
+                      type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                    onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                    errors.firstName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter first name"
+                />
+                {errors.firstName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+                )}
+                </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Last Name *
+                </label>
+                    <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                      onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                    errors.lastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter last name"
+                />
+                {errors.lastName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+                    )}
+                  </div>
+                  </div>
+
+                <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address *
+                  </label>
+                    <input
+                type="email"
+                name="email"
+                value={formData.email}
+                      onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter email address"
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
+                </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                    name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                      errors.password ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Create password"
+                    />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7" />
+                        </svg>
+                      )}
+                  </button>
+                  </div>
+                
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-gray-600">Strength:</span>
+                      <span className={`text-xs font-medium text-${getPasswordStrength(formData.password).color}-600`}>
+                        {getPasswordStrength(formData.password).strength}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                        className={`h-2 rounded-full transition-all duration-300 bg-${getPasswordStrength(formData.password).color}-500`}
+                        style={{ width: `${(getPasswordStrength(formData.password).score / 5) * 100}%` }}
+                          ></div>
+                        </div>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {getPasswordStrength(formData.password).feedback.map((item, index) => (
+                        <span key={index} className="inline-block mr-2">• {item}</span>
+                      ))}
+                      </div>
+                        </div>
+                )}
+                
+                {errors.password && (
+                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                  )}
+                </div>
+
+                <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                    className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                      errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Confirm password"
+                    />
+                  <button
+                      type="button"
+                    onClick={toggleConfirmPasswordVisibility}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showConfirmPassword ? (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7" />
+                        </svg>
+                      )}
+                  </button>
+                </div>
+                  {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+                </div>
+
+            {/* User Type Specific Fields */}
+            {userType === "student" && renderStudentFields()}
+            {userType === "jobSeeker" && renderJobSeekerFields()}
+            {userType === "universityStaff" && renderUniversityStaffFields()}
+
+            {/* Terms and Conditions */}
+            <div className="flex items-start space-x-3">
+                      <input
+                type="checkbox"
+                id="terms"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+              />
+              <div className="text-sm">
+                <label htmlFor="terms" className="text-gray-700">
+                  I agree to the{" "}
+                        <button 
+                          type="button" 
+                    className="text-yellow-600 hover:text-yellow-700 font-medium underline"
+                    onClick={() => window.open('/terms', '_blank')}
+                  >
+                    Terms and Conditions
+                        </button>
+                  {" "}and{" "}
+                          <button
+                            type="button"
+                    className="text-yellow-600 hover:text-yellow-700 font-medium underline"
+                    onClick={() => window.open('/privacy', '_blank')}
+                  >
+                    Privacy Policy
+                          </button>
+                  </label>
+                {errors.terms && (
+                  <p className="text-red-500 text-sm mt-1">{errors.terms}</p>
+                )}
+                </div>
         </div>
 
-        {/* Sign In Link */}
-        <div className="text-center mt-8">
-          <p className="text-gray-600">
+                  <button
+                    type="submit"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:-translate-y-1 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+              {isLoading ? "Creating Account..." : "Create Account"}
+                  </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
             Already have an account?{" "}
-            <Link to="/signin" className="font-semibold text-yellow-500 hover:text-yellow-400 transition-colors duration-200">
-              Sign in
-            </Link>
+              <button
+                onClick={() => navigate('/signin')}
+                className="text-yellow-600 hover:text-yellow-700 font-medium transition-colors duration-300"
+              >
+                Sign in here
+              </button>
           </p>
         </div>
         </div>
@@ -1763,3 +1943,4 @@ function Signup() {
 }
 
 export default Signup;
+

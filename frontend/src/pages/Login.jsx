@@ -11,6 +11,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
   const navigate = useNavigate();
 
   // Validation functions
@@ -53,6 +54,13 @@ function Login() {
     }
   };
 
+  const triggerShake = () => {
+    setIsShaking(true);
+    setTimeout(() => setIsShaking(false), 500);
+  };
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -63,51 +71,90 @@ function Login() {
     
     setIsSubmitting(true);
     
-    // Check if admin credentials
-    if (formData.email === "admin@flexihire.com" && formData.password === "admin123") {
-      // Store admin session
-      localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminUsername', 'admin');
-      // Dispatch auth change event for admin login
-      window.dispatchEvent(new Event('authStateChanged'));
-      // Redirect to admin dashboard
-      navigate('/admin/dashboard');
-    } else {
-      // Handle regular user sign in logic here
-      try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
-          })
-        });
+    try {
 
-        const result = await response.json();
+      // Make API call to backend for login
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
 
-        if (result.success) {
-          // Store user data and token using the utility function
-          setAuthData(result.data.token, result.data);
-          
-          // Redirect to profile page for all users
-          navigate('/profile');
+      const result = await response.json();
+
+      if (result.success) {
+        // Store user data and token
+        setAuthData(result.data.token, result.data);
+        
+        // Redirect based on user type
+        const userType = result.data.userType;
+        if (userType === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (userType === 'universityStaff') {
+          navigate('/staff/dashboard');
+        } else if (userType === 'student') {
+          navigate('/student/dashboard');
+        } else if (userType === 'jobSeeker') {
+          navigate('/client/dashboard');
         } else {
-          setErrors({ general: result.message || 'Login failed' });
+          // Default redirect for other user types
+          navigate('/profile');
         }
-      } catch (error) {
-        console.error('Login error:', error);
-        setErrors({ general: 'Login failed. Please try again.' });
+      } else {
+        // Handle login errors
+        setErrors({ general: result.message || 'Invalid credentials. Please try again.' });
+        triggerShake();
       }
+
+
+
+
+
+
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({ general: 'Network error. Please check your connection and try again.' });
+      triggerShake();
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      <style>
+        {`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+          }
+        `}
+      </style>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 pt-20 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden pt-30">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
+          {/* Floating Geometric Shapes */}
+          <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-400/30 to-cyan-400/30 rounded-full animate-bounce"></div>
+          <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-purple-400/30 to-pink-400/30 rounded-full animate-bounce delay-1000"></div>
+          <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-gradient-to-br from-green-400/30 to-emerald-400/30 rounded-full animate-bounce delay-2000"></div>
+          <div className="absolute bottom-40 right-1/3 w-28 h-28 bg-gradient-to-br from-orange-400/30 to-yellow-400/30 rounded-full animate-bounce delay-1500"></div>
+          
+          {/* Floating Icons */}
+          <div className="absolute top-32 left-20 text-blue-500/40 text-3xl animate-pulse">⚛️</div>
+          <div className="absolute top-48 right-32 text-purple-500/40 text-3xl animate-pulse delay-500">💻</div>
+          <div className="absolute bottom-32 left-32 text-green-500/40 text-3xl animate-pulse delay-1000">🚀</div>
+          <div className="absolute bottom-48 right-16 text-orange-500/40 text-3xl animate-pulse delay-1500">⚡</div>
+          
+          {/* Subtle Pattern */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(99,102,241,0.1)_1px,transparent_0)] bg-[size:20px_20px]"></div>
+        </div>
+
       <div className="max-w-6xl mx-auto flex items-center justify-center">
         {/* Left Side - Image */}
         <div className="hidden lg:block w-1/2 pr-12 relative">
@@ -124,8 +171,8 @@ function Login() {
               
               {/* Content overlay */}
               <div className="absolute inset-0 flex flex-col justify-center items-center text-white p-8">
-                <h3 className="text-3xl font-bold mb-4 text-center">Welcome Back!</h3>
-                <p className="text-lg text-center mb-6 leading-relaxed">
+                <h3 className="text-3xl font-bold mb-4 text-center text-white">Welcome Back!</h3>
+                <p className="text-lg text-center mb-6 leading-relaxed text-white">
                   Join thousands of professionals building their careers through FlexiHire
                 </p>
                 
@@ -133,12 +180,12 @@ function Login() {
                 <div className="grid grid-cols-2 gap-6 w-full max-w-sm">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-yellow-400">10K+</div>
-                    <div className="text-sm text-gray-200">Active Freelancers</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-400">5K+</div>
-                    <div className="text-sm text-gray-200">Completed Projects</div>
-                  </div>
+                                                        <div className="text-sm text-white">Active Freelancers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-400">5K+</div>
+                  <div className="text-sm text-white">Completed Projects</div>
+                </div>
                 </div>
               </div>
             </div>
@@ -166,32 +213,14 @@ function Login() {
         {/* Right Side - Login Form */}
         <div className="w-full lg:w-1/2 max-w-md">
         {/* Header */}
-        <div className="text-center">
-          <Link to="/" className="inline-block">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
-              FlexiHire
-            </h1>
-          </Link>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back</h2>
-          <p className="text-gray-600">Sign in to your account to continue</p>
-          {localStorage.getItem('userToken') && (
-            <div className="mt-4">
-              <button
-                onClick={() => {
-                  localStorage.removeItem('userToken');
-                  localStorage.removeItem('userData');
-                  window.location.href = '/';
-                }}
-                className="text-red-600 hover:text-red-700 text-sm underline"
-              >
-                Logout from another session
-              </button>
-            </div>
-          )}
-        </div>
+
+
+
 
         {/* Sign In Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+        <div className={`bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-indigo-200/50 transition-all duration-500 ${
+          isShaking ? 'animate-[shake_0.5s_ease-in-out]' : ''
+        }`}>
           {/* General Error Display */}
           {errors.general && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
@@ -259,12 +288,12 @@ function Login() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   )}
-                                  </button>
-                </div>
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                )}
+                </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -300,17 +329,24 @@ function Login() {
               >
                 {isSubmitting ? 'Signing in...' : 'Sign in'}
               </button>
+              
+              {/* Admin Login Button */}
+              <button
+                type="button"
+                onClick={() => navigate('/admin/login')}
+                className="w-full mt-3 py-3 px-4 rounded-xl font-semibold shadow-lg transition-all duration-300 transform bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white hover:shadow-xl hover:-translate-y-0.5 border-2 border-transparent hover:border-indigo-300"
+              >
+                🔐 Admin Login
+              </button>
             </div>
-
-            
           </form>
         </div>
 
         {/* Sign Up Link */}
         <div className="text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-700">
             Don't have an account?{" "}
-            <Link to="/join" className="font-semibold text-yellow-500 hover:text-yellow-400 transition-colors duration-200">
+            <Link to="/join" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
               Sign up for free
             </Link>
           </p>
@@ -318,6 +354,7 @@ function Login() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
