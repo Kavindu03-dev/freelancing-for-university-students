@@ -35,7 +35,7 @@ function Header() {
       }
     };
 
-    // Check auth on mount
+    // Check auth on mount and refresh auth state every 2 seconds
     checkAuth();
 
     // Listen for storage changes (when user signs in/out)
@@ -45,7 +45,7 @@ function Header() {
       }
     };
 
-    // Listen for custom auth events
+    // Listen for custom auth events to refresh auth state
     const handleAuthChange = () => {
       checkAuth();
     };
@@ -53,7 +53,7 @@ function Header() {
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('authStateChanged', handleAuthChange);
     
-    // Add periodic auth check to ensure sync
+    // Add periodic auth check to ensure sync with backend
     const authCheckInterval = setInterval(checkAuth, 2000);
     
     // Handle scroll effect
