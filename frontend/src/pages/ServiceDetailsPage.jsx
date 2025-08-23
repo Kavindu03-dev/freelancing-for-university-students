@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 import { isAuthenticated, getUserData } from '../utils/auth';
 
 function ServiceDetailsPage() {
@@ -712,7 +711,6 @@ function ServiceDetailsPage() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

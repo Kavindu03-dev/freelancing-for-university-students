@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Slideshow from "../components/Slideshow";
 
-import Footer from "../components/Footer";
-
 function HomePage() {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -603,8 +601,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

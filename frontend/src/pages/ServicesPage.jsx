@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 
 function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -631,7 +630,6 @@ function ServicesPage() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }
