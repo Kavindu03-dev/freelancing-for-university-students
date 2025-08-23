@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
 function AdminDashboard() {
-  console.log('🚀 AdminDashboard component is rendering!');
-  
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,6 +11,11 @@ function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
   const navigate = useNavigate();
+
+  // Debug imports and functions
+  console.log('🔍 AdminDashboard component initialized');
+  console.log('🔍 navigate function:', typeof navigate);
+  console.log('🔍 logout import:', typeof logout);
 
   // Enhanced mock data for dashboard
   const [stats] = useState({
@@ -142,21 +145,48 @@ function AdminDashboard() {
     const adminEmail = localStorage.getItem('adminEmail');
     
     if (!isLoggedIn || !adminEmail) {
-      console.log('❌ Admin not logged in, redirecting to login...');
-      console.log('isLoggedIn:', isLoggedIn);
-      console.log('adminEmail:', adminEmail);
       navigate('/admin/login');
       return;
     }
     
-    console.log('✅ Admin logged in successfully:', adminEmail);
     setAdminUsername(adminEmail); // Use email as username for display
   }, [navigate]);
 
   const handleLogout = () => {
-    console.log('🚪 Admin logout initiated...');
-    logout(navigate);
+    console.log('🚪 handleLogout clicked!');
+    try {
+      logout(navigate);
+      console.log('✅ logout function called successfully');
+    } catch (error) {
+      console.error('❌ Error in handleLogout:', error);
+    }
   };
+
+  // Direct logout function for testing
+  const directLogout = () => {
+    console.log('🧪 directLogout clicked!');
+    try {
+      // Clear localStorage directly
+      localStorage.removeItem('adminLoggedIn');
+      localStorage.removeItem('adminEmail');
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminId');
+      
+      console.log('✅ localStorage cleared successfully');
+      console.log('🚀 Navigating to home...');
+      
+      // Navigate to home
+      navigate('/');
+      console.log('✅ navigate called successfully');
+    } catch (error) {
+      console.error('❌ Error in directLogout:', error);
+    }
+  };
+
+  // Debug function definitions
+  console.log('🔍 Functions defined:');
+  console.log('🔍 handleLogout:', typeof handleLogout);
+  console.log('🔍 directLogout:', typeof directLogout);
 
   const renderOverview = () => (
     <div className="space-y-8">
@@ -1196,59 +1226,12 @@ function AdminDashboard() {
         }}></div>
       </div>
       
-      {/* Enhanced Header */}
-      <header className="bg-black shadow-lg border-b border-yellow-500">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-black font-bold text-lg">A</span>
-              </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
-                FlexiHire Admin
-              </h1>
-            </div>
-            <div className="flex items-center space-x-6">
-              {/* Search Bar */}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search users, projects, services..."
-                  className="w-80 px-4 py-2 bg-gray-800 border border-yellow-300 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                />
-                <svg className="absolute right-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              
-              {/* Admin Info */}
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">{adminUsername?.charAt(0) || 'A'}</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-white font-medium">{adminUsername}</p>
-                  <p className="text-yellow-400 text-sm">Super Admin</p>
-                </div>
-              </div>
-              
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+
 
       {/* Main Content with Professional Sidebar Layout */}
       <div className="flex min-h-screen relative z-10">
-        {/* Left Sidebar - Fixed width, full height, positioned below admin header */}
-        <div className="w-64 bg-white shadow-2xl border-r border-gray-200 flex-shrink-0 mt-20">
+        {/* Left Sidebar - Fixed width, full height, positioned at top */}
+        <div className="w-64 bg-white shadow-2xl border-r border-gray-200 flex-shrink-0">
           {/* Sidebar Header */}
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-6 border-b border-yellow-300">
             <div className="flex items-center space-x-3">
@@ -1291,12 +1274,26 @@ function AdminDashboard() {
                   <span className="font-medium">{tab.name}</span>
                 </button>
               ))}
+              
+              {/* Divider */}
+              <div className="border-t border-gray-200 my-4"></div>
+              
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 text-left group text-red-600 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200"
+              >
+                <svg className="w-5 h-5 flex-shrink-0 transition-colors duration-200 text-red-500 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="font-medium">Logout</span>
+              </button>
             </nav>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-8 pt-8 overflow-y-auto mt-20">
+        <div className="flex-1 p-8 pt-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
