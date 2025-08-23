@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
 function AdminDashboard() {
+  console.log('🚀 AdminDashboard component is rendering!');
+  
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,17 +139,22 @@ function AdminDashboard() {
   useEffect(() => {
     // Check if admin is logged in
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    const username = localStorage.getItem('adminUsername');
+    const adminEmail = localStorage.getItem('adminEmail');
     
-    if (!isLoggedIn || !username) {
+    if (!isLoggedIn || !adminEmail) {
+      console.log('❌ Admin not logged in, redirecting to login...');
+      console.log('isLoggedIn:', isLoggedIn);
+      console.log('adminEmail:', adminEmail);
       navigate('/admin/login');
       return;
     }
     
-    setAdminUsername(username);
+    console.log('✅ Admin logged in successfully:', adminEmail);
+    setAdminUsername(adminEmail); // Use email as username for display
   }, [navigate]);
 
   const handleLogout = () => {
+    console.log('🚪 Admin logout initiated...');
     logout(navigate);
   };
 
