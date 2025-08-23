@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 
 function SkillsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -499,7 +498,6 @@ function SkillsPage() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }

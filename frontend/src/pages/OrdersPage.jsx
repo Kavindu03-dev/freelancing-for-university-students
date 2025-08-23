@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 import { isAuthenticated, getUserData } from '../utils/auth';
 
 function OrdersPage() {
@@ -865,7 +864,6 @@ function OrdersPage() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

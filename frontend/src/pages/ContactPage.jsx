@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Footer from '../components/Footer';
 
 function ContactPage() {
   const [formData, setFormData] = useState({
@@ -421,7 +420,6 @@ function ContactPage() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }
