@@ -6,6 +6,14 @@ function StudentDashboard() {
   const [studentData, setStudentData] = useState(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedProfileData, setEditedProfileData] = useState({});
+  const [showEditPopup, setShowEditPopup] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [editErrors, setEditErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -253,6 +261,90 @@ function StudentDashboard() {
     });
   };
 
+  // Handle profile editing
+  const handleEditProfile = () => {
+    setShowEditPopup(true);
+    setEditFormData({
+      firstName: studentData?.firstName || '',
+      lastName: studentData?.lastName || '',
+      email: studentData?.email || '',
+      phoneNumber: studentData?.phoneNumber || '',
+      address: studentData?.address || '',
+      degreeProgram: studentData?.degreeProgram || '',
+      university: studentData?.university || '',
+      gpa: studentData?.gpa || '',
+      graduationYear: studentData?.graduationYear || '',
+      dateOfBirth: studentData?.dateOfBirth || '',
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setEditErrors({});
+  };
+
+  const handleSaveProfile = () => {
+    // Validate form
+    if (!validateEditForm()) return;
+
+    // Update the student data with edited values
+    const updatedData = { 
+      ...studentData, 
+      firstName: editFormData.firstName,
+      lastName: editFormData.lastName,
+      email: editFormData.email,
+      phoneNumber: editFormData.phoneNumber,
+      address: editFormData.address,
+      degreeProgram: editFormData.degreeProgram,
+      university: editFormData.university,
+      gpa: editFormData.gpa,
+      graduationYear: editFormData.graduationYear,
+      dateOfBirth: editFormData.dateOfBirth
+    };
+    
+    setStudentData(updatedData);
+    
+    // Save to localStorage
+    localStorage.setItem('userData', JSON.stringify(updatedData));
+    
+    // Close popup
+    setShowEditPopup(false);
+    
+    // Recalculate profile completeness
+    const newCompleteness = calculateProfileCompleteness(updatedData);
+    setProfileCompleteness(newCompleteness);
+    
+    // Show success message
+    alert("Profile updated successfully!");
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    
+    if (!editFormData.firstName.trim()) errors.firstName = "First name is required";
+    if (!editFormData.lastName.trim()) errors.lastName = "Last name is required";
+    if (!editFormData.email.trim()) errors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(editFormData.email)) errors.email = "Email is invalid";
+    
+    // Password validation (only if trying to change password)
+    if (editFormData.newPassword || editFormData.confirmPassword) {
+      if (!editFormData.currentPassword) errors.currentPassword = "Current password is required";
+      if (!editFormData.newPassword) errors.newPassword = "New password is required";
+      else if (editFormData.newPassword.length < 8) errors.newPassword = "Password must be at least 8 characters";
+      if (editFormData.newPassword !== editFormData.confirmPassword) {
+        errors.confirmPassword = "Passwords do not match";
+      }
+    }
+    
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditPopup(false);
+    setEditFormData({});
+    setEditErrors({});
+  };
+
   // Calculate profile completeness
   const calculateProfileCompleteness = (studentData) => {
     if (!studentData) return 0;
@@ -260,17 +352,26 @@ function StudentDashboard() {
     const fields = [
       studentData.firstName, studentData.lastName, studentData.email,
       studentData.degreeProgram, studentData.university, studentData.gpa,
-      studentData.graduationYear, studentData.technicalSkills
+      studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth, studentData.cvFile
     ];
     
     const completedFields = fields.filter(field => {
       if (field === null || field === undefined) return false;
       if (typeof field === 'string') return field.trim() !== '';
       if (typeof field === 'number') return field > 0;
+      if (Array.isArray(field)) return field.length > 0;
       return Boolean(field);
     }).length;
     return Math.round((completedFields / fields.length) * 100);
   };
+
+  // Calculate initial profile completeness when component mounts
+  useEffect(() => {
+    if (studentData) {
+      const completeness = calculateProfileCompleteness(studentData);
+      setProfileCompleteness(completeness);
+    }
+  }, [studentData]);
 
   // Generate personalized recommendations
   const generateRecommendations = () => {
@@ -386,10 +487,15 @@ function StudentDashboard() {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
-            if (tabParam && ['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'portfolio', 'skills', 'profile'] && Array.isArray(['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'portfolio', 'skills', 'profile']) && ['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'portfolio', 'skills', 'profile'].includes(tabParam)) {
-      setActiveTab(tabParam);
+    if (tabParam && ['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'portfolio', 'skills', 'profile', 'completeProfile'].includes(tabParam)) {
+      // If trying to access completeProfile but profile is already complete, redirect to profile tab
+      if (tabParam === 'completeProfile' && profileCompleteness >= 100) {
+        setActiveTab('profile');
+      } else {
+        setActiveTab(tabParam);
+      }
     }
-  }, [location.search]);
+  }, [location.search, profileCompleteness]);
 
   const handleLogout = () => {
     localStorage.removeItem('userData');
@@ -436,6 +542,29 @@ function StudentDashboard() {
 
   const renderOverview = () => (
     <div className="space-y-8">
+      {/* Profile Completion Notification */}
+      {profileCompleteness < 100 && (
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-xl p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-3xl">🎯</div>
+              <div>
+                <h3 className="text-xl font-bold mb-2">Complete Your Profile</h3>
+                <p className="text-blue-100">
+                  Your profile is {profileCompleteness}% complete. Add missing information to unlock better opportunities!
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("completeProfile")}
+              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300"
+            >
+              Complete Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.completedProjects}</h3>
@@ -452,6 +581,14 @@ function StudentDashboard() {
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-orange-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">{profileCompleteness}%</h3>
           <p className="text-gray-600">Profile Complete</p>
+          {profileCompleteness < 100 && (
+            <button
+              onClick={() => setActiveTab("completeProfile")}
+              className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition-all duration-300"
+            >
+              Complete Now
+            </button>
+          )}
         </div>
       </div>
 
@@ -1035,9 +1172,17 @@ function StudentDashboard() {
           ></div>
         </div>
         {profileCompleteness < 100 && (
-          <p className="text-sm text-gray-600 mt-2">
-            Complete your profile to get better recommendations and increase your chances of being hired!
-          </p>
+          <div className="mt-2">
+            <p className="text-sm text-gray-600 mb-2">
+              Complete your profile to get better recommendations and increase your chances of being hired!
+            </p>
+            <button
+              onClick={() => setActiveTab("completeProfile")}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-all duration-300"
+            >
+              Complete Now
+            </button>
+          </div>
         )}
       </div>
 
@@ -1387,6 +1532,222 @@ function StudentDashboard() {
     </div>
   );
 
+  const renderCompleteProfile = () => (
+    <div className="space-y-8">
+      {/* Profile Completion Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white rounded-2xl shadow-xl p-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Complete Your Profile</h1>
+          <p className="text-xl text-blue-100 mb-6">
+            Add the missing information to unlock better opportunities and recommendations
+          </p>
+          <div className="w-full bg-blue-200 rounded-full h-3 mb-4">
+            <div 
+              className="bg-white h-3 rounded-full transition-all duration-500" 
+              style={{ width: `${profileCompleteness}%` }}
+            ></div>
+          </div>
+          <p className="text-blue-100">{profileCompleteness}% Complete</p>
+        </div>
+      </div>
+
+      {/* Profile Completion Form */}
+      <div className="bg-white rounded-2xl shadow-xl p-8">
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Degree Program *
+              </label>
+              <select
+                name="degreeProgram"
+                value={studentData?.degreeProgram || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    degreeProgram: e.target.value
+                  }));
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              >
+                <option value="">Select Degree Program</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Computer Engineering">Computer Engineering</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                <option value="Machine Learning">Machine Learning</option>
+                <option value="Cybersecurity">Cybersecurity</option>
+                <option value="Business Administration">Business Administration</option>
+                <option value="Business Management">Business Management</option>
+                <option value="Finance">Finance</option>
+                <option value="Accounting">Accounting</option>
+                <option value="Economics">Economics</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Digital Marketing">Digital Marketing</option>
+                <option value="Human Resource Management">Human Resource Management</option>
+                <option value="Project Management">Project Management</option>
+                <option value="Design">Design</option>
+                <option value="Graphic Design">Graphic Design</option>
+                <option value="UI/UX Design">UI/UX Design</option>
+                <option value="Interior Design">Interior Design</option>
+                <option value="Fashion Design">Fashion Design</option>
+                <option value="Architecture">Architecture</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Electrical Engineering">Electrical Engineering</option>
+                <option value="Chemical Engineering">Chemical Engineering</option>
+                <option value="Biomedical Engineering">Biomedical Engineering</option>
+                <option value="Environmental Engineering">Environmental Engineering</option>
+                <option value="Medicine">Medicine</option>
+                <option value="Nursing">Nursing</option>
+                <option value="Pharmacy">Pharmacy</option>
+                <option value="Psychology">Psychology</option>
+                <option value="Sociology">Sociology</option>
+                <option value="Education">Education</option>
+                <option value="Law">Law</option>
+                <option value="Journalism">Journalism</option>
+                <option value="Media Studies">Media Studies</option>
+                <option value="Film Studies">Film Studies</option>
+                <option value="Music">Music</option>
+                <option value="Arts">Arts</option>
+                <option value="Agriculture">Agriculture</option>
+                <option value="Veterinary Science">Veterinary Science</option>
+                <option value="Food Science">Food Science</option>
+                <option value="Nutrition">Nutrition</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                University *
+              </label>
+              <input
+                type="text"
+                name="university"
+                value={studentData?.university || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    university: e.target.value
+                  }));
+                }}
+                placeholder="Enter your university name"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                GPA *
+              </label>
+              <input
+                type="text"
+                name="gpa"
+                value={studentData?.gpa || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    gpa: e.target.value
+                  }));
+                }}
+                placeholder="e.g., 3.8"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Graduation Year *
+              </label>
+              <input
+                type="number"
+                name="graduationYear"
+                value={studentData?.graduationYear || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    graduationYear: e.target.value
+                  }));
+                }}
+                placeholder="e.g., 2025"
+                min="2020"
+                max="2030"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={studentData?.dateOfBirth || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    dateOfBirth: e.target.value
+                  }));
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CV/Resume Upload
+              </label>
+              <input
+                type="file"
+                name="cvFile"
+                accept=".pdf,.doc,.docx"
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    cvFile: e.target.files[0]
+                  }));
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">Upload your CV/Resume (PDF, DOC, DOCX)</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={() => setActiveTab("profile")}
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                // Save to localStorage and update the profile
+                localStorage.setItem('userData', JSON.stringify(studentData));
+                
+                // Recalculate profile completeness
+                const newCompleteness = calculateProfileCompleteness(studentData);
+                setProfileCompleteness(newCompleteness);
+                
+                alert("Profile updated successfully!");
+                setActiveTab("profile");
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600"
+            >
+              Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
   const renderProfile = () => (
     <div className="space-y-8">
       {/* Profile Header */}
@@ -1439,8 +1800,19 @@ function StudentDashboard() {
 
           {/* Action Buttons */}
           <div className="flex flex-col space-y-3">
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors">
-              Edit Profile
+            {profileCompleteness < 100 && (
+              <button 
+                onClick={() => setActiveTab("completeProfile")}
+                className="bg-blue-500 hover:bg-blue-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+              >
+                Complete Profile
+              </button>
+            )}
+            <button 
+              onClick={handleEditProfile}
+              className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
+              {isEditingProfile ? 'Cancel Edit' : 'Edit Profile'}
             </button>
             <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
               View Portfolio
@@ -1454,7 +1826,17 @@ function StudentDashboard() {
         {/* Main Profile Info */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Academic Information</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Academic Information</h3>
+              {profileCompleteness < 100 && (
+                <button
+                  onClick={() => setActiveTab("completeProfile")}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-all duration-300"
+                >
+                  Complete Profile
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
@@ -1475,42 +1857,153 @@ function StudentDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Degree Program</label>
-                <input 
-                  type="text" 
-                  value={studentData?.degreeProgram || ''}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  readOnly
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Degree Program
+                  {!studentData?.degreeProgram && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="text" 
+                    value={editedProfileData.degreeProgram || ''}
+                    onChange={(e) => setEditedProfileData({...editedProfileData, degreeProgram: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter your degree program"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={studentData?.degreeProgram || 'Not specified'}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      studentData?.degreeProgram ? 'border-gray-300' : 'border-red-300 bg-red-50'
+                    }`}
+                    readOnly
+                  />
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
-                <input 
-                  type="text" 
-                  value={studentData?.university || ''}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  readOnly
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  University
+                  {!studentData?.university && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="text" 
+                    value={editedProfileData.university || ''}
+                    onChange={(e) => setEditedProfileData({...editedProfileData, university: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter your university"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={studentData?.university || 'Not specified'}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      studentData?.university ? 'border-gray-300' : 'border-red-300 bg-red-50'
+                    }`}
+                    readOnly
+                  />
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">GPA</label>
-                <input 
-                  type="text" 
-                  value={studentData?.gpa || ''}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  readOnly
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  GPA
+                  {!studentData?.gpa && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="text" 
+                    value={editedProfileData.gpa || ''}
+                    onChange={(e) => setEditedProfileData({...editedProfileData, gpa: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter your GPA (e.g., 3.8)"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={studentData?.gpa || 'Not specified'}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      studentData?.gpa ? 'border-gray-300' : 'border-red-300 bg-red-50'
+                    }`}
+                    readOnly
+                  />
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
-                <input 
-                  type="text" 
-                  value={studentData?.graduationYear || ''}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  readOnly
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Graduation Year
+                  {!studentData?.graduationYear && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="text" 
+                    value={editedProfileData.graduationYear || ''}
+                    onChange={(e) => setEditedProfileData({...editedProfileData, graduationYear: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter graduation year (e.g., 2025)"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={studentData?.graduationYear || 'Not specified'}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      studentData?.graduationYear ? 'border-gray-300' : 'border-red-300 bg-red-50'
+                    }`}
+                    readOnly
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date of Birth
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="date" 
+                    value={editedProfileData.dateOfBirth || ''}
+                    onChange={(e) => setEditedProfileData({...editedProfileData, dateOfBirth: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={studentData?.dateOfBirth || 'Not specified'}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    readOnly
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  CV/Resume
+                  {!studentData?.cvFile && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <div className={`w-full px-4 py-3 border-2 rounded-xl ${
+                  studentData?.cvFile ? 'border-gray-300 bg-green-50' : 'border-red-300 bg-red-50'
+                }`}>
+                  <span className={`text-sm ${studentData?.cvFile ? 'text-green-700' : 'text-red-600'}`}>
+                    {studentData?.cvFile ? 'CV uploaded' : 'CV not uploaded'}
+                  </span>
+                </div>
               </div>
             </div>
+            
+            {/* Edit Mode Action Buttons */}
+            {isEditingProfile && (
+              <div className="flex justify-end space-x-4 mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -1584,6 +2077,293 @@ function StudentDashboard() {
     </div>
   );
 
+  // Edit Profile Popup Form
+  const renderEditProfilePopup = () => {
+    if (!showEditPopup) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-2xl">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Edit Profile</h2>
+              <button
+                onClick={handleCancelEdit}
+                className="text-white hover:text-gray-200 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          
+          {/* Form */}
+          <div className="p-6 space-y-6">
+            {/* Personal Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Personal Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                  <input
+                    type="text"
+                    value={editFormData.firstName || ''}
+                    onChange={(e) => setEditFormData({...editFormData, firstName: e.target.value})}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      editErrors.firstName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter first name"
+                  />
+                  {editErrors.firstName && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                  <input
+                    type="text"
+                    value={editFormData.lastName || ''}
+                    onChange={(e) => setEditFormData({...editFormData, lastName: e.target.value})}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      editErrors.lastName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter last name"
+                  />
+                  {editErrors.lastName && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <input
+                    type="email"
+                    value={editFormData.email || ''}
+                    onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      editErrors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter email address"
+                  />
+                  {editErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.email}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={editFormData.phoneNumber || ''}
+                    onChange={(e) => setEditFormData({...editFormData, phoneNumber: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={editFormData.address || ''}
+                    onChange={(e) => setEditFormData({...editFormData, address: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter your address"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Academic Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Academic Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Degree Program</label>
+                  <input
+                    type="text"
+                    value={editFormData.degreeProgram || ''}
+                    onChange={(e) => setEditFormData({...editFormData, degreeProgram: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter degree program"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
+                  <input
+                    type="text"
+                    value={editFormData.university || ''}
+                    onChange={(e) => setEditFormData({...editFormData, university: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter university"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">GPA</label>
+                  <input
+                    type="text"
+                    value={editFormData.gpa || ''}
+                    onChange={(e) => setEditFormData({...editFormData, gpa: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter GPA (e.g., 3.8)"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
+                  <input
+                    type="text"
+                    value={editFormData.graduationYear || ''}
+                    onChange={(e) => setEditFormData({...editFormData, graduationYear: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter graduation year (e.g., 2025)"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={editFormData.dateOfBirth || ''}
+                    onChange={(e) => setEditFormData({...editFormData, dateOfBirth: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Password Change */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Change Password (Optional)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={editFormData.currentPassword || ''}
+                      onChange={(e) => setEditFormData({...editFormData, currentPassword: e.target.value})}
+                      className={`w-full px-4 py-3 pr-10 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {editErrors.currentPassword && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.currentPassword}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={editFormData.newPassword || ''}
+                      onChange={(e) => setEditFormData({...editFormData, newPassword: e.target.value})}
+                      className={`w-full px-4 py-3 pr-10 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showNewPassword ? (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {editErrors.newPassword && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.newPassword}</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={editFormData.confirmPassword || ''}
+                      onChange={(e) => setEditFormData({...editFormData, confirmPassword: e.target.value})}
+                      className={`w-full px-4 py-3 pr-10 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Confirm new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showConfirmPassword ? (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {editErrors.confirmPassword && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button
+                onClick={handleCancelEdit}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!studentData) return <div>Loading...</div>;
 
   return (
@@ -1614,7 +2394,9 @@ function StudentDashboard() {
               { id: "applications", name: "My Applications", icon: "📝" },
               { id: "portfolio", name: "Portfolio", icon: "💼" },
               { id: "skills", name: "Skills", icon: "🛠️" },
-              { id: "profile", name: "Profile", icon: "👤" }
+              { id: "profile", name: "Profile", icon: "👤" },
+              // Only show Complete Profile tab when profile is incomplete
+              ...(profileCompleteness < 100 ? [{ id: "completeProfile", name: "Complete Profile", icon: "✏️" }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1644,10 +2426,12 @@ function StudentDashboard() {
             {activeTab === "portfolio" && renderPortfolio()}
             {activeTab === "skills" && renderSkills()}
             {activeTab === "profile" && renderProfile()}
+            {activeTab === "completeProfile" && renderCompleteProfile()}
           </div>
         </div>
 
       {showApplicationForm && renderApplicationForm()}
+      {renderEditProfilePopup()}
     </div>
   );
 }
