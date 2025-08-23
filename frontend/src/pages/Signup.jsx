@@ -11,12 +11,8 @@ function Signup() {
     firstName: "",
     lastName: "",
     
-    // Student-specific fields
-    degreeProgram: "",
-    university: "",
-    gpa: "",
+    // Student-specific fields - removed degreeProgram, university, gpa, graduationYear
     technicalSkills: "",
-    graduationYear: "",
     
     // Job Seeker/Client fields
     organization: "",
@@ -32,9 +28,8 @@ function Signup() {
     qualification: "",
     professionalSummary: "",
     
-    // Additional fields
+    // Additional fields - removed dateOfBirth
     phoneNumber: "",
-    dateOfBirth: "",
     address: "",
     companySize: "",
     industry: "",
@@ -887,16 +882,7 @@ function Signup() {
 
     // User type specific validations
     if (userType === "student") {
-      if (!formData.degreeProgram) newErrors.degreeProgram = "Degree program is required";
-      if (formData.degreeProgram === "Other" && !customDegreeProgram.trim()) {
-        newErrors.degreeProgram = "Please specify your degree program";
-      }
-      if (!formData.university) newErrors.university = "University is required";
-    if (formData.university === "Other" && !customUniversity.trim()) {
-      newErrors.university = "Please specify your university name";
-    }
-      if (!formData.gpa) newErrors.gpa = "GPA is required";
-      if (!formData.graduationYear) newErrors.graduationYear = "Graduation year is required";
+      // Removed validation for degreeProgram, university, gpa, graduationYear
     }
 
     if (userType === "jobSeeker") {
@@ -978,205 +964,37 @@ function Signup() {
     }
   };
 
-  const renderStudentFields = () => (
+    const renderStudentFields = () => (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Degree Program *
+            Phone Number
           </label>
-          <select
-            name="degreeProgram"
-            value={formData.degreeProgram}
+          <input
+            type="tel"
+            name="phoneNumber"
+            value={formData.phoneNumber || ""}
             onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-              errors.degreeProgram ? 'border-red-500' : 'border-gray-300'
-            }`}
-          >
-            <option value="">Select Degree Program</option>
-            {degreePrograms.map(program => (
-              <option key={program} value={program}>{program}</option>
-            ))}
-          </select>
-          
-          {/* Custom Degree Program Input for "Other" option */}
-          {formData.degreeProgram === "Other" && (
-            <div className="mt-3">
-              <input
-                type="text"
-                name="customDegreeProgram"
-                value={customDegreeProgram}
-                onChange={(e) => {
-                  setCustomDegreeProgram(e.target.value);
-                  setFormData({ ...formData, degreeProgram: e.target.value });
-                }}
-                placeholder="Please specify your degree program"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-          )}
-          
-          {errors.degreeProgram && (
-            <p className="text-red-500 text-sm mt-1">{errors.degreeProgram}</p>
-          )}
-            </div>
-            
+            placeholder="+94 71 123 4567"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+        </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            University *
-          </label>
-          <div className="relative" ref={universityDropdownRef}>
-            <input
-              type="text"
-              name="university"
-              value={universitySearch}
-              onChange={(e) => {
-                setUniversitySearch(e.target.value);
-                setShowUniversityDropdown(true);
-                if (e.target.value === "") {
-                  setFormData({ ...formData, university: "" });
-                }
-              }}
-              onFocus={() => setShowUniversityDropdown(true)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && universitySearch.trim()) {
-                  setFormData({ ...formData, university: universitySearch.trim() });
-                  setShowUniversityDropdown(false);
-                }
-              }}
-              placeholder="Search or type university name"
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-                errors.university ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {showUniversityDropdown && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                {filteredUniversities.length > 0 ? (
-                  filteredUniversities.map(uni => (
-                    <button
-                      key={uni}
-                      type="button"
-                      onClick={() => handleUniversitySelect(uni)}
-                      className="w-full text-left px-3 py-2 hover:bg-yellow-50 focus:bg-yellow-50 focus:outline-none"
-                    >
-                      {uni}
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-2 text-gray-500">
-                    No universities found. You can type a custom name.
-                </div>
-                )}
-              </div>
-            )}
-            </div>
-            
-          {/* Custom University Input for "Other" option */}
-          {formData.university === "Other" && (
-            <div className="mt-3">
-              <input
-                type="text"
-                name="customUniversity"
-                value={customUniversity}
-                onChange={(e) => {
-                  setCustomUniversity(e.target.value);
-                  setFormData({ ...formData, university: e.target.value });
-                }}
-                placeholder="Please specify your university name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-                </div>
-          )}
-          {errors.university && (
-            <p className="text-red-500 text-sm mt-1">{errors.university}</p>
-          )}
-              </div>
-            </div>
-            
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            GPA *
+            Address
           </label>
           <input
             type="text"
-            name="gpa"
-            value={formData.gpa}
+            name="address"
+            value={formData.address || ""}
             onChange={handleChange}
-            placeholder="e.g., 3.8"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-              errors.gpa ? 'border-red-500' : 'border-gray-300'
-            }`}
+            placeholder="Enter your full address"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
-          {errors.gpa && (
-            <p className="text-red-500 text-sm mt-1">{errors.gpa}</p>
-          )}
-              </div>
-            
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Graduation Year *
-          </label>
-          <input
-            type="number"
-            name="graduationYear"
-            value={formData.graduationYear}
-            onChange={handleChange}
-            placeholder="e.g., 2025"
-            min="2020"
-            max="2030"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-              errors.graduationYear ? 'border-red-500' : 'border-gray-300'
-            }`}
-          />
-          {errors.graduationYear && (
-            <p className="text-red-500 text-sm mt-1">{errors.graduationYear}</p>
-          )}
-              </div>
-            </div>
-            
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber || ""}
-                onChange={handleChange}
-                placeholder="+94 71 123 4567"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                />
-              </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date of Birth
-              </label>
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth || ""}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Address
-            </label>
-            <textarea
-              name="address"
-              value={formData.address || ""}
-              onChange={handleChange}
-              placeholder="Enter your full address"
-              rows="3"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
         </div>
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1187,16 +1005,16 @@ function Signup() {
             {selectedSkills.map(skill => (
               <span key={skill} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium flex items-center gap-2">
                 {skill}
-              <button
+                <button
                   type="button"
                   onClick={() => handleSkillToggle(skill)}
                   className="text-yellow-600 hover:text-yellow-800"
                 >
                   ×
-              </button>
+                </button>
               </span>
             ))}
-        </div>
+          </div>
 
           {/* Skill Search Input */}
           <div className="relative mb-3">
@@ -1221,7 +1039,7 @@ function Signup() {
               >
                 Add
               </button>
-              </div>
+            </div>
             {showSkillDropdown && skillSearch && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {filteredSkills.length > 0 ? (
@@ -1238,11 +1056,11 @@ function Signup() {
                 ) : (
                   <div className="px-3 py-2 text-gray-500">
                     No skills found. You can type a custom skill.
-            </div>
+                  </div>
                 )}
               </div>
-          )}
-            </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
             {availableSkills.map(skill => (
@@ -1261,24 +1079,7 @@ function Signup() {
             ))}
           </div>
         </div>
-          </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          CV/Resume Upload
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <p className="mt-2 text-sm text-gray-600">
-            <button type="button" className="text-yellow-600 hover:text-yellow-500 font-medium">
-              Upload a file
-            </button> or drag and drop
-          </p>
-          <p className="text-xs text-gray-500 mt-1">PDF, DOC up to 10MB</p>
-            </div>
-            </div>
+      </div>
     </>
   );
           

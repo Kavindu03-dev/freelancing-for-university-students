@@ -113,16 +113,11 @@ const signup = async (req, res) => {
 
     // Add student-specific fields
     if (userType === 'student') {
-      if (!degreeProgram || !university) {
-        return res.status(400).json({
-          success: false,
-          message: 'Degree program and university are required for students'
-        });
-      }
-      userData.degreeProgram = degreeProgram;
-      userData.university = university;
+      // These fields are now optional and can be completed later in the profile
+      userData.degreeProgram = degreeProgram || '';
+      userData.university = university || '';
       userData.gpa = gpa || '';
-      userData.technicalSkills = technicalSkills || [];
+      userData.technicalSkills = Array.isArray(technicalSkills) ? technicalSkills : [];
       userData.graduationYear = graduationYear || '';
     }
 
@@ -137,7 +132,7 @@ const signup = async (req, res) => {
       userData.organization = organization;
       userData.jobTitle = jobTitle || '';
       userData.contactPhone = contactPhone || '';
-      userData.projectCategories = projectCategories || [];
+      userData.projectCategories = Array.isArray(projectCategories) ? projectCategories : [];
       userData.companySize = companySize || '';
       userData.industry = industry || '';
       userData.website = website || '';
@@ -176,6 +171,12 @@ const signup = async (req, res) => {
           phoneNumber: user.phoneNumber,
           dateOfBirth: user.dateOfBirth,
           address: user.address,
+          // Include student fields for profile completion
+          degreeProgram: user.degreeProgram,
+          university: user.university,
+          gpa: user.gpa,
+          technicalSkills: user.technicalSkills,
+          graduationYear: user.graduationYear,
           isVerified: user.isVerified,
           agreeToTerms: user.agreeToTerms,
           agreeToMarketing: user.agreeToMarketing,
