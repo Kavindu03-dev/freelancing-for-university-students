@@ -1,26 +1,30 @@
 // Authentication utility functions
 
 export const logout = (navigate) => {
-  // Clear all stored data
-  localStorage.removeItem('userToken');
-  localStorage.removeItem('userData');
-  localStorage.removeItem('adminLoggedIn');
-  localStorage.removeItem('adminEmail');
-  localStorage.removeItem('adminToken');
-  localStorage.removeItem('adminId');
-  
-  // Dispatch auth change event
-  window.dispatchEvent(new Event('authStateChanged'));
-  
-  // Redirect to home page
-  if (navigate) {
-    navigate('/');
-  } else {
+  try {
+    // Clear all stored data
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminEmail');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminId');
+    
+    // Dispatch auth change event
+    window.dispatchEvent(new Event('authStateChanged'));
+    
+    // Redirect to home page
+    if (navigate) {
+      navigate('/');
+    } else {
+      window.location.href = '/';
+    }
+    
+  } catch (error) {
+    console.error('❌ Error during logout:', error);
+    // Fallback redirect
     window.location.href = '/';
   }
-  
-  // Optional: Show success message
-  alert('Logged out successfully!');
 };
 
 export const isAuthenticated = () => {

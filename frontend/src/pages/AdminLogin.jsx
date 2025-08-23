@@ -23,39 +23,45 @@ function AdminLogin() {
     setError("");
     setIsLoading(true);
 
-    // Hardcoded admin credentials for development
-    const validCredentials = {
-      email: "admin@flexihire.com",
-      password: "admin123"
-    };
+    try {
+      console.log('🚀 Attempting admin login with:', credentials.email);
+      
+      // Call backend API
+      const response = await fetch('http://localhost:5000/api/auth/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
 
-    // Check if credentials match
-    console.log('Entered credentials:', credentials);
-    console.log('Valid credentials:', validCredentials);
-    console.log('Email match:', credentials.email === validCredentials.email);
-    console.log('Password match:', credentials.password === validCredentials.password);
-    
-    if (credentials.email === validCredentials.email && credentials.password === validCredentials.password) {
-      console.log('✅ Credentials match! Proceeding to dashboard...');
-      
-      // Store admin data
-      localStorage.setItem('adminLoggedIn', 'true');
-      localStorage.setItem('adminEmail', credentials.email);
-      localStorage.setItem('adminToken', 'admin-token-123');
-      localStorage.setItem('adminId', 'admin-001');
-      
-      console.log('✅ Admin data stored in localStorage');
-      console.log('✅ Attempting navigation to /admin/dashboard');
-      
-      // Navigate to admin dashboard
-      navigate('/admin/dashboard');
-      
-      console.log('✅ Navigation called');
-    } else {
-      setError(`Invalid admin credentials. Expected: ${validCredentials.email} / ${validCredentials.password}, Got: ${credentials.email} / ${credentials.password}`);
+      const data = await response.json();
+      console.log('📡 Backend response:', data);
+
+      if (data.success) {
+        console.log('✅ Admin login successful!');
+        
+        // Store admin data from backend response
+        localStorage.setItem('adminLoggedIn', 'true');
+        localStorage.setItem('adminEmail', data.data.email);
+        localStorage.setItem('adminToken', data.data.token);
+        localStorage.setItem('adminId', data.data._id);
+        
+        console.log('✅ Admin data stored in localStorage');
+        console.log('✅ Navigating to admin dashboard...');
+        
+        // Navigate to admin dashboard
+        navigate('/admin/dashboard');
+      } else {
+        console.log('❌ Admin login failed:', data.message);
+        setError(data.message || 'Login failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error during admin login:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -159,16 +165,16 @@ function AdminLogin() {
 
 
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-            <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
-              <p className="text-sm text-yellow-800 font-bold">
+            <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
+              <p className="text-sm text-blue-800 font-bold">
                 🔑 <strong>ADMIN LOGIN CREDENTIALS:</strong>
               </p>
-              <p className="text-sm text-yellow-800 mt-2">
-                <strong>Email:</strong> admin@flexihire.com<br/>
+              <p className="text-sm text-blue-800 mt-2">
+                <strong>Email:</strong> admin@gmail.com<br/>
                 <strong>Password:</strong> admin123
               </p>
-              <p className="text-xs text-yellow-700 mt-2 italic">
-                Copy and paste these exactly as shown
+              <p className="text-xs text-blue-700 mt-2 italic">
+                These credentials are stored in the database
               </p>
             </div>
             
