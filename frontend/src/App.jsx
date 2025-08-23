@@ -27,8 +27,9 @@ import Footer from "./components/Footer";
 function AppContent() {
   const location = useLocation();
   
-  // Don't show Header on admin dashboard
+  // Don't show Header and Footer on admin dashboard
   const shouldShowHeader = !location.pathname.includes('/admin/dashboard');
+  const shouldShowFooter = !location.pathname.includes('/admin/dashboard');
   
   return (
     <>
@@ -54,7 +55,7 @@ function AppContent() {
         <Route path="/service/:id" element={<ServiceDetailsPage />} />
         <Route path="/" element={<HomePage />} />
       </Routes>
-      <Footer />
+      {shouldShowFooter && <Footer />}
     </>
   );
 }

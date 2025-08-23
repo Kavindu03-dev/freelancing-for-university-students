@@ -23,38 +23,39 @@ function AdminLogin() {
     setError("");
     setIsLoading(true);
 
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-          password: credentials.password
-        })
-      });
+    // Hardcoded admin credentials for development
+    const validCredentials = {
+      email: "admin@flexihire.com",
+      password: "admin123"
+    };
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Store admin data and token
-        localStorage.setItem('adminLoggedIn', 'true');
-        localStorage.setItem('adminEmail', credentials.email);
-        localStorage.setItem('adminToken', result.data.token);
-        localStorage.setItem('adminId', result.data._id);
-        
-        // Navigate to admin dashboard
-        navigate('/admin/dashboard');
-      } else {
-        setError(result.message || 'Login failed');
-      }
-    } catch (error) {
-      console.error('Admin login error:', error);
-      setError('Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+    // Check if credentials match
+    console.log('Entered credentials:', credentials);
+    console.log('Valid credentials:', validCredentials);
+    console.log('Email match:', credentials.email === validCredentials.email);
+    console.log('Password match:', credentials.password === validCredentials.password);
+    
+    if (credentials.email === validCredentials.email && credentials.password === validCredentials.password) {
+      console.log('✅ Credentials match! Proceeding to dashboard...');
+      
+      // Store admin data
+      localStorage.setItem('adminLoggedIn', 'true');
+      localStorage.setItem('adminEmail', credentials.email);
+      localStorage.setItem('adminToken', 'admin-token-123');
+      localStorage.setItem('adminId', 'admin-001');
+      
+      console.log('✅ Admin data stored in localStorage');
+      console.log('✅ Attempting navigation to /admin/dashboard');
+      
+      // Navigate to admin dashboard
+      navigate('/admin/dashboard');
+      
+      console.log('✅ Navigation called');
+    } else {
+      setError(`Invalid admin credentials. Expected: ${validCredentials.email} / ${validCredentials.password}, Got: ${credentials.email} / ${credentials.password}`);
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -158,6 +159,34 @@ function AdminLogin() {
 
 
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+              <p className="text-sm text-yellow-800 font-bold">
+                🔑 <strong>ADMIN LOGIN CREDENTIALS:</strong>
+              </p>
+              <p className="text-sm text-yellow-800 mt-2">
+                <strong>Email:</strong> admin@flexihire.com<br/>
+                <strong>Password:</strong> admin123
+              </p>
+              <p className="text-xs text-yellow-700 mt-2 italic">
+                Copy and paste these exactly as shown
+              </p>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700 mb-2">
+                <strong>Test Navigation:</strong>
+              </p>
+              <button
+                onClick={() => {
+                  console.log('🧪 Testing manual navigation...');
+                  navigate('/admin/dashboard');
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                🧪 Test Go to Dashboard
+              </button>
+            </div>
+            
             <button
               onClick={() => navigate('/')}
               className="text-yellow-600 hover:text-yellow-700 font-medium transition-colors duration-300"

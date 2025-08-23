@@ -5,7 +5,9 @@ export const logout = (navigate) => {
   localStorage.removeItem('userToken');
   localStorage.removeItem('userData');
   localStorage.removeItem('adminLoggedIn');
-  localStorage.removeItem('adminUsername');
+  localStorage.removeItem('adminEmail');
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('adminId');
   
   // Dispatch auth change event
   window.dispatchEvent(new Event('authStateChanged'));
@@ -29,8 +31,8 @@ export const isAuthenticated = () => {
 
 export const isAdmin = () => {
   const adminLoggedIn = localStorage.getItem('adminLoggedIn');
-  const adminUsername = localStorage.getItem('adminUsername');
-  return !!(adminLoggedIn && adminUsername);
+  const adminEmail = localStorage.getItem('adminEmail');
+  return !!(adminLoggedIn && adminEmail);
 };
 
 export const getUserData = () => {
