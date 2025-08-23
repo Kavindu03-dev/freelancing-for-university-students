@@ -90,30 +90,72 @@ function HomePage() {
     }
   };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20">
       {/* Header is now rendered globally in App.jsx */}
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundSize: '60px 60px'
-          }}></div>
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
               Find the Perfect Freelancer
             </h1>
-            <p className="text-xl md:text-2xl mb-12 text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
               Connect with talented professionals for your projects
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-10 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            
+            {/* Search Bar */}
+            <div className="max-w-2xl mx-auto mb-8" ref={searchRef}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="What service are you looking for?"
+                  className="w-full px-6 py-4 text-lg rounded-full border-2 border-yellow-500 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-yellow-400 backdrop-blur-sm"
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  <svg className="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-yellow-500 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
+                  {filteredCategories.map((category, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleCategorySelect(category)}
+                      className="px-6 py-3 hover:bg-yellow-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span className="text-gray-800 font-medium">{category}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 Hire a Freelancer
               </button>
+              <Link to="/join" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-full font-semibold transition-all duration-300">
+                Join as Freelancer
+              </Link>
+            </div>
+            
+            {/* Admin Access Link */}
+            <div className="mt-6 text-center">
+              <Link to="/admin/login" className="text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors duration-300">
+                Admin Access
+              </Link>
             </div>
           </div>
         </div>
