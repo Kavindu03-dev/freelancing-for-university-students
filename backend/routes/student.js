@@ -1,49 +1,51 @@
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/auth');
-const {
-  getStudentProfile,
-  updateStudentProfile,
-  addSkill,
-  removeSkill,
-  updateSkills,
-  getAllFreelancers,
-  getFreelancerProfile
-} = require('../controllers/studentController');
+import express from 'express';
+import auth from '../middleware/auth.js';
+import freelancerController from '../controllers/studentController.js';
+import portfolioController from '../controllers/portfolioController.js';
+import upload from '../middleware/upload.js';
+import imgbbUpload from '../middleware/imgbbUpload.js';
 
-const {
-  addPortfolioItem,
-  updatePortfolioItem,
-  removePortfolioItem,
-  getPortfolioItems
-} = require('../controllers/portfolioController');
+const router = express.Router();
 
 // Protected routes (require authentication)
-router.use(protect);
+router.use(auth.protect);
 
-// Student profile management
+// Freelancer profile management
 router.route('/profile')
-  .get(getStudentProfile)
-  .put(updateStudentProfile);
+  .get(freelancerController.getFreelancerProfile)
+  .put(freelancerController.updateFreelancerProfile);
 
 // Skills management
 router.route('/skills')
-  .post(addSkill)
-  .put(updateSkills);
+  .post(freelancerController.addSkill)
+  .put(freelancerController.updateSkills);
 
-router.delete('/skills/:skill', removeSkill);
+router.delete('/skills/:skill', freelancerController.removeSkill);
 
 // Portfolio management
 router.route('/portfolio')
-  .get(getPortfolioItems)
-  .post(addPortfolioItem);
+  .get(portfolioController.getPortfolioItems)
+  .post(portfolioController.addPortfolioItem);
 
 router.route('/portfolio/:itemId')
-  .put(updatePortfolioItem)
-  .delete(removePortfolioItem);
+  .put(portfolioController.updatePortfolioItem)
+  .delete(portfolioController.removePortfolioItem);
+
+// CV/Resume management
+router.route('/cv')
+  .post(upload.single('cvFile'), freelancerController.uploadCV)
+  .delete(freelancerController.deleteCV);
+
+// Profile image management
+router.route('/profile-image')
+  .post(imgbbUpload.single('profileImage'), freelancerController.uploadProfileImage)
+  .delete(freelancerController.removeProfileImage);
+
+// Account management
+router.delete('/account', freelancerController.deleteAccount);
 
 // Public routes (no authentication required)
-router.get('/freelancers', getAllFreelancers);
-router.get('/freelancers/:id', getFreelancerProfile);
+router.get('/freelancers', freelancerController.getAllFreelancers);
+router.get('/freelancers/:id', freelancerController.getFreelancerProfile);
 
-module.exports = router;
+export default router;

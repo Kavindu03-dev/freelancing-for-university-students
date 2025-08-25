@@ -1,10 +1,10 @@
 {
-  "name": "backend",
+  "name": "freelancing-platform-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for Freelancing Platform for University Students",
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -15,8 +15,11 @@
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "form-data": "^4.0.4",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.17.2"
+    "mongoose": "^8.17.2",
+    "multer": "^2.0.2",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

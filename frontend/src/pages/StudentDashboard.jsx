@@ -14,8 +14,27 @@ function StudentDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [cvFile, setCvFile] = useState(null);
+  const [isUploadingCV, setIsUploadingCV] = useState(false);
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const [isRemovingProfileImage, setIsRemovingProfileImage] = useState(false);
+  const [showProfileImageMenu, setShowProfileImageMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Close profile image menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileImageMenu && !event.target.closest('.profile-image-container')) {
+        setShowProfileImageMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileImageMenu]);
 
   // Mock data
   const [stats] = useState({
@@ -275,6 +294,7 @@ function StudentDashboard() {
       gpa: studentData?.gpa || '',
       graduationYear: studentData?.graduationYear || '',
       dateOfBirth: studentData?.dateOfBirth || '',
+      technicalSkills: studentData?.technicalSkills || [],
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -282,39 +302,74 @@ function StudentDashboard() {
     setEditErrors({});
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     // Validate form
     if (!validateEditForm()) return;
 
-    // Update the student data with edited values
-    const updatedData = { 
-      ...studentData, 
-      firstName: editFormData.firstName,
-      lastName: editFormData.lastName,
-      email: editFormData.email,
-      phoneNumber: editFormData.phoneNumber,
-      address: editFormData.address,
-      degreeProgram: editFormData.degreeProgram,
-      university: editFormData.university,
-      gpa: editFormData.gpa,
-      graduationYear: editFormData.graduationYear,
-      dateOfBirth: editFormData.dateOfBirth
-    };
-    
-    setStudentData(updatedData);
-    
-    // Save to localStorage
-    localStorage.setItem('userData', JSON.stringify(updatedData));
-    
-    // Close popup
-    setShowEditPopup(false);
-    
-    // Recalculate profile completeness
-    const newCompleteness = calculateProfileCompleteness(updatedData);
-    setProfileCompleteness(newCompleteness);
-    
-    // Show success message
-    alert("Profile updated successfully!");
+    try {
+      // Get the auth token
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      // Prepare the data to send to backend
+      const updateData = {
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        // Email is not included as it cannot be changed
+        phoneNumber: editFormData.phoneNumber,
+        address: editFormData.address,
+        degreeProgram: editFormData.degreeProgram,
+        university: editFormData.university,
+        gpa: editFormData.gpa,
+        graduationYear: editFormData.graduationYear,
+        dateOfBirth: editFormData.dateOfBirth,
+        technicalSkills: editFormData.technicalSkills
+      };
+
+      // Make API call to update profile
+      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the student data with edited values
+        const updatedData = { 
+          ...studentData, 
+          ...updateData
+        };
+        
+        setStudentData(updatedData);
+        
+        // Save to localStorage
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        // Close popup
+        setShowEditPopup(false);
+        
+        // Recalculate profile completeness
+        const newCompleteness = calculateProfileCompleteness(updatedData);
+        setProfileCompleteness(newCompleteness);
+        
+        // Show success message
+        alert("Profile updated successfully!");
+      } else {
+        // Show error message from backend
+        alert(`Failed to update profile: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    }
   };
 
   const validateEditForm = () => {
@@ -322,8 +377,12 @@ function StudentDashboard() {
     
     if (!editFormData.firstName.trim()) errors.firstName = "First name is required";
     if (!editFormData.lastName.trim()) errors.lastName = "Last name is required";
-    if (!editFormData.email.trim()) errors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(editFormData.email)) errors.email = "Email is invalid";
+    // Email is read-only, so no validation needed
+    
+    // Validate technical skills
+    if (!editFormData.technicalSkills || editFormData.technicalSkills.length === 0) {
+      errors.technicalSkills = "At least one technical skill is required";
+    }
     
     // Password validation (only if trying to change password)
     if (editFormData.newPassword || editFormData.confirmPassword) {
@@ -352,7 +411,7 @@ function StudentDashboard() {
     const fields = [
       studentData.firstName, studentData.lastName, studentData.email,
       studentData.degreeProgram, studentData.university, studentData.gpa,
-      studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth, studentData.cvFile
+      studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth
     ];
     
     const completedFields = fields.filter(field => {
@@ -362,7 +421,18 @@ function StudentDashboard() {
       if (Array.isArray(field)) return field.length > 0;
       return Boolean(field);
     }).length;
-    return Math.round((completedFields / fields.length) * 100);
+
+    // CV file is optional and doesn't count towards profile completeness
+    // Only count it if it's actually uploaded with valid data
+    let cvBonus = 0;
+    if (isValidCVFile(studentData.cvFile)) {
+      cvBonus = 1;
+    }
+
+    const totalFields = fields.length + cvBonus;
+    const totalCompleted = completedFields + cvBonus;
+    
+    return Math.round((totalCompleted / totalFields) * 100);
   };
 
   // Calculate initial profile completeness when component mounts
@@ -439,6 +509,130 @@ function StudentDashboard() {
     }
   }, [studentData, availableOpportunities, stats]);
 
+  // CV Upload Functions
+  const handleCVUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Only PDF, DOC, DOCX, JPEG, JPG, and PNG files are allowed.');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size too large. Maximum size is 5MB.');
+      return;
+    }
+
+    setCvFile(file);
+    setIsUploadingCV(true);
+
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('cvFile', file);
+
+      const response = await fetch('http://localhost:5000/api/freelancer/cv', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update student data with CV info
+        setStudentData(prev => ({
+          ...prev,
+          cvFile: result.data.cvFile
+        }));
+        
+        // Update localStorage
+        const updatedData = { ...studentData, cvFile: result.data.cvFile };
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        // Recalculate profile completeness
+        const newCompleteness = calculateProfileCompleteness(updatedData);
+        setProfileCompleteness(newCompleteness);
+        
+        alert('CV uploaded successfully!');
+      } else {
+        alert(`Failed to upload CV: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error uploading CV:', error);
+      alert('Failed to upload CV. Please try again.');
+    } finally {
+      setIsUploadingCV(false);
+    }
+  };
+
+  const handleCVDelete = async () => {
+    if (!studentData?.cvFile) return;
+
+    if (!confirm('Are you sure you want to delete your CV?')) return;
+
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/freelancer/cv', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Remove CV from student data
+        setStudentData(prev => {
+          const { cvFile, ...rest } = prev;
+          return rest;
+        });
+        
+        // Update localStorage
+        const updatedData = { ...studentData };
+        delete updatedData.cvFile;
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        // Recalculate profile completeness
+        const newCompleteness = calculateProfileCompleteness(updatedData);
+        setProfileCompleteness(newCompleteness);
+        
+        setCvFile(null);
+        alert('CV deleted successfully!');
+      } else {
+        alert(`Failed to delete CV: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting CV:', error);
+      alert('Failed to delete CV. Please try again.');
+    }
+  };
+
   const [applications] = useState([
     {
       id: 1,
@@ -469,12 +663,237 @@ function StudentDashboard() {
     expectedGraduation: ""
   });
 
+  // Function to fetch complete profile data from backend
+  const fetchCompleteProfile = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Debug: Log the data to see what's being received
+          console.log('Fetched profile data:', result.data);
+          console.log('CV file data:', result.data.cvFile);
+          
+          // Clean up invalid CV data if it exists
+          let cleanedData = { ...result.data };
+          if (cleanedData.cvFile && !isValidCVFile(cleanedData.cvFile)) {
+            console.log('Removing invalid CV data:', cleanedData.cvFile);
+            delete cleanedData.cvFile;
+          }
+          
+          // Update student data with complete profile including CV
+          setStudentData(cleanedData);
+          // Update localStorage with complete data
+          localStorage.setItem('userData', JSON.stringify(cleanedData));
+          // Recalculate profile completeness
+          const newCompleteness = calculateProfileCompleteness(cleanedData);
+          setProfileCompleteness(newCompleteness);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching complete profile:', error);
+    }
+  };
+
+  // Function to refresh user data (can be called manually if needed)
+  const refreshUserData = () => {
+    fetchCompleteProfile();
+  };
+
+  // Helper function to check if CV data is valid
+  const isValidCVFile = (cvData) => {
+    return cvData && 
+           cvData.fileName && 
+           cvData.filePath && 
+           cvData.originalName &&
+           cvData.fileSize &&
+           cvData.fileSize > 0;
+  };
+
+  // Profile Image Upload Functions
+  const handleProfileImageUpload = async (file) => {
+    try {
+      setIsUploadingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to upload profile image');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch('http://localhost:5000/api/freelancer/profile-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update student data with new profile image
+          setStudentData(prev => ({
+            ...prev,
+            profileImage: result.data.profileImage
+          }));
+          
+          // Update localStorage
+          const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+          const updatedUserData = {
+            ...currentUserData,
+            profileImage: result.data.profileImage
+          };
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          alert('Profile image uploaded successfully!');
+        } else {
+          alert(result.message || 'Failed to upload profile image');
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to upload profile image');
+      }
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      alert('Failed to upload profile image. Please try again.');
+    } finally {
+      setIsUploadingProfileImage(false);
+    }
+  };
+
+  const handleProfileImageRemove = async () => {
+    try {
+      setIsRemovingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to remove profile image');
+        return;
+      }
+
+      // Call backend API to remove profile image
+      const response = await fetch('http://localhost:5000/api/freelancer/profile-image', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setStudentData(prev => ({
+          ...prev,
+          profileImage: null
+        }));
+        
+        // Update localStorage
+        const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const updatedUserData = {
+          ...currentUserData,
+          profileImage: null
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        alert('Profile image removed successfully!');
+      } else {
+        alert(`Failed to remove profile image: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Profile image remove error:', error);
+      alert('Failed to remove profile image. Please try again.');
+    } finally {
+      setIsRemovingProfileImage(false);
+    }
+  };
+
+  // Function to delete user account
+  const handleDeleteAccount = async () => {
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      '⚠️ WARNING: This action cannot be undone!\n\n' +
+      'Are you absolutely sure you want to delete your account?\n\n' +
+      'This will permanently delete:\n' +
+      '• Your profile and all data\n' +
+      '• Your CV/resume files\n' +
+      '• All your project history\n' +
+      '• Your account credentials\n\n' +
+      'Type "DELETE" to confirm:'
+    );
+
+    if (!isConfirmed) return;
+
+    const userInput = prompt('Please type "DELETE" to confirm account deletion:');
+    if (userInput !== 'DELETE') {
+      alert('Account deletion cancelled. Your account is safe.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/freelancer/account', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Account deleted successfully. You will be redirected to the home page.');
+        // Clear all local data
+        localStorage.clear();
+        // Redirect to home page
+        navigate('/');
+      } else {
+        alert(`Failed to delete account: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     if (userData) {
       const parsed = JSON.parse(userData);
-      if (parsed.userType === 'student') {
-        setStudentData(parsed);
+      console.log('Initial user data from localStorage:', parsed);
+      console.log('CV file from localStorage:', parsed.cvFile);
+      
+      if (parsed.userType === 'freelancer') {
+        // Clean up invalid CV data if it exists
+        let cleanedData = { ...parsed };
+        if (cleanedData.cvFile && !isValidCVFile(cleanedData.cvFile)) {
+          console.log('Removing invalid CV data from localStorage:', cleanedData.cvFile);
+          delete cleanedData.cvFile;
+          // Update localStorage with cleaned data
+          localStorage.setItem('userData', JSON.stringify(cleanedData));
+        }
+        
+        setStudentData(cleanedData);
+        // Fetch complete profile data from backend to ensure CV data is up to date
+        fetchCompleteProfile();
       } else {
         navigate('/signin');
       }
@@ -482,6 +901,27 @@ function StudentDashboard() {
       navigate('/signin');
     }
   }, [navigate]);
+
+  // Listen for auth state changes (when user logs in/out)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        const parsed = JSON.parse(userData);
+        if (parsed.userType === 'freelancer') {
+          setStudentData(parsed);
+          // Fetch fresh data from backend
+          fetchCompleteProfile();
+        }
+      }
+    };
+
+    window.addEventListener('authStateChanged', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('authStateChanged', handleAuthChange);
+    };
+  }, []);
 
   // Handle URL query parameter for tab
   useEffect(() => {
@@ -1701,19 +2141,50 @@ function StudentDashboard() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 CV/Resume Upload
               </label>
-              <input
-                type="file"
-                name="cvFile"
-                accept=".pdf,.doc,.docx"
-                onChange={(e) => {
-                  setStudentData(prev => ({
-                    ...prev,
-                    cvFile: e.target.files[0]
-                  }));
-                }}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-              />
-              <p className="text-sm text-gray-500 mt-1">Upload your CV/Resume (PDF, DOC, DOCX)</p>
+              {isValidCVFile(studentData?.cvFile) ? (
+                <div className="border-2 border-green-200 bg-green-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{studentData.cvFile.originalName || 'CV Uploaded'}</p>
+                        <p className="text-sm text-gray-500">File uploaded successfully</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCVDelete}
+                      className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={handleCVUpload}
+                      className="hidden"
+                      disabled={isUploadingCV}
+                    />
+                    <div className="space-y-2">
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600">Click to upload CV/Resume</p>
+                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, JPEG, JPG, PNG (max 5MB)</p>
+                    </div>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1727,16 +2198,59 @@ function StudentDashboard() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                // Save to localStorage and update the profile
-                localStorage.setItem('userData', JSON.stringify(studentData));
-                
-                // Recalculate profile completeness
-                const newCompleteness = calculateProfileCompleteness(studentData);
-                setProfileCompleteness(newCompleteness);
-                
-                alert("Profile updated successfully!");
-                setActiveTab("profile");
+              onClick={async () => {
+                try {
+                  // Get the auth token
+                  const token = localStorage.getItem('userToken');
+                  if (!token) {
+                    alert('Authentication token not found. Please log in again.');
+                    return;
+                  }
+
+                  // Prepare the data to send to backend
+                  const updateData = {
+                    firstName: studentData.firstName,
+                    lastName: studentData.lastName,
+                    email: studentData.email,
+                    phoneNumber: studentData.phoneNumber,
+                    address: studentData.address,
+                    degreeProgram: studentData.degreeProgram,
+                    university: studentData.university,
+                    gpa: studentData.gpa,
+                    graduationYear: studentData.graduationYear,
+                    dateOfBirth: studentData.dateOfBirth
+                  };
+
+                  // Make API call to update profile
+                  const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updateData)
+                  });
+
+                  const result = await response.json();
+
+                  if (result.success) {
+                    // Save to localStorage and update the profile
+                    localStorage.setItem('userData', JSON.stringify(studentData));
+                    
+                    // Recalculate profile completeness
+                    const newCompleteness = calculateProfileCompleteness(studentData);
+                    setProfileCompleteness(newCompleteness);
+                    
+                    alert("Profile updated successfully!");
+                    setActiveTab("profile");
+                  } else {
+                    // Show error message from backend
+                    alert(`Failed to update profile: ${result.message}`);
+                  }
+                } catch (error) {
+                  console.error('Error updating profile:', error);
+                  alert('Failed to update profile. Please try again.');
+                }
               }}
               className="px-6 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600"
             >
@@ -1754,11 +2268,175 @@ function StudentDashboard() {
       <div className="bg-gradient-to-r from-black via-gray-900 to-black text-white rounded-2xl shadow-xl p-8">
         <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
           {/* Profile Picture */}
-          <div className="relative">
-            <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black">
-              {studentData?.firstName && typeof studentData.firstName === 'string' ? studentData.firstName.charAt(0) : 'S'}{studentData?.lastName && typeof studentData.lastName === 'string' ? studentData.lastName.charAt(0) : 'T'}
+          <div className="relative group profile-image-container">
+            {studentData?.profileImage?.url ? (
+              <div className="relative">
+                <img
+                  src={studentData.profileImage.url}
+                  alt="Profile"
+                  className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => setShowProfileImageMenu(!showProfileImageMenu)}
+                />
+                {/* Status indicator */}
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                
+                {/* Click indicator */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Profile Image Options Menu */}
+                {showProfileImageMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowProfileImageMenu(false)} />
+                    
+                    {/* Menu */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowProfileImageMenu(false);
+                            document.getElementById('change-profile-image-input').click();
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setShowProfileImageMenu(false);
+                            if (confirm('Are you sure you want to remove your profile picture?')) {
+                              await handleProfileImageRemove();
+                            }
+                          }}
+                          disabled={isRemovingProfileImage}
+                          className={`w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors ${
+                            isRemovingProfileImage ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {isRemovingProfileImage ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Removing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Remove Photo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* Hidden file input for changing photo */}
+                <input
+                  id="change-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            ) : (
+              <div className="relative">
+                <div 
+                  className={`w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => document.getElementById('upload-profile-image-input').click()}
+                >
+                  {studentData?.firstName && typeof studentData.firstName === 'string' ? studentData.firstName.charAt(0) : 'S'}{studentData?.lastName && typeof studentData.lastName === 'string' ? studentData.lastName.charAt(0) : 'T'}
+                </div>
+                
+                {/* Hidden file input for uploading photo */}
+                <input
+                  id="upload-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            )}
+            
+            {/* Upload progress indicator */}
+            {isUploadingProfileImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
+                <div className="text-center text-white">
+                  <svg className="animate-spin w-8 h-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-sm font-medium">Uploading...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Upload instruction */}
+            <div className="text-center mt-2">
+              <p className="text-xs text-gray-300 opacity-75">
+                {studentData?.profileImage?.url ? 'Click for options' : 'Click to upload photo'}
+              </p>
+
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
           </div>
 
           {/* Profile Info */}
@@ -1795,6 +2473,11 @@ function StudentDashboard() {
             <p className="text-gray-300 max-w-2xl">
               Passionate {studentData?.degreeProgram || 'student'} with expertise in web development and design. 
               Looking for freelance opportunities to gain real-world experience and build a strong portfolio.
+              {studentData?.profileImage?.url && (
+                <span className="block mt-2 text-sm text-green-300">
+                  ✓ Professional profile picture uploaded
+                </span>
+              )}
             </p>
           </div>
 
@@ -1825,9 +2508,10 @@ function StudentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Profile Info */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Personal Information Section */}
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">Academic Information</h3>
+              <h3 className="text-2xl font-bold text-gray-800">Personal Information</h3>
               {profileCompleteness < 100 && (
                 <button
                   onClick={() => setActiveTab("completeProfile")}
@@ -1839,16 +2523,25 @@ function StudentDashboard() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                 <input 
                   type="text" 
-                  value={`${studentData?.firstName || ''} ${studentData?.lastName || ''}`}
+                  value={studentData?.firstName || ''}
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                   readOnly
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                <input 
+                  type="text" 
+                  value={studentData?.lastName || ''}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-blue-200 focus:border-blue-500"
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                 <input 
                   type="email" 
                   value={studentData?.email || ''}
@@ -1856,6 +2549,67 @@ function StudentDashboard() {
                   readOnly
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={studentData?.phoneNumber || 'Not specified'}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                    studentData?.phoneNumber ? 'border-gray-300' : 'border-gray-300 bg-gray-50'
+                  }`}
+                  readOnly
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                <input 
+                  type="text" 
+                  value={studentData?.address || 'Not specified'}
+                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                    studentData?.address ? 'border-gray-300' : 'border-gray-300 bg-gray-50'
+                  }`}
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact & Social Information Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Contact & Social</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.phoneNumber ? 'Phone & Email' : 'Email Only'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">Within 24 hours</span>
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.linkedinProfile || 'Not specified'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Academic Information</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Degree Program
@@ -2006,6 +2760,65 @@ function StudentDashboard() {
             )}
           </div>
 
+          {/* Skills & Expertise Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Skills & Expertise</h3>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Technical Skills
+                  {(!studentData?.technicalSkills || studentData.technicalSkills.length === 0) && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                {isEditingProfile ? (
+                  <input 
+                    type="text" 
+                    value={editedProfileData.technicalSkills ? editedProfileData.technicalSkills.join(', ') : ''}
+                    onChange={(e) => {
+                      const skills = e.target.value.split(',').map(skill => skill.trim()).filter(skill => skill);
+                      setEditedProfileData({...editedProfileData, technicalSkills: skills});
+                    }}
+                    className="w-full px-4 py-3 border-2 border-blue-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Enter skills separated by commas (e.g., React, Node.js, Python)"
+                  />
+                ) : (
+                  <div className={`w-full px-4 py-3 border-2 rounded-xl ${
+                    studentData?.technicalSkills && studentData.technicalSkills.length > 0 ? 'border-gray-300 bg-gray-50' : 'border-red-300 bg-red-50'
+                  }`}>
+                    {studentData?.technicalSkills && studentData.technicalSkills.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {studentData.technicalSkills.map((skill, index) => (
+                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-red-600">No technical skills specified</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Programming Languages</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.programmingSkills || 'Not specified'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Frameworks & Tools</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.frameworks || 'Not specified'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Professional Summary</h3>
             <div className="space-y-4">
@@ -2072,6 +2885,143 @@ function StudentDashboard() {
               )}
             </div>
           </div>
+
+          {/* CV/Resume Upload Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">CV/Resume</h3>
+              <button
+                onClick={refreshUserData}
+                className="px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                title="Refresh CV data"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Debug info - remove this after testing */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
+                <strong>Debug:</strong> CV Data: {JSON.stringify(studentData?.cvFile, null, 2)}
+                <br />
+                <strong>Is Valid CV:</strong> {isValidCVFile(studentData?.cvFile) ? 'Yes' : 'No'}
+              </div>
+            )}
+            
+            <div className="space-y-4">
+              {isValidCVFile(studentData?.cvFile) ? (
+                <div className="border-2 border-green-200 bg-green-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{studentData.cvFile.originalName}</p>
+                        <p className="text-sm text-gray-500">
+                          {(studentData.cvFile.fileSize / 1024 / 1024).toFixed(2)} MB • 
+                          {new Date(studentData.cvFile.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <a
+                        href={`http://localhost:5000/${studentData.cvFile.filePath}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+                      >
+                        View
+                      </a>
+                      <button
+                        onClick={handleCVDelete}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Upload your CV/Resume</h4>
+                  <p className="text-gray-500 mb-4">
+                    Upload your CV or resume in PDF, DOC, DOCX, JPEG, JPG, or PNG format (max 5MB)
+                  </p>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={handleCVUpload}
+                      className="hidden"
+                      disabled={isUploadingCV}
+                    />
+                    <span className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+                      isUploadingCV ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}>
+                      {isUploadingCV ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Uploading...
+                        </>
+                      ) : (
+                        'Choose File'
+                      )}
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Danger Zone - Account Deletion */}
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl shadow-xl p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-red-800">Danger Zone</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-red-700 mb-3">
+                  Once you delete your account, there is no going back. Please be certain.
+                </p>
+                <div className="bg-red-100 border border-red-300 rounded-lg p-4">
+                  <h4 className="font-semibold text-red-800 mb-2">What will be deleted:</h4>
+                  <ul className="text-red-700 text-sm space-y-1">
+                    <li>• Your complete profile and personal information</li>
+                    <li>• All uploaded CV/resume files</li>
+                    <li>• Project history and applications</li>
+                    <li>• Account credentials and authentication</li>
+                    <li>• All associated data and preferences</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <button
+                onClick={handleDeleteAccount}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors duration-200 border-2 border-red-600 hover:border-red-700"
+              >
+                🗑️ Delete My Account
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2087,7 +3037,10 @@ function StudentDashboard() {
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-2xl">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Edit Profile</h2>
+              <div>
+                <h2 className="text-2xl font-bold">Edit Profile</h2>
+                <p className="text-blue-100 text-sm mt-1">Update your profile information (email cannot be changed)</p>
+              </div>
               <button
                 onClick={handleCancelEdit}
                 className="text-white hover:text-gray-200 text-2xl font-bold"
@@ -2099,6 +3052,28 @@ function StudentDashboard() {
           
           {/* Form */}
           <div className="p-6 space-y-6">
+            {/* Information Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-start space-x-3">
+                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">What you can edit:</h4>
+                  <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                    <li>• Personal information (name, phone, address)</li>
+                    <li>• Academic details (degree, university, GPA, graduation year)</li>
+                    <li>• Skills and expertise</li>
+                    <li>• Password (optional)</li>
+                  </ul>
+                  <p className="text-xs text-blue-600 mt-2 font-medium">
+                    <span className="font-semibold">Security Note:</span> Email address cannot be changed for security reasons. 
+                    Contact support if you need to update your email.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Personal Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Personal Information</h3>
@@ -2136,19 +3111,23 @@ function StudentDashboard() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email * 
+                    <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      Read Only
+                    </span>
+                  </label>
                   <input
                     type="email"
                     value={editFormData.email || ''}
-                    onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                      editErrors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter email address"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-100 cursor-not-allowed"
+                    readOnly
+                    disabled
                   />
-                  {editErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{editErrors.email}</p>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed for security reasons</p>
                 </div>
                 
                 <div>
@@ -2231,6 +3210,35 @@ function StudentDashboard() {
                     onChange={(e) => setEditFormData({...editFormData, dateOfBirth: e.target.value})}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                   />
+                </div>
+              </div>
+            </div>
+            
+            {/* Skills & Expertise */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Skills & Expertise</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Technical Skills
+                    {(!editFormData.technicalSkills || editFormData.technicalSkills.length === 0) && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={editFormData.technicalSkills ? editFormData.technicalSkills.join(', ') : ''}
+                    onChange={(e) => {
+                      const skills = e.target.value.split(',').map(skill => skill.trim()).filter(skill => skill);
+                      setEditFormData({...editFormData, technicalSkills: skills});
+                    }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      editErrors.technicalSkills ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter skills separated by commas (e.g., React, Node.js, Python)"
+                  />
+                  {editErrors.technicalSkills && (
+                    <p className="text-red-500 text-sm mt-1">{editErrors.technicalSkills}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">Separate multiple skills with commas</p>
                 </div>
               </div>
             </div>

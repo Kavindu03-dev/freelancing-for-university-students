@@ -1,5 +1,5 @@
-const Service = require('../models/Service');
-const User = require('../models/User');
+import Service from '../models/Service.js';
+import User from '../models/User.js';
 
 // @desc    Create a new service
 // @route   POST /api/services
@@ -22,7 +22,7 @@ const createService = async (req, res) => {
       duration,
       skills,
       portfolio,
-      freelancer: req.user.id
+      freelancer: req.user._id
     });
 
     await service.save();
@@ -224,8 +224,8 @@ const updateService = async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    // Check if user owns the service
-    if (service.freelancer.toString() !== req.user.id) {
+    // Check if user owns the service or is admin
+    if (service.freelancer.toString() !== req.user._id && req.user.userType !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -268,7 +268,7 @@ const deleteService = async (req, res) => {
     }
 
     // Check if user owns the service or is admin
-    if (service.freelancer.toString() !== req.user.id && req.user.userType !== 'admin') {
+    if (service.freelancer.toString() !== req.user._id && req.user.userType !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -304,7 +304,7 @@ const addReview = async (req, res) => {
 
     // Check if user already reviewed this service
     const existingReview = service.reviews.find(
-      review => review.client.toString() === req.user.id
+      review => review.client.toString() === req.user._id
     );
 
     if (existingReview) {
@@ -313,7 +313,7 @@ const addReview = async (req, res) => {
 
     // Add review
     service.reviews.push({
-      client: req.user.id,
+      client: req.user._id,
       rating,
       comment
     });
@@ -337,7 +337,7 @@ const addReview = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   createService,
   getServices,
   getServiceById,

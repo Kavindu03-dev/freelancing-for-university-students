@@ -19,7 +19,7 @@ import ServiceDetailsPage from "./pages/ServiceDetailsPage";
 import MessagesPage from "./pages/MessagesPage";
 import OrdersPage from "./pages/OrdersPage";
 import StaffDashboard from "./pages/StaffDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
+import FreelancerDashboard from "./pages/StudentDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import Footer from "./components/Footer";
 
@@ -40,7 +40,7 @@ function AppContent() {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
+        <Route path="/freelancer/dashboard" element={<FreelancerDashboard />} />
         <Route path="/client/dashboard" element={<ClientDashboard />} />
 
 

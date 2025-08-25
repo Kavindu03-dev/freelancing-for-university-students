@@ -88,8 +88,33 @@ function Login() {
       const result = await response.json();
 
       if (result.success) {
-        // Store user data and token
+        // Store initial user data and token
         setAuthData(result.data.token, result.data);
+        
+        // For freelancers, fetch complete profile data including CV
+        if (result.data.userType === 'freelancer') {
+          try {
+            const profileResponse = await fetch('http://localhost:5000/api/freelancer/profile', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${result.data.token}`
+              }
+            });
+            
+            if (profileResponse.ok) {
+              const profileResult = await profileResponse.json();
+              if (profileResult.success) {
+                // Update localStorage with complete profile data
+                localStorage.setItem('userData', JSON.stringify(profileResult.data));
+                // Dispatch auth change event to update components
+                window.dispatchEvent(new Event('authStateChanged'));
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching complete profile:', error);
+            // Continue with login even if profile fetch fails
+          }
+        }
         
         // Redirect based on user type
         const userType = result.data.userType;
@@ -97,13 +122,13 @@ function Login() {
           navigate('/admin/dashboard');
         } else if (userType === 'universityStaff') {
           navigate('/staff/dashboard');
-        } else if (userType === 'student') {
-          navigate('/student/dashboard');
-        } else if (userType === 'jobSeeker') {
+        } else if (userType === 'freelancer') {
+          navigate('/freelancer/dashboard');
+        } else if (userType === 'client') {
           navigate('/client/dashboard');
         } else {
           // Default redirect for other user types
-          navigate('/profile');
+          navigate('/');
         }
       } else {
         // Handle login errors

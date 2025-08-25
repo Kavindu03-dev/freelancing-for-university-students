@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   // Common fields
@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   userType: {
     type: String,
-    enum: ['student', 'jobSeeker', 'universityStaff'],
+    enum: ['freelancer', 'client', 'universityStaff'],
     required: true
   },
   phoneNumber: {
@@ -54,7 +54,23 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   
-  // Student-specific fields
+  // Profile Image
+  profileImage: {
+    url: {
+      type: String,
+      trim: true
+    },
+    deleteUrl: {
+      type: String,
+      trim: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  
+  // Freelancer-specific fields
   degreeProgram: {
     type: String,
     trim: true
@@ -75,8 +91,37 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  cvFile: {
+    type: {
+      originalName: {
+        type: String,
+        trim: true
+      },
+      fileName: {
+        type: String,
+        trim: true
+      },
+      filePath: {
+        type: String,
+        trim: true
+      },
+      fileSize: {
+        type: Number
+      },
+      mimeType: {
+        type: String,
+        trim: true
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
+    },
+    required: false,
+    default: undefined
+  },
   
-  // Job Seeker/Client fields
+  // Client fields
   organization: {
     type: String,
     trim: true
@@ -200,4 +245,4 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('User', userSchema);
+export default mongoose.model('User', userSchema);

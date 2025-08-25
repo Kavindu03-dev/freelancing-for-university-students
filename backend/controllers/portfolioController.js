@@ -1,7 +1,7 @@
-const User = require('../models/User');
+import User from '../models/User.js';
 
 // @desc    Add portfolio item
-// @route   POST /api/student/portfolio
+// @route   POST /api/freelancer/portfolio
 // @access  Private
 const addPortfolioItem = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ const addPortfolioItem = async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({
@@ -60,7 +60,7 @@ const addPortfolioItem = async (req, res) => {
 };
 
 // @desc    Update portfolio item
-// @route   PUT /api/student/portfolio/:itemId
+// @route   PUT /api/freelancer/portfolio/:itemId
 // @access  Private
 const updatePortfolioItem = async (req, res) => {
   try {
@@ -74,7 +74,7 @@ const updatePortfolioItem = async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({
@@ -102,9 +102,9 @@ const updatePortfolioItem = async (req, res) => {
 
     // Update portfolio item
     portfolioItem.title = title.trim();
-    portfolioItem.description = description ? description.trim() : '';
-    portfolioItem.link = link ? link.trim() : '';
-    portfolioItem.image = image ? image.trim() : '';
+    if (description !== undefined) portfolioItem.description = description.trim();
+    if (link !== undefined) portfolioItem.link = link.trim();
+    if (image !== undefined) portfolioItem.image = image.trim();
 
     await user.save();
 
@@ -126,13 +126,13 @@ const updatePortfolioItem = async (req, res) => {
 };
 
 // @desc    Remove portfolio item
-// @route   DELETE /api/student/portfolio/:itemId
+// @route   DELETE /api/freelancer/portfolio/:itemId
 // @access  Private
 const removePortfolioItem = async (req, res) => {
   try {
     const { itemId } = req.params;
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     
     if (!user) {
       return res.status(404).json({
@@ -170,11 +170,11 @@ const removePortfolioItem = async (req, res) => {
 };
 
 // @desc    Get portfolio items
-// @route   GET /api/student/portfolio
+// @route   GET /api/freelancer/portfolio
 // @access  Private
 const getPortfolioItems = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('portfolio');
+    const user = await User.findById(req.user._id).select('portfolio');
     
     if (!user) {
       return res.status(404).json({
@@ -206,7 +206,7 @@ const getPortfolioItems = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   addPortfolioItem,
   updatePortfolioItem,
   removePortfolioItem,
