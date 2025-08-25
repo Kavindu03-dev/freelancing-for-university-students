@@ -42,6 +42,8 @@ const updateUserProfile = async (req, res) => {
       user.email = req.body.email || user.email;
       user.skills = req.body.skills || user.skills;
       user.bio = req.body.bio || user.bio;
+      user.hourlyRate = req.body.hourlyRate !== undefined ? req.body.hourlyRate : user.hourlyRate;
+      user.professionalSummary = req.body.professionalSummary || user.professionalSummary;
 
       const updatedUser = await user.save();
 
@@ -55,7 +57,9 @@ const updateUserProfile = async (req, res) => {
           email: updatedUser.email,
           userType: updatedUser.userType,
           skills: updatedUser.skills,
-          bio: updatedUser.bio
+          bio: updatedUser.bio,
+          hourlyRate: updatedUser.hourlyRate,
+          professionalSummary: updatedUser.professionalSummary
         }
       });
     } else {
