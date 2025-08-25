@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Signup() {
-  const [userType, setUserType] = useState("student");
+  const [userType, setUserType] = useState("freelancer");
   const [formData, setFormData] = useState({
     // Common fields
     email: "",
@@ -881,11 +881,11 @@ function Signup() {
     if (!acceptedTerms) newErrors.terms = "You must accept the terms and conditions";
 
     // User type specific validations
-    if (userType === "student") {
+    if (userType === "freelancer") {
       // Removed validation for degreeProgram, university, gpa, graduationYear
     }
 
-    if (userType === "jobSeeker") {
+    if (userType === "client") {
       if (!formData.organization) newErrors.organization = "Organization is required";
       if (!formData.contactPhone) newErrors.contactPhone = "Contact phone is required";
     }
@@ -1419,7 +1419,181 @@ function Signup() {
               </>
   );
 
+  const renderClientFields = () => (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Organization *
+          </label>
+          <input
+            type="text"
+            name="organization"
+            value={formData.organization}
+            onChange={handleChange}
+            placeholder="Company or organization name"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.organization ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.organization && (
+            <p className="text-red-500 text-sm mt-1">{errors.organization}</p>
+          )}
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Job Title
+          </label>
+          <input
+            type="text"
+            name="jobTitle"
+            value={formData.jobTitle}
+            onChange={handleChange}
+            placeholder="e.g., Project Manager, CEO"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+        </div>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Contact Phone *
+          </label>
+          <input
+            type="tel"
+            name="contactPhone"
+            value={formData.contactPhone}
+            onChange={handleChange}
+            placeholder="+94 71 123 4567"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.contactPhone ? 'border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.contactPhone && (
+            <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Company Size
+          </label>
+          <select
+            name="companySize"
+            value={formData.companySize || ""}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Company Size</option>
+            <option value="1-10">1-10 employees</option>
+            <option value="11-50">11-50 employees</option>
+            <option value="51-200">51-200 employees</option>
+            <option value="201-500">201-500 employees</option>
+            <option value="501-1000">501-1000 employees</option>
+            <option value="1000+">1000+ employees</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Industry
+          </label>
+          <select
+            name="industry"
+            value={formData.industry || ""}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          >
+            <option value="">Select Industry</option>
+            <option value="Technology">Technology</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Finance">Finance</option>
+            <option value="Education">Education</option>
+            <option value="Manufacturing">Manufacturing</option>
+            <option value="Retail">Retail</option>
+            <option value="Real Estate">Real Estate</option>
+            <option value="Media">Media</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Energy">Energy</option>
+            <option value="Consulting">Consulting</option>
+            <option value="Non-Profit">Non-Profit</option>
+            <option value="Government">Government</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Website
+          </label>
+          <input
+            type="url"
+            name="website"
+            value={formData.website || ""}
+            onChange={handleChange}
+            placeholder="https://www.company.com"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Company Description
+        </label>
+        <textarea
+          name="companyDescription"
+          value={formData.companyDescription || ""}
+          onChange={handleChange}
+          placeholder="Describe your company, its mission, and what you do..."
+          rows="3"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Preferred Skills
+        </label>
+        <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
+          <div className="flex flex-wrap gap-2 mb-3">
+            {selectedSkills.map(skill => (
+              <span key={skill} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2">
+                {skill}
+                <button
+                  type="button"
+                  onClick={() => handleSkillToggle(skill)}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
+            {availableSkills.map(skill => (
+              <button
+                key={skill}
+                type="button"
+                onClick={() => handleSkillToggle(skill)}
+                className={`px-2 py-1 text-xs rounded border transition-colors ${
+                  selectedSkills.includes(skill)
+                    ? 'bg-green-500 text-white border-green-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 hover:bg-green-50'
+                }`}
+              >
+                {skill}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 
   if (verificationSent) {
     return (
@@ -1496,8 +1670,8 @@ function Signup() {
                   </label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {[
-                { value: "student", label: "Student", icon: "🎓" },
-                { value: "jobSeeker", label: "Job Seeker", icon: "💼" },
+                { value: "freelancer", label: "Freelancer", icon: "🎓" },
+                { value: "client", label: "Client", icon: "💼" },
                 { value: "universityStaff", label: "Staff", icon: "👨‍🏫" }
               ].map(type => (
                           <button
@@ -1679,9 +1853,9 @@ function Signup() {
                 </div>
 
             {/* User Type Specific Fields */}
-            {userType === "student" && renderStudentFields()}
-            {userType === "jobSeeker" && renderJobSeekerFields()}
-            {userType === "universityStaff" && renderUniversityStaffFields()}
+                          {userType === "freelancer" && renderStudentFields()}
+              {userType === "client" && renderClientFields()}
+              {userType === "universityStaff" && renderUniversityStaffFields()}
 
             {/* Terms and Conditions */}
             <div className="flex items-start space-x-3">

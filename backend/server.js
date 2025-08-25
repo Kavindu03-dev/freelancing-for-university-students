@@ -1,6 +1,10 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+import express from 'express';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import freelancerRoutes from './routes/student.js';
+import serviceRoutes from './routes/services.js';
 
 // Load environment variables
 dotenv.config();
@@ -13,6 +17,9 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -27,10 +34,10 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/student', require('./routes/student'));
-app.use('/api/services', require('./routes/services'));
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/freelancer', freelancerRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

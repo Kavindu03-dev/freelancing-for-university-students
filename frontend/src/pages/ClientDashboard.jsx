@@ -232,7 +232,7 @@ function ClientDashboard() {
     const userData = localStorage.getItem('userData');
     if (userData) {
       const parsed = JSON.parse(userData);
-      if (parsed.userType === 'jobSeeker') {
+              if (parsed.userType === 'client') {
         setClientData(parsed);
       } else {
         navigate('/signin');

@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 const protect = async (req, res, next) => {
   let token;
@@ -15,22 +15,27 @@ const protect = async (req, res, next) => {
       // Get user from the token
       req.user = await User.findById(decoded.id).select('-password');
 
+      if (!req.user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+
       next();
     } catch (error) {
       console.error('Token verification error:', error);
-      res.status(401).json({ 
+      return res.status(401).json({ 
         success: false, 
         message: 'Not authorized, token failed' 
       });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ 
+  } else {
+    return res.status(401).json({ 
       success: false, 
       message: 'Not authorized, no token' 
     });
   }
 };
 
-module.exports = { protect };
+export default { protect };

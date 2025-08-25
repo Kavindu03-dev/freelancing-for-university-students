@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const serviceSchema = new mongoose.Schema({
   title: {
@@ -121,4 +121,4 @@ serviceSchema.methods.calculateAverageRating = function() {
   this.totalReviews = this.reviews.length;
 };
 
-module.exports = mongoose.model('Service', serviceSchema);
+export default mongoose.model('Service', serviceSchema);
