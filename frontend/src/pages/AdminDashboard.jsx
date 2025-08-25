@@ -48,7 +48,7 @@ function AdminDashboard() {
     { id: 5, title: "Digital Marketing Campaign", client: "Growth Co", freelancer: "Emily Rodriguez", status: "Completed", budget: "$1200", progress: 100, category: "Marketing" }
   ]);
 
-  // Mock data for pending services
+  // Mock data for pending services of the admin dashboard
   const [pendingServices] = useState([
     { 
       id: 1, 
@@ -79,7 +79,7 @@ function AdminDashboard() {
     }
   ]);
 
-  // Mock data for reported content
+  // Mock data for reported content of the admin dashboard
   const [reportedContent] = useState([
     {
       id: 1,
@@ -114,7 +114,7 @@ function AdminDashboard() {
     }
   ]);
 
-  // Mock data for university and faculty analytics
+  // Mock data for university and faculty analytics of the admin dashboard
   const [universityStats] = useState([
     { name: "MIT", users: 245, projects: 156, revenue: 12500, growth: 15.2 },
     { name: "Stanford", users: 198, projects: 134, revenue: 10800, growth: 12.8 },
@@ -140,7 +140,7 @@ function AdminDashboard() {
   ]);
 
   useEffect(() => {
-    // Check if admin is logged in
+    // Check if admin is logged in of the admin dashboard
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
     const adminEmail = localStorage.getItem('adminEmail');
     
@@ -149,7 +149,7 @@ function AdminDashboard() {
       return;
     }
     
-    setAdminUsername(adminEmail); // Use email as username for display
+    setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
   }, [navigate]);
 
   const handleLogout = () => {
