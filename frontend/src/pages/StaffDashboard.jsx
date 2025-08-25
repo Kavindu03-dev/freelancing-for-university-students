@@ -4,6 +4,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 function StaffDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [staffData, setStaffData] = useState(null);
+  const [professionalSummary, setProfessionalSummary] = useState({
+    bio: '',
+    areasOfExpertise: ''
+  });
+  const [isSavingSummary, setIsSavingSummary] = useState(false);
+  const [summarySaveMessage, setSummarySaveMessage] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -55,6 +61,16 @@ function StaffDashboard() {
     }
   }, [location.search]);
 
+  // Initialize professional summary state when staff data is loaded
+  useEffect(() => {
+    if (staffData) {
+      setProfessionalSummary({
+        bio: staffData.bio || '',
+        areasOfExpertise: staffData.professionalSummary || ''
+      });
+    }
+  }, [staffData]);
+
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
@@ -71,6 +87,64 @@ function StaffDashboard() {
     // Simulate rejection process
     console.log(`Rejecting student ${studentId}`);
     // In real implementation, this would update the database
+  };
+
+  const handleSaveProfessionalSummary = async () => {
+    try {
+      setIsSavingSummary(true);
+      setSummarySaveMessage('');
+
+      // Get the auth token
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        setSummarySaveMessage('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      // Prepare the data to send to backend
+      const updateData = {
+        bio: professionalSummary.bio,
+        professionalSummary: professionalSummary.areasOfExpertise
+      };
+
+      // Make API call to update profile
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the staff data with edited values
+        const updatedData = { 
+          ...staffData, 
+          bio: updateData.bio,
+          professionalSummary: updateData.professionalSummary
+        };
+        
+        setStaffData(updatedData);
+        
+        // Save to localStorage
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        // Show success message
+        setSummarySaveMessage('Professional summary saved successfully!');
+        setTimeout(() => setSummarySaveMessage(''), 3000);
+      } else {
+        // Show error message from backend
+        setSummarySaveMessage(`Failed to save: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error saving professional summary:', error);
+      setSummarySaveMessage('Failed to save. Please try again.');
+    } finally {
+      setIsSavingSummary(false);
+    }
   };
 
   const renderOverview = () => (
@@ -379,8 +453,7 @@ function StaffDashboard() {
             </div>
 
             <p className="text-gray-300 max-w-2xl">
-              Dedicated university staff member committed to supporting student success and maintaining academic standards. 
-              Experienced in student verification, analytics, and academic oversight.
+              {staffData?.bio || 'Dedicated university staff member committed to supporting student success and maintaining academic standards. Experienced in student verification, analytics, and academic oversight.'}
             </p>
           </div>
 
@@ -451,7 +524,8 @@ function StaffDashboard() {
                   rows="4"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="Tell us about your role and responsibilities..."
-                  defaultValue="Experienced university staff member with expertise in student services, academic oversight, and institutional support. Committed to fostering student success and maintaining academic excellence."
+                  value={professionalSummary.bio || staffData?.bio || ''}
+                  onChange={(e) => setProfessionalSummary(prev => ({ ...prev, bio: e.target.value }))}
                 />
               </div>
               <div>
@@ -460,8 +534,45 @@ function StaffDashboard() {
                   type="text" 
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                   placeholder="e.g., Student Services, Academic Affairs, Research Support"
-                  defaultValue="Student Services, Academic Affairs, Research Support"
+                  value={professionalSummary.areasOfExpertise || staffData?.professionalSummary || ''}
+                  onChange={(e) => setProfessionalSummary(prev => ({ ...prev, areasOfExpertise: e.target.value }))}
                 />
+              </div>
+              
+              {/* Save Message */}
+              {summarySaveMessage && (
+                <div className={`p-3 rounded-lg text-sm font-medium ${
+                  summarySaveMessage.includes('successfully') 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {summarySaveMessage}
+                </div>
+              )}
+              
+              {/* Save Button */}
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={handleSaveProfessionalSummary}
+                  disabled={isSavingSummary}
+                  className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 ${
+                    isSavingSummary
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105'
+                  }`}
+                >
+                  {isSavingSummary ? (
+                    <div className="flex items-center space-x-2">
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Saving...</span>
+                    </div>
+                  ) : (
+                    'Save Professional Summary'
+                  )}
+                </button>
               </div>
             </div>
           </div>
