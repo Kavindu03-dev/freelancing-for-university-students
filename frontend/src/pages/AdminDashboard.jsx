@@ -5,7 +5,6 @@ import { logout } from "../utils/auth";
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState("all");
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -139,17 +138,167 @@ function AdminDashboard() {
     { name: "Digital Marketing", projects: 167, revenue: 9800, successRate: 87.3, avgBudget: 1200 }
   ]);
 
+  // Skills management state
+  const [skills, setSkills] = useState([]);
+  const [showAddSkillModal, setShowAddSkillModal] = useState(false);
+  const [newSkill, setNewSkill] = useState({
+    name: '',
+    description: '',
+    category: '',
+    icon: '⚡',
+    avgPrice: 0,
+    popularity: 0
+  });
+  const [skillCategories] = useState([
+    'Programming & Tech',
+    'Design & Creative',
+    'Digital Marketing',
+    'Writing & Translation',
+    'Video & Animation',
+    'Music & Audio',
+    'Business & Consulting',
+    'Data & Analytics'
+  ]);
+
+  // Skills management functions
+  const fetchSkills = async () => {
+    try {
+      console.log('🔍 fetchSkills called');
+      const adminToken = localStorage.getItem('adminToken');
+      console.log('🔍 adminToken:', adminToken ? 'exists' : 'missing');
+      
+      const response = await fetch('http://localhost:5000/api/skills/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+      
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Skills data received:', data);
+        setSkills(data.data || []);
+        console.log('🔍 Skills state updated with:', data.data || []);
+      } else {
+        const errorData = await response.json();
+        console.error('🔍 Error response:', errorData);
+      }
+    } catch (error) {
+      console.error('🔍 Error fetching skills:', error);
+    }
+  };
+
+  const handleAddSkill = async (e) => {
+    e.preventDefault();
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('http://localhost:5000/api/skills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify(newSkill)
+      });
+
+      if (response.ok) {
+        setShowAddSkillModal(false);
+        setNewSkill({
+          name: '',
+          description: '',
+          category: '',
+          icon: '⚡',
+          avgPrice: 0,
+          popularity: 0
+        });
+        fetchSkills();
+      }
+    } catch (error) {
+      console.error('Error adding skill:', error);
+    }
+  };
+
+  const handleDeleteSkill = async (skillId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Update local state to mark skill as inactive
+        setSkills(skills.map(skill => 
+          skill._id === skillId ? { ...skill, isActive: false } : skill
+        ));
+      }
+    } catch (error) {
+      console.error('Error deleting skill:', error);
+    }
+  };
+
+  const handleRestoreSkill = async (skillId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/restore`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Update local state to mark skill as active
+        setSkills(skills.map(skill => 
+          skill._id === skillId ? { ...skill, isActive: true } : skill
+        ));
+      }
+    } catch (error) {
+      console.error('Error restoring skill:', error);
+    }
+    };
+
+  const handlePermanentlyDeleteSkill = async (skillId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/permanent`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Remove the skill completely from the local state
+        setSkills(skills.filter(skill => skill._id !== skillId));
+      }
+    } catch (error) {
+      console.error('Error permanently deleting skill:', error);
+    }
+  };
+
   useEffect(() => {
+    console.log('🔍 useEffect triggered');
     // Check if admin is logged in of the admin dashboard
     const isLoggedIn = localStorage.getItem('adminLoggedIn');
     const adminEmail = localStorage.getItem('adminEmail');
     
+    console.log('🔍 isLoggedIn:', isLoggedIn);
+    console.log('🔍 adminEmail:', adminEmail);
+    
     if (!isLoggedIn || !adminEmail) {
+      console.log('🔍 Redirecting to admin login');
       navigate('/admin/login');
       return;
     }
     
+    console.log('🔍 Admin is logged in, setting username and fetching skills');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
+    fetchSkills(); // Fetch skills when component mounts
   }, [navigate]);
 
   const handleLogout = () => {
@@ -774,6 +923,137 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderSkills = () => {
+    console.log('🔍 renderSkills called with skills:', skills);
+    return (
+    <div className="space-y-8">
+      {/* Skills Management Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Skills Management</h3>
+            <p className="text-gray-600 mt-1">Manage platform skills and categories</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
+              {skills.filter(s => s.isActive).length} Active / {skills.length} Total
+            </span>
+            <button 
+              onClick={() => setShowAddSkillModal(true)}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Add Skill</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Skills Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Skill</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Category</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Popularity</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Avg Price</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {skills.map(skill => (
+                <tr key={skill._id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
+                  !skill.isActive ? 'bg-gray-100 opacity-75' : ''
+                }`}>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{skill.icon}</span>
+                      <div>
+                        <div className="font-medium text-gray-900">{skill.name}</div>
+                        <div className="text-sm text-gray-500">{skill.description}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {skill.category}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-yellow-500 h-2 rounded-full" 
+                          style={{ width: `${Math.min(skill.popularity, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-600">{skill.popularity}%</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="font-medium text-gray-900">${skill.avgPrice}</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      skill.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {skill.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex space-x-2">
+                      {skill.isActive ? (
+                        <button
+                          onClick={() => handleDeleteSkill(skill._id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleRestoreSkill(skill._id)}
+                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handlePermanentlyDeleteSkill(skill._id)}
+                            className="text-red-800 hover:text-red-900 text-sm font-medium"
+                          >
+                            Permanent Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {skills.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No skills yet</h3>
+              <p className="text-gray-600 max-w-md mx-auto">Start by adding the first skill to your platform.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  };
+
   const renderModeration = () => (
     <div className="space-y-8">
       {/* Content Moderation Header */}
@@ -1253,6 +1533,7 @@ function AdminDashboard() {
                 { id: "users", name: "Users", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" },
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
+                { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
                 { id: "moderation", name: "Moderation", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
                 { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
@@ -1298,13 +1579,131 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-            {activeTab === "services" && renderServices()}
-            {activeTab === "moderation" && renderModeration()}
-            {activeTab === "analytics" && renderAnalytics()}
-            {activeTab === "settings" && renderSettings()}
+                    {activeTab === "services" && renderServices()}
+        {activeTab === "skills" && renderSkills()}
+        {activeTab === "moderation" && renderModeration()}
+        {activeTab === "analytics" && renderAnalytics()}
+        {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>
+
+      {/* Skills Modal */}
+      {showAddSkillModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Skill</h3>
+              <button
+                onClick={() => setShowAddSkillModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSkill} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Skill Name</label>
+                <input
+                  type="text"
+                  value={newSkill.name}
+                  onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., React Development"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newSkill.description}
+                  onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the skill..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={newSkill.category}
+                  onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {skillCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <input
+                  type="text"
+                  value={newSkill.icon}
+                  onChange={(e) => setNewSkill({...newSkill, icon: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="⚡"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Average Price ($)</label>
+                  <input
+                    type="number"
+                    value={newSkill.avgPrice}
+                    onChange={(e) => setNewSkill({...newSkill, avgPrice: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Popularity (%)</label>
+                  <input
+                    type="number"
+                    value={newSkill.popularity}
+                    onChange={(e) => setNewSkill({...newSkill, popularity: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Add Skill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSkillModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

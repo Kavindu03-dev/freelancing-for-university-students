@@ -5,254 +5,53 @@ function SkillsPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSkills, setFilteredSkills] = useState([]);
+  const [skillsData, setSkillsData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // Skills data organized by categories
-  const skillsData = {
-    'Programming & Tech': [
-      {
-        name: 'JavaScript',
-        description: 'Dynamic web programming language',
-        freelancers: 1250,
-        avgPrice: 45,
-        popularity: 95,
-        icon: '⚡'
-      },
-      {
-        name: 'Python',
-        description: 'Versatile programming for web, data science, AI',
-        freelancers: 980,
-        avgPrice: 50,
-        popularity: 92,
-        icon: '🐍'
-      },
-      {
-        name: 'React',
-        description: 'Modern frontend JavaScript library',
-        freelancers: 850,
-        avgPrice: 55,
-        popularity: 88,
-        icon: '⚛️'
-      },
-      {
-        name: 'Node.js',
-        description: 'Server-side JavaScript runtime',
-        freelancers: 720,
-        avgPrice: 52,
-        popularity: 85,
-        icon: '🟢'
-      },
-      {
-        name: 'PHP',
-        description: 'Server-side web development',
-        freelancers: 1100,
-        avgPrice: 40,
-        popularity: 78,
-        icon: '🐘'
-      },
-      {
-        name: 'Java',
-        description: 'Enterprise and mobile development',
-        freelancers: 890,
-        avgPrice: 60,
-        popularity: 82,
-        icon: '☕'
+  // Fetch skills from backend
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:5000/api/skills');
+        if (response.ok) {
+          const data = await response.json();
+          const skills = data.data || [];
+          
+          // Group skills by category
+          const groupedSkills = skills.reduce((acc, skill) => {
+            if (!acc[skill.category]) {
+              acc[skill.category] = [];
+            }
+            acc[skill.category].push({
+              ...skill,
+              freelancers: skill.freelancers || Math.floor(Math.random() * 1000) + 200 // Fallback for demo
+            });
+            return acc;
+          }, {});
+          
+          setSkillsData(groupedSkills);
+        }
+      } catch (error) {
+        console.error('Error fetching skills:', error);
+        // Fallback to default data if API fails
+        setSkillsData({
+          'Programming & Tech': [
+            { name: 'JavaScript', description: 'Dynamic web programming language', freelancers: 1250, avgPrice: 45, popularity: 95, icon: '⚡' },
+            { name: 'Python', description: 'Versatile programming for web, data science, AI', freelancers: 980, avgPrice: 50, popularity: 92, icon: '🐍' }
+          ],
+          'Design & Creative': [
+            { name: 'Adobe Photoshop', description: 'Professional image editing and design', freelancers: 2100, avgPrice: 35, popularity: 96, icon: '🎨' },
+            { name: 'Figma', description: 'UI/UX design and prototyping', freelancers: 1200, avgPrice: 45, popularity: 91, icon: '🎯' }
+          ]
+        });
+      } finally {
+        setLoading(false);
       }
-    ],
-    'Design & Creative': [
-      {
-        name: 'Adobe Photoshop',
-        description: 'Professional image editing and design',
-        freelancers: 2100,
-        avgPrice: 35,
-        popularity: 96,
-        icon: '🎨'
-      },
-      {
-        name: 'Adobe Illustrator',
-        description: 'Vector graphics and logo design',
-        freelancers: 1650,
-        avgPrice: 40,
-        popularity: 89,
-        icon: '✏️'
-      },
-      {
-        name: 'Figma',
-        description: 'UI/UX design and prototyping',
-        freelancers: 1200,
-        avgPrice: 45,
-        popularity: 91,
-        icon: '🎯'
-      },
-      {
-        name: 'Adobe After Effects',
-        description: 'Motion graphics and animation',
-        freelancers: 780,
-        avgPrice: 65,
-        popularity: 75,
-        icon: '🎬'
-      },
-      {
-        name: 'Sketch',
-        description: 'Digital design toolkit',
-        freelancers: 650,
-        avgPrice: 50,
-        popularity: 70,
-        icon: '💎'
-      }
-    ],
-    'Digital Marketing': [
-      {
-        name: 'Google Ads',
-        description: 'Pay-per-click advertising campaigns',
-        freelancers: 950,
-        avgPrice: 55,
-        popularity: 87,
-        icon: '📊'
-      },
-      {
-        name: 'Facebook Marketing',
-        description: 'Social media advertising and management',
-        freelancers: 1300,
-        avgPrice: 40,
-        popularity: 84,
-        icon: '📱'
-      },
-      {
-        name: 'SEO',
-        description: 'Search engine optimization',
-        freelancers: 1100,
-        avgPrice: 45,
-        popularity: 90,
-        icon: '🔍'
-      },
-      {
-        name: 'Content Marketing',
-        description: 'Strategic content creation and promotion',
-        freelancers: 820,
-        avgPrice: 42,
-        popularity: 81,
-        icon: '📝'
-      },
-      {
-        name: 'Email Marketing',
-        description: 'Email campaign design and automation',
-        freelancers: 690,
-        avgPrice: 38,
-        popularity: 76,
-        icon: '📧'
-      }
-    ],
-    'Writing & Translation': [
-      {
-        name: 'Content Writing',
-        description: 'Blog posts, articles, and web content',
-        freelancers: 1800,
-        avgPrice: 25,
-        popularity: 93,
-        icon: '✍️'
-      },
-      {
-        name: 'Copywriting',
-        description: 'Marketing and sales copy',
-        freelancers: 1200,
-        avgPrice: 35,
-        popularity: 86,
-        icon: '💬'
-      },
-      {
-        name: 'Technical Writing',
-        description: 'Documentation and technical content',
-        freelancers: 550,
-        avgPrice: 48,
-        popularity: 72,
-        icon: '📋'
-      },
-      {
-        name: 'Translation',
-        description: 'Multi-language translation services',
-        freelancers: 920,
-        avgPrice: 30,
-        popularity: 79,
-        icon: '🌍'
-      },
-      {
-        name: 'Proofreading',
-        description: 'Grammar and style correction',
-        freelancers: 680,
-        avgPrice: 22,
-        popularity: 74,
-        icon: '🔍'
-      }
-    ],
-    'Video & Animation': [
-      {
-        name: 'Video Editing',
-        description: 'Professional video post-production',
-        freelancers: 1100,
-        avgPrice: 50,
-        popularity: 88,
-        icon: '🎞️'
-      },
-      {
-        name: '2D Animation',
-        description: 'Animated graphics and explainer videos',
-        freelancers: 650,
-        avgPrice: 65,
-        popularity: 77,
-        icon: '🎭'
-      },
-      {
-        name: '3D Animation',
-        description: 'Three-dimensional animation and modeling',
-        freelancers: 420,
-        avgPrice: 85,
-        popularity: 68,
-        icon: '🎲'
-      },
-      {
-        name: 'Motion Graphics',
-        description: 'Animated design elements',
-        freelancers: 580,
-        avgPrice: 70,
-        popularity: 74,
-        icon: '⚡'
-      }
-    ],
-    'Music & Audio': [
-      {
-        name: 'Voice Over',
-        description: 'Professional voice recording',
-        freelancers: 890,
-        avgPrice: 45,
-        popularity: 82,
-        icon: '🎤'
-      },
-      {
-        name: 'Audio Editing',
-        description: 'Sound mixing and mastering',
-        freelancers: 520,
-        avgPrice: 40,
-        popularity: 71,
-        icon: '🎧'
-      },
-      {
-        name: 'Music Production',
-        description: 'Original music composition',
-        freelancers: 380,
-        avgPrice: 75,
-        popularity: 65,
-        icon: '🎵'
-      },
-      {
-        name: 'Podcast Production',
-        description: 'Podcast editing and production',
-        freelancers: 290,
-        avgPrice: 55,
-        popularity: 69,
-        icon: '🎙️'
-      }
-    ]
-  };
+    };
+
+    fetchSkills();
+  }, []);
 
   const categories = ['All', ...Object.keys(skillsData)];
 
@@ -352,14 +151,21 @@ function SkillsPage() {
       {/* Skills Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              {selectedCategory === 'All' ? 'All Skills' : selectedCategory}
-            </h2>
-            <p className="text-gray-600">
-              {filteredSkills.length} skills found
-            </p>
-          </div>
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-semibold text-gray-600">Loading skills...</h3>
+            </div>
+          ) : (
+            <>
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                  {selectedCategory === 'All' ? 'All Skills' : selectedCategory}
+                </h2>
+                <p className="text-gray-600">
+                  {filteredSkills.length} skills found
+                </p>
+              </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredSkills.map((skill, index) => (
@@ -427,6 +233,8 @@ function SkillsPage() {
               <h3 className="text-xl font-semibold text-gray-500 mb-2">No skills found</h3>
               <p className="text-gray-400">Try adjusting your search or category filter</p>
             </div>
+          )}
+            </>
           )}
         </div>
       </section>
