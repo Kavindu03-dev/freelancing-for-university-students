@@ -108,6 +108,26 @@ function ClientDashboard() {
   const [recommendedFreelancers, setRecommendedFreelancers] = useState([]);
   const [loadingFreelancers, setLoadingFreelancers] = useState(true);
   const [freelancersError, setFreelancersError] = useState(null);
+  
+  // Edit profile state
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    organization: '',
+    jobTitle: '',
+    contactPhone: '',
+    projectCategories: [],
+    companySize: '',
+    industry: '',
+    website: '',
+    companyDescription: ''
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
 
   // Recommendation algorithms
   const getRecommendedFreelancers = (postRequirements = null) => {
@@ -239,6 +259,87 @@ function ClientDashboard() {
     });
     
     return Math.min(score, 100);
+  };
+
+  // Edit profile functions
+  const handleEditProfile = () => {
+    setEditFormData({
+      firstName: clientData?.firstName || '',
+      lastName: clientData?.lastName || '',
+      email: clientData?.email || '',
+      phoneNumber: clientData?.phoneNumber || '',
+      address: clientData?.address || '',
+      organization: clientData?.organization || '',
+      jobTitle: clientData?.jobTitle || '',
+      contactPhone: clientData?.contactPhone || '',
+      projectCategories: clientData?.projectCategories || [],
+      companySize: clientData?.companySize || '',
+      industry: clientData?.industry || '',
+      website: clientData?.website || '',
+      companyDescription: clientData?.companyDescription || ''
+    });
+    setEditErrors({});
+    setShowEditProfile(true);
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    
+    if (!editFormData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!editFormData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!editFormData.email.trim()) errors.email = 'Email is required';
+    if (!editFormData.organization.trim()) errors.organization = 'Organization is required';
+    if (!editFormData.jobTitle.trim()) errors.jobTitle = 'Job title is required';
+    
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateEditForm()) return;
+
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        const updatedData = { ...clientData, ...editFormData };
+        setClientData(updatedData);
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        setShowEditProfile(false);
+        alert('Profile updated successfully!');
+      } else {
+        alert(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditProfile(false);
+    setEditErrors({});
   };
 
   const handleLogout = () => {
@@ -1070,7 +1171,10 @@ function ClientDashboard() {
 
           {/* Action Buttons */}
           <div className="flex flex-col space-y-3">
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors">
+            <button 
+              onClick={handleEditProfile}
+              className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
               Edit Profile
             </button>
             <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
@@ -1268,6 +1372,241 @@ function ClientDashboard() {
             {activeTab === "profile" && renderProfile()}
           </div>
         </div>
+
+        {/* Edit Profile Modal */}
+        {showEditProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-2xl font-bold text-gray-900">Edit Profile</h3>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Personal Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.firstName}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                          editErrors.firstName ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {editErrors.firstName && (
+                        <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.lastName}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                          editErrors.lastName ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {editErrors.lastName && (
+                        <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        value={editFormData.email}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                          editErrors.email ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {editErrors.email && (
+                        <p className="text-red-500 text-sm mt-1">{editErrors.email}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={editFormData.phoneNumber}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <input
+                        type="text"
+                        value={editFormData.address}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Organization <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.organization}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, organization: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                          editErrors.organization ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {editErrors.organization && (
+                        <p className="text-red-500 text-sm mt-1">{editErrors.organization}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Job Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.jobTitle}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, jobTitle: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                          editErrors.jobTitle ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                      />
+                      {editErrors.jobTitle && (
+                        <p className="text-red-500 text-sm mt-1">{editErrors.jobTitle}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
+                      <input
+                        type="tel"
+                        value={editFormData.contactPhone}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, contactPhone: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Company Size</label>
+                      <select
+                        value={editFormData.companySize}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, companySize: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      >
+                        <option value="">Select company size</option>
+                        <option value="1-10 employees">1-10 employees</option>
+                        <option value="11-50 employees">11-50 employees</option>
+                        <option value="51-100 employees">51-100 employees</option>
+                        <option value="101-500 employees">101-500 employees</option>
+                        <option value="500+ employees">500+ employees</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                      <input
+                        type="text"
+                        value={editFormData.industry}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, industry: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                        placeholder="e.g., Technology, Healthcare, Education"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                      <input
+                        type="url"
+                        value={editFormData.website}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, website: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Company Description</label>
+                      <textarea
+                        rows="3"
+                        value={editFormData.companyDescription}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, companyDescription: e.target.value }))}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                        placeholder="Describe your company and what you do..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Categories */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Project Categories</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {['Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing', 'Data Analysis', 'AI/ML', 'Other'].map(category => (
+                      <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editFormData.projectCategories.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditFormData(prev => ({
+                                ...prev,
+                                projectCategories: [...prev.projectCategories, category]
+                              }));
+                            } else {
+                              setEditFormData(prev => ({
+                                ...prev,
+                                projectCategories: prev.projectCategories.filter(cat => cat !== category)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="p-6 border-t border-gray-200 flex justify-end space-x-4">
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isSaving}
+                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
