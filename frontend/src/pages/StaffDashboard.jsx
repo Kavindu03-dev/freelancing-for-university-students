@@ -10,6 +10,25 @@ function StaffDashboard() {
   });
   const [isSavingSummary, setIsSavingSummary] = useState(false);
   const [summarySaveMessage, setSummarySaveMessage] = useState('');
+  
+  // Edit profile state
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    staffRole: '',
+    department: '',
+    employeeId: '',
+    experience: '',
+    qualification: '',
+    bio: '',
+    professionalSummary: ''
+  });
+  const [editErrors, setEditErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,11 +50,8 @@ function StaffDashboard() {
     { id: 5, name: "Alex Chen", email: "alex@cmu.edu", university: "CMU", degreeProgram: "Computer Science", gpa: "3.9", status: "Verified", projects: 15, revenue: 8900 }
   ]);
 
-  const [verificationRequests] = useState([
-    { id: 1, studentName: "Mike Johnson", email: "mike@harvard.edu", university: "Harvard", degreeProgram: "Business", gpa: "3.7", documents: ["Transcript", "ID Card"], submittedAt: "2024-01-16" },
-    { id: 2, studentName: "Emily Rodriguez", email: "emily@mit.edu", university: "MIT", degreeProgram: "Engineering", gpa: "3.5", documents: ["Transcript", "Enrollment Letter"], submittedAt: "2024-01-15" },
-    { id: 3, studentName: "David Kim", email: "david@stanford.edu", university: "Stanford", degreeProgram: "Computer Science", gpa: "3.8", documents: ["Transcript", "Student ID"], submittedAt: "2024-01-14" }
-  ]);
+  const [verificationRequests, setVerificationRequests] = useState([]);
+  const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
 
   useEffect(() => {
     // Check if staff is logged in
@@ -71,10 +87,97 @@ function StaffDashboard() {
     }
   }, [staffData]);
 
+  // Fetch verification requests when component mounts
+  useEffect(() => {
+    if (staffData) {
+      fetchVerificationRequests();
+    }
+  }, [staffData]);
+
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
     navigate('/');
+  };
+
+  // Edit profile functions
+  const handleEditProfile = () => {
+    setEditFormData({
+      firstName: staffData?.firstName || '',
+      lastName: staffData?.lastName || '',
+      email: staffData?.email || '',
+      phoneNumber: staffData?.phoneNumber || '',
+      address: staffData?.address || '',
+      staffRole: staffData?.staffRole || '',
+      department: staffData?.department || '',
+      employeeId: staffData?.employeeId || '',
+      experience: staffData?.experience || '',
+      qualification: staffData?.qualification || '',
+      bio: staffData?.bio || '',
+      professionalSummary: staffData?.professionalSummary || ''
+    });
+    setEditErrors({});
+    setShowEditProfile(true);
+  };
+
+  const validateEditForm = () => {
+    const errors = {};
+    
+    if (!editFormData.firstName.trim()) errors.firstName = 'First name is required';
+    if (!editFormData.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!editFormData.email.trim()) errors.email = 'Email is required';
+    if (!editFormData.staffRole.trim()) errors.staffRole = 'Staff role is required';
+    if (!editFormData.department.trim()) errors.department = 'Department is required';
+    
+    setEditErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateEditForm()) return;
+
+    try {
+      setIsSaving(true);
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        const updatedData = { ...staffData, ...editFormData };
+        setStaffData(updatedData);
+        localStorage.setItem('userData', JSON.stringify(updatedData));
+        
+        setShowEditProfile(false);
+        alert('Profile updated successfully!');
+      } else {
+        alert(result.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditProfile(false);
+    setEditErrors({});
   };
 
   const verifyStudent = (studentId) => {
@@ -87,6 +190,61 @@ function StaffDashboard() {
     // Simulate rejection process
     console.log(`Rejecting student ${studentId}`);
     // In real implementation, this would update the database
+  };
+
+  // Verification request functions
+  const fetchVerificationRequests = async () => {
+    try {
+      setLoadingVerificationRequests(true);
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/verification/staff/requests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setVerificationRequests(result.data);
+      } else {
+        console.error('Failed to fetch verification requests:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching verification requests:', error);
+    } finally {
+      setLoadingVerificationRequests(false);
+    }
+  };
+
+  const respondToVerificationRequest = async (requestId, status, response) => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const apiResponse = await fetch(`http://localhost:5000/api/verification/request/${requestId}/respond`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          status,
+          staffResponse: response
+        })
+      });
+
+      const result = await apiResponse.json();
+
+      if (result.success) {
+        // Refresh the verification requests
+        fetchVerificationRequests();
+        alert(`Verification request ${status} successfully`);
+      } else {
+        alert(`Failed to ${status} request: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error responding to verification request:', error);
+      alert('Failed to respond to verification request');
+    }
   };
 
   const handleSaveProfessionalSummary = async () => {
@@ -310,101 +468,121 @@ function StaffDashboard() {
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">Student Verification</h3>
-            <p className="text-gray-600 mt-1">Review and verify student credentials and documents</p>
+            <h3 className="text-2xl font-bold text-gray-900">Student Verification Requests</h3>
+            <p className="text-gray-600 mt-1">Review and respond to student verification requests</p>
           </div>
           <span className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-xl text-sm font-medium">
-            {verificationRequests.length} Pending
+            {verificationRequests.filter(req => req.status === 'pending').length} Pending
           </span>
         </div>
 
-        <div className="space-y-4">
-          {verificationRequests.map(request => (
-            <div key={request.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900">{request.studentName}</h4>
-                      <p className="text-yellow-600 font-medium">{request.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span className="text-gray-600">University: <span className="font-medium">{request.university}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      <span className="text-gray-600">Program: <span className="font-medium">{request.degreeProgram}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span className="text-gray-600">GPA: <span className="font-medium">{request.gpa}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-600">Submitted: <span className="font-medium">{request.submittedAt}</span></span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Documents Submitted:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {request.documents.map((doc, index) => (
-                        <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                          {doc}
+        {loadingVerificationRequests ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading verification requests...</p>
+          </div>
+        ) : verificationRequests.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">📋</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Verification Requests</h3>
+            <p className="text-gray-600">No pending verification requests at the moment.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {verificationRequests.map(request => (
+              <div key={request._id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-900">
+                          {request.freelancerId?.firstName} {request.freelancerId?.lastName}
+                        </h4>
+                        <p className="text-yellow-600 font-medium">{request.freelancerId?.email}</p>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                         </span>
-                      ))}
+                      </div>
                     </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span className="text-gray-600">University: <span className="font-medium">{request.freelancerId?.university || 'Not specified'}</span></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span className="text-gray-600">Program: <span className="font-medium">{request.freelancerId?.degreeProgram || 'Not specified'}</span></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="text-gray-600">GPA: <span className="font-medium">{request.freelancerId?.gpa || 'Not specified'}</span></span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-gray-600">Submitted: <span className="font-medium">{new Date(request.submittedAt).toLocaleDateString()}</span></span>
+                      </div>
+                    </div>
+
+                    {request.requestMessage && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Request Message:</p>
+                        <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">{request.requestMessage}</p>
+                      </div>
+                    )}
+
+                    {request.staffResponse && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Your Response:</p>
+                        <p className="text-gray-600 text-sm bg-blue-50 p-3 rounded-lg">{request.staffResponse}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+                
+                {request.status === 'pending' && (
+                  <div className="flex space-x-4">
+                    <button 
+                      onClick={() => respondToVerificationRequest(request._id, 'approved', 'Verification approved. Welcome to the platform!')}
+                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Approve</span>
+                    </button>
+                    <button 
+                      onClick={() => respondToVerificationRequest(request._id, 'rejected', 'Verification rejected. Please provide additional documentation.')}
+                      className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                )}
               </div>
-              
-              <div className="flex space-x-4">
-                <button 
-                  onClick={() => verifyStudent(request.id)}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Verify Student</span>
-                </button>
-                <button 
-                  onClick={() => rejectStudent(request.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Reject</span>
-                </button>
-                <button className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Details</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -459,7 +637,10 @@ function StaffDashboard() {
 
           {/* Action Buttons */}
           <div className="flex flex-col space-y-3">
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors">
+            <button 
+              onClick={handleEditProfile}
+              className="bg-yellow-400 hover:bg-yellow-300 text-black px-6 py-2 rounded-lg font-semibold transition-colors"
+            >
               Edit Profile
             </button>
             <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
@@ -687,6 +868,216 @@ function StaffDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      {showEditProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold text-gray-900">Edit Profile</h3>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Personal Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.firstName}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.firstName ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                    {editErrors.firstName && (
+                      <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.lastName}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.lastName ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                    {editErrors.lastName && (
+                      <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.email ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                    {editErrors.email && (
+                      <p className="text-red-500 text-sm mt-1">{editErrors.email}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editFormData.phoneNumber}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input
+                      type="text"
+                      value={editFormData.address}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Staff Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Staff Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Staff Role <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.staffRole}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, staffRole: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.staffRole ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g., Academic Advisor, Student Services Coordinator"
+                    />
+                    {editErrors.staffRole && (
+                      <p className="text-red-500 text-sm mt-1">{editErrors.staffRole}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Department <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.department}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, department: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                        editErrors.department ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="e.g., Computer Science, Student Affairs"
+                    />
+                    {editErrors.department && (
+                      <p className="text-red-500 text-sm mt-1">{editErrors.department}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                    <input
+                      type="text"
+                      value={editFormData.employeeId}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, employeeId: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="e.g., EMP001"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                    <input
+                      type="text"
+                      value={editFormData.experience}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, experience: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="e.g., 5 years in student services"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Qualification</label>
+                    <input
+                      type="text"
+                      value={editFormData.qualification}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, qualification: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="e.g., Master's in Education, PhD in Psychology"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Summary */}
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Summary</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                    <textarea
+                      rows="4"
+                      value={editFormData.bio}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Tell us about your role and responsibilities..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Summary</label>
+                    <textarea
+                      rows="3"
+                      value={editFormData.professionalSummary}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, professionalSummary: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Describe your areas of expertise and specializations..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end space-x-4">
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
