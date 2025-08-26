@@ -115,14 +115,14 @@ const getServices = async (req, res) => {
 
     // Get gigs (services)
     const gigs = await Service.find(gigFilter)
-      .populate('freelancerId', 'firstName lastName email university degreeProgram')
+      .populate('freelancerId', 'firstName lastName email university degreeProgram profileImage')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
     // Get posts (client jobs)
     const posts = await Post.find(postFilter)
-      .populate('clientId', 'firstName lastName email organization')
+      .populate('clientId', 'firstName lastName email organization profileImage')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));

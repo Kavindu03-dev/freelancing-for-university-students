@@ -126,6 +126,8 @@ function ServicesPage() {
         const data = await response.json();
         if (data.success) {
           console.log('Raw services data from backend:', data.data);
+          console.log('Sample gig item:', data.data.find(item => item.type === 'gig'));
+          console.log('Sample job item:', data.data.find(item => item.type === 'job'));
           // Transform the data to match the expected format
           const transformedServices = data.data.map(item => {
             if (item.type === 'gig') {
@@ -143,7 +145,7 @@ function ServicesPage() {
                   name: item.freelancerName || (item.freelancerId ? `${item.freelancerId.firstName} ${item.freelancerId.lastName}` : 'Unknown'),
                   rating: item.rating || 0,
                   reviews: item.totalReviews || item.reviews?.length || 0,
-                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+                  avatar: item.freelancerId?.profileImage?.url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
                 },
                 status: 'approved',
                 createdAt: new Date(item.createdAt).toISOString().split('T')[0],
@@ -165,7 +167,7 @@ function ServicesPage() {
                   name: item.clientId ? `${item.clientId.firstName} ${item.clientName}` : 'Unknown',
                   rating: 0,
                   reviews: 0,
-                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+                  avatar: item.clientId?.profileImage?.url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
                 },
                 status: 'approved',
                 createdAt: new Date(item.createdAt).toISOString().split('T')[0],
@@ -178,6 +180,8 @@ function ServicesPage() {
           });
           
           console.log('Transformed services data:', transformedServices);
+          console.log('Sample transformed gig:', transformedServices.find(item => item.type === 'gig'));
+          console.log('Sample transformed job:', transformedServices.find(item => item.type === 'job'));
           setServices(transformedServices);
           setFilteredServices(transformedServices);
         }
