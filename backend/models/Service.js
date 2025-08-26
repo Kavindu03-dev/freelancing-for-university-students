@@ -50,6 +50,14 @@ const serviceSchema = new mongoose.Schema({
     imageUrl: String,
     projectUrl: String
   }],
+  images: [{
+    url: String,
+    caption: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   freelancerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -78,6 +86,11 @@ const serviceSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
   featured: {
     type: Boolean,
     default: false
@@ -88,10 +101,43 @@ const serviceSchema = new mongoose.Schema({
   faqs: [{
     question: String,
     answer: String
+  }],
+  reviews: [{
+    client: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5
+    },
+    comment: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
 });
+
+// Method to calculate average rating
+serviceSchema.methods.calculateAverageRating = function() {
+  if (this.reviews.length === 0) {
+    this.rating = 0;
+    this.totalReviews = 0;
+    return;
+  }
+  
+  const totalRating = this.reviews.reduce((sum, review) => sum + review.rating, 0);
+  this.rating = totalRating / this.reviews.length;
+  this.totalReviews = this.reviews.length;
+};
 
 // Indexes for better query performance
 serviceSchema.index({ freelancerId: 1, isActive: 1 });

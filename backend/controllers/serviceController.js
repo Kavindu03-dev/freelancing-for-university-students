@@ -1,13 +1,14 @@
 import Service from '../models/Service.js';
 import Post from '../models/Post.js';
 import User from '../models/User.js';
+import { uploadToImgBB, cleanupTempFile } from '../middleware/imgbbUpload.js';
 
 // @desc    Create a new service
 // @route   POST /api/services
 // @access  Private (Freelancers only)
 const createService = async (req, res) => {
   try {
-    const { title, description, category, price, duration, skills, portfolio } = req.body;
+    const { title, description, category, price, duration, skills, portfolio, images } = req.body;
 
     console.log('Creating service with data:', req.body);
     console.log('User from request:', req.user);
@@ -38,12 +39,14 @@ const createService = async (req, res) => {
       deliveryUnit: 'Days', // Default to Days
       skills: skillsArray,
       portfolio: portfolioArray,
+      images: images || [],
       freelancerId: req.user._id,
       freelancerName: `${req.user.firstName} ${req.user.lastName}`,
       university: req.user.university || '',
       degreeProgram: req.user.degreeProgram || '',
       gpa: req.user.gpa || '',
-      experience: req.user.experience || ''
+      experience: req.user.experience || '',
+      status: 'pending' // Set initial status
     };
 
     console.log('Service data to be created:', serviceData);
@@ -203,7 +206,7 @@ const updateServiceStatus = async (req, res) => {
 
     // Check if user is admin
     if (req.user.userType !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
+      return res.status(400).json({ message: 'Access denied. Admin only.' });
     }
 
     if (!['approved', 'rejected'].includes(status)) {
@@ -214,7 +217,7 @@ const updateServiceStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    ).populate('freelancer', 'firstName lastName email');
+    ).populate('freelancerId', 'firstName lastName email');
 
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
@@ -237,9 +240,9 @@ const updateServiceStatus = async (req, res) => {
 const getServicesByFreelancer = async (req, res) => {
   try {
     const services = await Service.find({
-      freelancer: req.params.id,
+      freelancerId: req.params.id,
       isActive: true
-    }).populate('freelancer', 'firstName lastName email');
+    }).populate('freelancerId', 'firstName lastName email');
 
     res.json({
       success: true,
@@ -280,7 +283,11 @@ const getPendingServices = async (req, res) => {
 // @access  Private (Service owner only)
 const updateService = async (req, res) => {
   try {
-    const { title, description, category, price, duration, skills, portfolio } = req.body;
+    const { title, description, category, price, duration, skills, portfolio, images } = req.body;
+    
+    console.log('=== UPDATE SERVICE DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Extracted fields:', { title, description, category, price, duration, skills, portfolio, images });
 
     const service = await Service.findById(req.params.id);
 
@@ -291,17 +298,17 @@ const updateService = async (req, res) => {
     // Enhanced debugging and ownership verification
     console.log('=== UPDATE SERVICE DEBUG ===');
     console.log('Service ID:', req.params.id);
-    console.log('Service freelancer ID:', service.freelancer);
-    console.log('Service freelancer ID type:', typeof service.freelancer);
-    console.log('Service freelancer ID toString:', service.freelancer.toString());
+    console.log('Service freelancer ID:', service.freelancerId);
+    console.log('Service freelancer ID type:', typeof service.freelancerId);
+    console.log('Service freelancer ID toString:', service.freelancerId.toString());
     console.log('User ID from token:', req.user._id);
     console.log('User ID type:', typeof req.user._id);
     console.log('User type:', req.user.userType);
     
     // Multiple comparison methods
-    const stringComparison = service.freelancer.toString() === req.user._id;
-    const directComparison = service.freelancer == req.user._id;
-    const strictComparison = service.freelancer === req.user._id;
+    const stringComparison = service.freelancerId.toString() === req.user._id;
+    const directComparison = service.freelancerId == req.user._id;
+    const strictComparison = service.freelancerId === req.user._id;
     
     console.log('String comparison:', stringComparison);
     console.log('Direct comparison:', directComparison);
@@ -327,7 +334,7 @@ const updateService = async (req, res) => {
       return res.status(403).json({ 
         message: 'Access denied - You can only edit your own services',
         debug: {
-          serviceOwner: service.freelancer.toString(),
+          serviceOwner: service.freelancerId.toString(),
           currentUser: req.user._id,
           userType: req.user.userType
         }
@@ -336,20 +343,26 @@ const updateService = async (req, res) => {
     */
 
     // Update service
+    const updateData = {
+      title,
+      description,
+      category,
+      price: Number(price),
+      deliveryTime: Number(duration) || 1,
+      deliveryUnit: 'Days',
+      skills: typeof skills === 'string' ? skills.split(',').map(skill => skill.trim()).filter(skill => skill) : skills,
+      portfolio: typeof portfolio === 'string' && portfolio.trim() ? [{ title: 'Portfolio Item', description: portfolio, imageUrl: '', projectUrl: '' }] : portfolio,
+      images: images || [],
+      status: 'pending' // Reset to pending for admin review
+    };
+    
+    console.log('Update data:', updateData);
+    
     const updatedService = await Service.findByIdAndUpdate(
       req.params.id,
-      {
-        title,
-        description,
-        category,
-        price,
-        duration,
-        skills,
-        portfolio,
-        status: 'pending' // Reset to pending for admin review
-      },
+      updateData,
       { new: true }
-    ).populate('freelancer', 'firstName lastName email');
+    ).populate('freelancerId', 'firstName lastName email');
 
     console.log('Service updated successfully');
 
@@ -378,17 +391,17 @@ const deleteService = async (req, res) => {
     // Enhanced debugging and ownership verification
     console.log('=== DELETE SERVICE DEBUG ===');
     console.log('Service ID:', req.params.id);
-    console.log('Service freelancer ID:', service.freelancer);
-    console.log('Service freelancer ID type:', typeof service.freelancer);
-    console.log('Service freelancer ID toString:', service.freelancer.toString());
+    console.log('Service freelancer ID:', service.freelancerId);
+    console.log('Service freelancer ID type:', typeof service.freelancerId);
+    console.log('Service freelancer ID toString:', service.freelancerId.toString());
     console.log('User ID from token:', req.user._id);
     console.log('User ID type:', typeof req.user._id);
     console.log('User type:', req.user.userType);
     
     // Multiple comparison methods
-    const stringComparison = service.freelancer.toString() === req.user._id;
-    const directComparison = service.freelancer == req.user._id;
-    const strictComparison = service.freelancer === req.user._id;
+    const stringComparison = service.freelancerId.toString() === req.user._id;
+    const directComparison = service.freelancerId == req.user._id;
+    const strictComparison = service.freelancerId === req.user._id;
     
     console.log('String comparison:', stringComparison);
     console.log('Direct comparison:', directComparison);
@@ -414,8 +427,9 @@ const deleteService = async (req, res) => {
       return res.status(500).json({ 
         message: 'Access denied - You can only delete your own services',
         debug: {
-          serviceOwner: service.freelancer.toString(),
+          serviceOwner: service.freelancerId.toString(),
           currentUser: req.user._id,
+          userType: req.user._id,
           userType: req.user.userType
         }
       });
@@ -517,6 +531,56 @@ const testAuth = async (req, res) => {
   }
 };
 
+// @desc    Upload images for gig
+// @route   POST /api/services/upload-images
+// @access  Private (Freelancers only)
+const uploadGigImages = async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No images uploaded' });
+    }
+
+    const uploadedImages = [];
+    const imgbbApiKey = process.env.IMGBB_API_KEY;
+
+    if (!imgbbApiKey) {
+      return res.status(500).json({ message: 'Image upload service not configured' });
+    }
+
+    for (const file of req.files) {
+      try {
+        // Upload to ImgBB
+        const uploadResult = await uploadToImgBB(file.path, imgbbApiKey);
+        
+        uploadedImages.push({
+          url: uploadResult.url,
+          caption: file.originalname,
+          uploadedAt: new Date()
+        });
+
+        // Clean up temporary file
+        cleanupTempFile(file.path);
+      } catch (uploadError) {
+        console.error('Error uploading image:', uploadError);
+        // Clean up temporary file even if upload fails
+        cleanupTempFile(file.path);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: uploadedImages,
+      message: 'Images uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Error uploading gig images:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
+  }
+};
+
 export default {
   createService,
   getServices,
@@ -527,5 +591,6 @@ export default {
   updateService,
   deleteService,
   addReview,
-  testAuth
+  testAuth,
+  uploadGigImages
 };

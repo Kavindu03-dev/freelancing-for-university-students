@@ -19,6 +19,10 @@ const GigManagement = ({ user }) => {
     portfolio: ''
   });
 
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
   const [formErrors, setFormErrors] = useState({});
 
   // Function to get user ID from JWT token
@@ -125,16 +129,74 @@ const GigManagement = ({ user }) => {
     }
   };
 
+  const handleImageSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    if (imageFiles.length > 5) {
+      setError('Maximum 5 images allowed');
+      return;
+    }
+    
+    setSelectedImages(imageFiles);
+  };
+
+  const uploadImages = async () => {
+    if (selectedImages.length === 0) return [];
+    
+    try {
+      setIsUploadingImages(true);
+      const formData = new FormData();
+      
+      selectedImages.forEach((image, index) => {
+        formData.append('images', image);
+      });
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('/api/services/upload-images', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setUploadedImages(result.data);
+        return result.data;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload images');
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      setError(error.message || 'Failed to upload images');
+      return [];
+    } finally {
+      setIsUploadingImages(false);
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.title.trim()) errors.title = 'Title is required';
-    if (!formData.description.trim()) errors.description = 'Description is required';
+    console.log('=== VALIDATION DEBUG ===');
+    console.log('Title:', formData.title, 'Valid:', !!formData.title?.trim());
+    console.log('Description:', formData.description, 'Valid:', !!formData.description?.trim());
+    console.log('Category:', formData.category, 'Valid:', !!formData.category);
+    console.log('Price:', formData.price, 'Valid:', !!(formData.price && Number(formData.price) > 0));
+    console.log('Duration:', formData.duration, 'Valid:', !!formData.duration);
+    console.log('Skills:', formData.skills, 'Valid:', !!formData.skills?.trim());
+    
+    if (!formData.title?.trim()) errors.title = 'Title is required';
+    if (!formData.description?.trim()) errors.description = 'Description is required';
     if (!formData.category) errors.category = 'Category is required';
-    if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required';
-    if (!formData.duration.trim()) errors.duration = 'Duration is required';
-    if (!formData.skills.trim()) errors.skills = 'Skills are required';
+    if (!formData.price || Number(formData.price) <= 0) errors.price = 'Valid price is required';
+    if (!formData.duration || formData.duration.toString().trim() === '') errors.duration = 'Duration is required';
+    if (!formData.skills?.trim()) errors.skills = 'Skills are required';
 
+    console.log('Validation errors:', errors);
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -147,7 +209,30 @@ const GigManagement = ({ user }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('userToken');
-      console.log('Creating gig with data:', formData);
+      
+      // Upload images first if any are selected
+      let images = [];
+      if (selectedImages.length > 0) {
+        images = await uploadImages();
+        if (images.length === 0 && selectedImages.length > 0) {
+          setError('Failed to upload images. Please try again.');
+          return;
+        }
+      }
+      
+      // Prepare gig data with images and proper field mapping
+      const gigData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        price: formData.price,
+        duration: formData.duration, // Send as duration, backend will map to deliveryTime
+        skills: formData.skills, // Backend will handle string to array conversion
+        portfolio: formData.portfolio || '',
+        images: images
+      };
+      
+      console.log('Creating gig with data:', gigData);
       console.log('Token:', token);
       
       const response = await fetch('/api/services', {
@@ -156,7 +241,7 @@ const GigManagement = ({ user }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(gigData)
       });
 
       console.log('Create response status:', response.status);
@@ -174,6 +259,8 @@ const GigManagement = ({ user }) => {
           skills: '',
           portfolio: ''
         });
+        setSelectedImages([]);
+        setUploadedImages([]);
         setShowCreateForm(false);
         fetchUserGigs(); // Refresh the list
       } else {
@@ -192,14 +279,46 @@ const GigManagement = ({ user }) => {
   const handleEditGig = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    console.log('=== EDIT GIG DEBUG ===');
+    console.log('Form data:', formData);
+    console.log('Selected images:', selectedImages);
+    console.log('Uploaded images:', uploadedImages);
+    console.log('Editing gig:', editingGig);
+    
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
 
     try {
       setLoading(true);
       const token = localStorage.getItem('userToken');
+      
+      // Upload new images if any are selected
+      let images = editingGig.images || []; // Keep existing images
+      if (selectedImages.length > 0) {
+        const newImages = await uploadImages();
+        if (newImages.length > 0) {
+          images = [...images, ...newImages]; // Add new images to existing ones
+        }
+      }
+      
+      // Prepare gig data with proper field mapping
+      const gigData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        price: formData.price,
+        duration: formData.duration, // Send as duration, backend will map to deliveryTime
+        skills: formData.skills, // Backend will handle string to array conversion
+        portfolio: formData.portfolio || '',
+        images: images
+      };
+      
       console.log('Editing gig:', editingGig._id);
-      console.log('Form data:', formData);
+      console.log('Form data:', gigData);
       console.log('Token:', token);
+      console.log('Request payload:', JSON.stringify(gigData));
       
       const response = await fetch(`/api/services/${editingGig._id}`, {
         method: 'PUT',
@@ -207,7 +326,7 @@ const GigManagement = ({ user }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(gigData)
       });
 
       console.log('Edit response status:', response.status);
@@ -227,10 +346,13 @@ const GigManagement = ({ user }) => {
           skills: '',
           portfolio: ''
         });
+        setSelectedImages([]);
+        setUploadedImages([]);
         fetchUserGigs(); // Refresh the list
       } else {
         const errorData = await response.json();
-        console.log('Edit error:', errorData);
+        console.log('Edit error status:', response.status);
+        console.log('Edit error data:', errorData);
         setError(errorData.message || 'Failed to update gig');
       }
     } catch (error) {
@@ -280,14 +402,17 @@ const GigManagement = ({ user }) => {
   const openEditForm = (gig) => {
     setEditingGig(gig);
     setFormData({
-      title: gig.title,
-      description: gig.description,
-      category: gig.category,
-      price: gig.price,
-      duration: gig.duration,
-      skills: gig.skills,
-      portfolio: gig.portfolio || ''
+      title: gig.title || '',
+      description: gig.description || '',
+      category: gig.category || '',
+      price: gig.price || '',
+      duration: (gig.deliveryTime || gig.duration || '').toString(), // Ensure duration is a string
+      skills: Array.isArray(gig.skills) ? gig.skills.join(', ') : (gig.skills || ''),
+      portfolio: Array.isArray(gig.portfolio) && gig.portfolio.length > 0 ? gig.portfolio[0].description || '' : (gig.portfolio || '')
     });
+    // Set existing images for editing
+    setUploadedImages(gig.images || []);
+    setSelectedImages([]); // Clear any new selected images
     setShowEditForm(true);
   };
 
@@ -304,6 +429,8 @@ const GigManagement = ({ user }) => {
       skills: '',
       portfolio: ''
     });
+    setSelectedImages([]);
+    setUploadedImages([]);
     setFormErrors({});
     setError('');
     setSuccess('');
@@ -488,6 +615,77 @@ const GigManagement = ({ user }) => {
                 placeholder="https://your-portfolio.com"
               />
             </div>
+
+            {/* Gig Images */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Gig Images (Optional) - Max 5 images
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Upload images related to your gig. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per image.
+              </p>
+              
+              {/* Selected Images Preview */}
+              {selectedImages.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedImages.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Uploaded Images Display */}
+              {uploadedImages.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Uploaded Images:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {uploadedImages.map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.url}
+                          alt={image.caption}
+                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                        />
+                        <p className="text-xs text-gray-600 mt-1 truncate">{image.caption}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {isUploadingImages && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    <span className="text-sm text-blue-700">Uploading images...</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -596,6 +794,29 @@ const GigManagement = ({ user }) => {
               <h4 className="text-lg font-bold text-gray-900 mb-2">{gig.title}</h4>
               <p className="text-gray-600 text-sm mb-3 line-clamp-3">{gig.description}</p>
               
+              {/* Gig Images */}
+              {gig.images && gig.images.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 mb-2">Images:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {gig.images.slice(0, 4).map((image, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={image.url}
+                          alt={image.caption || `Gig image ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                        />
+                        {index === 3 && gig.images.length > 4 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                            <span className="text-white text-xs font-medium">+{gig.images.length - 4}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Category:</span>
@@ -607,7 +828,7 @@ const GigManagement = ({ user }) => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Duration:</span>
-                  <span className="font-semibold">{gig.duration}</span>
+                  <span className="font-semibold">{gig.deliveryTime ? `${gig.deliveryTime} Days` : gig.duration}</span>
                 </div>
               </div>
 
@@ -615,11 +836,18 @@ const GigManagement = ({ user }) => {
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-2">Skills:</p>
                 <div className="flex flex-wrap gap-1">
-                  {gig.skills.split(',').map((skill, index) => (
-                    <span key={index} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                      {skill.trim()}
-                    </span>
-                  ))}
+                  {Array.isArray(gig.skills) 
+                    ? gig.skills.map((skill, index) => (
+                        <span key={index} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                          {skill}
+                        </span>
+                      ))
+                    : gig.skills.split(',').map((skill, index) => (
+                        <span key={index} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                          {skill.trim()}
+                        </span>
+                      ))
+                  }
                 </div>
               </div>
 
