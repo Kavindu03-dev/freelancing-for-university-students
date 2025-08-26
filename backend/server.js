@@ -7,6 +7,7 @@ import freelancerRoutes from './routes/student.js';
 import serviceRoutes from './routes/services.js';
 import skillRoutes from './routes/skills.js';
 import postRoutes from './routes/posts.js';
+import verificationRoutes from './routes/verification.js';
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +43,7 @@ app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/verification', verificationRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

@@ -84,7 +84,7 @@ const GigManagement = ({ user }) => {
         return;
       }
       
-      const response = await fetch(`http://localhost:5000/api/services/freelancer/${userId}`, {
+      const response = await fetch(`/api/services/freelancer/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -150,7 +150,7 @@ const GigManagement = ({ user }) => {
       console.log('Creating gig with data:', formData);
       console.log('Token:', token);
       
-      const response = await fetch('http://localhost:5000/api/services', {
+      const response = await fetch('/api/services', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,7 +201,7 @@ const GigManagement = ({ user }) => {
       console.log('Form data:', formData);
       console.log('Token:', token);
       
-      const response = await fetch(`http://localhost:5000/api/services/${editingGig._id}`, {
+      const response = await fetch(`/api/services/${editingGig._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const GigManagement = ({ user }) => {
       console.log('Deleting gig:', gigId);
       console.log('Token:', token);
       
-      const response = await fetch(`http://localhost:5000/api/services/${gigId}`, {
+      const response = await fetch(`/api/services/${gigId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

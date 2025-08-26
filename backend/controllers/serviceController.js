@@ -9,27 +9,51 @@ const createService = async (req, res) => {
   try {
     const { title, description, category, price, duration, skills, portfolio } = req.body;
 
+    console.log('Creating service with data:', req.body);
+    console.log('User from request:', req.user);
+
     // Check if user is a freelancer
     if (req.user.userType !== 'freelancer') {
       return res.status(403).json({ message: 'Only freelancers can create services' });
     }
 
-    // Create new service
-    const service = new Service({
+    // Parse skills if it's a string
+    const skillsArray = typeof skills === 'string' 
+      ? skills.split(',').map(skill => skill.trim()).filter(skill => skill)
+      : skills || [];
+
+    // Parse portfolio if it's a string
+    const portfolioArray = typeof portfolio === 'string' && portfolio.trim()
+      ? [{ title: 'Portfolio Item', description: portfolio, imageUrl: '', projectUrl: '' }]
+      : portfolio || [];
+
+    // Create new service with proper field mapping
+    const serviceData = {
       title,
       description,
       category,
-      price,
-      duration,
-      skills,
-      portfolio,
-      freelancer: req.user._id
-    });
+      price: Number(price),
+      priceType: 'Fixed', // Default to Fixed pricing
+      deliveryTime: Number(duration) || 1,
+      deliveryUnit: 'Days', // Default to Days
+      skills: skillsArray,
+      portfolio: portfolioArray,
+      freelancerId: req.user._id,
+      freelancerName: `${req.user.firstName} ${req.user.lastName}`,
+      university: req.user.university || '',
+      degreeProgram: req.user.degreeProgram || '',
+      gpa: req.user.gpa || '',
+      experience: req.user.experience || ''
+    };
+
+    console.log('Service data to be created:', serviceData);
+
+    const service = new Service(serviceData);
 
     await service.save();
 
     // Populate freelancer info
-    await service.populate('freelancer', 'firstName lastName email');
+    await service.populate('freelancerId', 'firstName lastName email');
 
     res.status(201).json({
       success: true,
@@ -38,7 +62,15 @@ const createService = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating service:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
 
