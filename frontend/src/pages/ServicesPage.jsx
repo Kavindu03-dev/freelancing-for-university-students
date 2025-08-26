@@ -15,6 +15,8 @@ function ServicesPage() {
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('gigs'); // New state for active tab
+  const [isTabSwitching, setIsTabSwitching] = useState(false); // New state for tab switching animation
 
   // Form state for posting a job
   const [jobForm, setJobForm] = useState({
@@ -270,6 +272,28 @@ function ServicesPage() {
     setSelectedService(null);
   };
 
+  // Get services based on active tab
+  const getTabServices = () => {
+    if (activeTab === 'gigs') {
+      return filteredServices.filter(service => service.type === 'gig');
+    } else {
+      return filteredServices.filter(service => service.type === 'job');
+    }
+  };
+
+  const tabServices = getTabServices();
+
+  // Function to handle tab switching with animation
+  const handleTabSwitch = (newTab) => {
+    if (newTab === activeTab) return;
+    
+    setIsTabSwitching(true);
+    setTimeout(() => {
+      setActiveTab(newTab);
+      setIsTabSwitching(false);
+    }, 150);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20">
       {/* Hero Section */}
@@ -335,22 +359,73 @@ function ServicesPage() {
         </div>
       </section>
 
-      {/* Services Grid */}
-      <section className="py-16">
+      {/* Tab Navigation */}
+      <section className="py-8 bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+                         <div className="flex bg-gray-100 rounded-lg p-1 relative border border-yellow-200/30">
+                             {/* Animated background indicator */}
+               <div 
+                 className={`absolute top-1 bottom-1 rounded-lg transition-all duration-500 ease-in-out ${
+                   activeTab === 'gigs' 
+                     ? 'left-1 w-[calc(50%-2px)] bg-white shadow-lg shadow-yellow-200/50' 
+                     : 'left-[calc(50%+2px)] w-[calc(50%-2px)] bg-white shadow-lg shadow-yellow-200/50'
+                 }`}
+               />
+              
+                             <button
+                 onClick={() => handleTabSwitch('gigs')}
+                 className={`relative px-8 py-3 rounded-lg font-semibold transition-all duration-500 ease-in-out z-10 hover:scale-105 ${
+                   activeTab === 'gigs'
+                     ? 'text-yellow-600'
+                     : 'text-gray-600 hover:text-yellow-500'
+                 }`}
+               >
+                 🚀 Gigs ({filteredServices.filter(service => service.type === 'gig').length})
+               </button>
+               <button
+                 onClick={() => handleTabSwitch('posts')}
+                 className={`relative px-8 py-3 rounded-lg font-semibold transition-all duration-500 ease-in-out z-10 hover:scale-105 ${
+                   activeTab === 'posts'
+                     ? 'text-yellow-600'
+                     : 'text-gray-600 hover:text-yellow-500'
+                 }`}
+               >
+                 💼 Job Posts ({filteredServices.filter(service => service.type === 'job').length})
+               </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Services Content */}
+      <section className="py-16 transition-all duration-500 ease-in-out">
+        <div 
+          key={activeTab} 
+          className="animate-fade-in-up"
+          style={{ animationDuration: '0.6s' }}
+        >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">
-                Available Services
+            <div className="transition-all duration-500 ease-in-out">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2 transition-all duration-500 ease-in-out transform">
+                {activeTab === 'gigs' ? '🚀 Available Gigs' : '💼 Available Job Posts'}
               </h2>
-              <p className="text-gray-600">
-                {filteredServices.length} services found
+              <p className="text-gray-600 transition-all duration-500 ease-in-out">
+                {activeTab === 'gigs' 
+                  ? 'Professional services offered by talented freelancers'
+                  : 'Projects and opportunities posted by clients'
+                }
               </p>
             </div>
-            <button
-              onClick={fetchServices}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center space-x-2"
-            >
+                         <button
+               onClick={fetchServices}
+               className={`px-4 py-2 rounded-lg font-medium transition-all duration-500 ease-in-out flex items-center space-x-2 transform hover:scale-105 ${
+                 activeTab === 'gigs'
+                   ? 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                   : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+               }`}
+             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -358,10 +433,14 @@ function ServicesPage() {
             </button>
           </div>
 
-          {loading ? (
-            <div className="text-center py-16">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading services...</p>
+          {loading || isTabSwitching ? (
+                         <div className="text-center py-16">
+               <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${
+                 activeTab === 'gigs' ? 'border-yellow-500' : 'border-yellow-500'
+               }`}></div>
+              <p className="text-gray-600">
+                {isTabSwitching ? 'Switching tabs...' : `Loading ${activeTab === 'gigs' ? 'gigs' : 'job posts'}...`}
+              </p>
             </div>
           ) : error ? (
             <div className="text-center py-16">
@@ -377,8 +456,19 @@ function ServicesPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map((service) => (
-              <div key={service.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-200 relative">
+              {tabServices.map((service, index) => (
+                             <div 
+                 key={service.id} 
+                 className={`bg-white rounded-xl shadow-lg hover:shadow-xl hover:shadow-yellow-200/20 transition-all duration-500 ease-in-out transform hover:-translate-y-2 overflow-hidden border relative animate-fade-in-up ${
+                   activeTab === 'gigs' 
+                     ? 'border-yellow-200 hover:border-yellow-300' 
+                     : 'border-yellow-200 hover:border-yellow-300'
+                 }`}
+                 style={{
+                   animationDelay: `${index * 100}ms`,
+                   animationFillMode: 'both'
+                 }}
+               >
                 {/* Status Badge */}
                 {service.status === 'pending' && (
                   <div className="absolute top-4 right-4 z-10">
@@ -389,9 +479,17 @@ function ServicesPage() {
                 )}
 
                 {/* Service Image Placeholder */}
-                <div className="h-48 bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                                 <div className={`h-48 bg-gradient-to-br flex items-center justify-center ${
+                   activeTab === 'gigs' 
+                     ? 'from-yellow-400 to-yellow-600' 
+                     : 'from-yellow-500 to-yellow-700'
+                 }`}>
                   <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    {activeTab === 'gigs' ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                    )}
                   </svg>
                 </div>
 
@@ -400,16 +498,14 @@ function ServicesPage() {
                     <div className="flex-1">
                       <h3 className="text-xl font-semibold text-gray-800">{service.title}</h3>
                       <div className="flex items-center space-x-2 mt-1">
-                        {service.type === 'gig' ? (
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            Freelancer Service
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                            Client Job
-                          </span>
-                        )}
-                        {service.source === 'client' && service.deadline && (
+                                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                           activeTab === 'gigs'
+                             ? 'bg-yellow-100 text-yellow-800'
+                             : 'bg-yellow-100 text-yellow-800'
+                         }`}>
+                           {activeTab === 'gigs' ? 'Freelancer Service' : 'Client Job'}
+                         </span>
+                        {activeTab === 'posts' && service.deadline && (
                           <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
                             Deadline: {new Date(service.deadline).toLocaleDateString()}
                           </span>
@@ -451,15 +547,15 @@ function ServicesPage() {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      {service.type === 'gig' ? 'Duration' : 'Timeline'}: {service.duration}
+                      {activeTab === 'gigs' ? 'Duration:' : 'Timeline:'} {service.duration}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
-                      {service.type === 'gig' ? 'Skills' : 'Required Skills'}: {service.skills}
+                      {activeTab === 'gigs' ? 'Skills:' : 'Required Skills:'} {service.skills}
                     </div>
-                    {service.source === 'client' && service.location && (
+                    {activeTab === 'posts' && service.location && (
                       <div className="flex items-center text-sm text-gray-500">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 0 1111.314 0z" />
@@ -476,7 +572,7 @@ function ServicesPage() {
                         onClick={() => handleHire(service)}
                         className="w-full bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
                       >
-                        {service.type === 'gig' ? 'Hire Now' : 'Apply Now'}
+                        {activeTab === 'gigs' ? 'Hire Now' : 'Apply Now'}
                       </button>
                     )}
                     
@@ -507,17 +603,20 @@ function ServicesPage() {
                 </div>
               </div>
             ))}
-              {filteredServices.length === 0 && (
+              {tabServices.length === 0 && (
                 <div className="text-center py-16">
                   <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
                   </svg>
-                  <h3 className="text-xl font-semibold text-gray-500 mb-2">No services found</h3>
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">
+                    No {activeTab === 'gigs' ? 'gigs' : 'job posts'} found
+                  </h3>
                   <p className="text-gray-400">Try adjusting your search or category filter</p>
                 </div>
               )}
             </div>
           )}
+        </div>
         </div>
       </section>
 
