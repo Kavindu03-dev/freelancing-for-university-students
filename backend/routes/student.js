@@ -7,6 +7,10 @@ import imgbbUpload from '../middleware/imgbbUpload.js';
 
 const router = express.Router();
 
+// Public routes (no authentication required)
+router.get('/freelancers', freelancerController.getAllFreelancers);
+router.get('/freelancers/:id', freelancerController.getFreelancerProfile);
+
 // Protected routes (require authentication)
 router.use(protect);
 
@@ -43,9 +47,5 @@ router.route('/profile-image')
 
 // Account management
 router.delete('/account', freelancerController.deleteAccount);
-
-// Public routes (no authentication required)
-router.get('/freelancers', freelancerController.getAllFreelancers);
-router.get('/freelancers/:id', freelancerController.getFreelancerProfile);
 
 export default router;

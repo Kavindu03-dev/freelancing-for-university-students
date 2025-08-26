@@ -104,89 +104,10 @@ function ClientDashboard() {
   const degreeFields = ["Computer Science", "Engineering", "Business", "Design", "Marketing", "Finance"];
   const locations = ["Remote", "On-site", "Hybrid"];
 
-  // Mock data for recommended freelancers
-  const [recommendedFreelancers, setRecommendedFreelancers] = useState([
-    {
-      id: 1,
-      name: "John Student",
-      university: "MIT",
-      degreeProgram: "Computer Science",
-      gpa: "3.8",
-      skills: ["React", "Node.js", "MongoDB", "Python", "AWS"],
-      experience: "2 years web development",
-      completedProjects: 15,
-      rating: 4.8,
-      hourlyRate: 25,
-      availability: "20 hours/week",
-      profileCompleteness: 95,
-      lastActive: "2 days ago",
-      portfolio: "https://john-portfolio.com",
-      reviews: [
-        { client: "Tech Corp", rating: 5, comment: "Excellent work quality and communication" },
-        { client: "Startup Inc", rating: 4, comment: "Very reliable and skilled developer" }
-      ]
-    },
-    {
-      id: 2,
-      name: "Sarah Wilson",
-      university: "Stanford",
-      degreeProgram: "Computer Science",
-      gpa: "3.9",
-      skills: ["React", "Vue.js", "Python", "Machine Learning", "Data Analysis"],
-      experience: "1.5 years frontend development",
-      completedProjects: 12,
-      rating: 4.9,
-      hourlyRate: 30,
-      availability: "25 hours/week",
-      profileCompleteness: 90,
-      lastActive: "1 day ago",
-      portfolio: "https://sarah-portfolio.com",
-      reviews: [
-        { client: "AI Labs", rating: 5, comment: "Outstanding ML implementation skills" },
-        { client: "Data Corp", rating: 5, comment: "Great analytical thinking and execution" }
-      ]
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      university: "UC Berkeley",
-      degreeProgram: "Graphic Design",
-      gpa: "3.7",
-      skills: ["Adobe Illustrator", "Photoshop", "Figma", "UI/UX Design", "Branding"],
-      experience: "3 years design experience",
-      completedProjects: 20,
-      rating: 4.7,
-      hourlyRate: 35,
-      availability: "30 hours/week",
-      profileCompleteness: 88,
-      lastActive: "3 days ago",
-      portfolio: "https://mike-design.com",
-      reviews: [
-        { client: "Design Studio", rating: 5, comment: "Creative and professional designer" },
-        { client: "Brand Corp", rating: 4, comment: "Great understanding of brand identity" }
-      ]
-    },
-    {
-      id: 4,
-      name: "Emily Chen",
-      university: "Carnegie Mellon",
-      degreeProgram: "Data Science",
-      gpa: "3.9",
-      skills: ["Python", "R", "SQL", "Machine Learning", "Statistical Analysis"],
-      experience: "2 years data science",
-      completedProjects: 18,
-      rating: 4.8,
-      hourlyRate: 28,
-      availability: "22 hours/week",
-      profileCompleteness: 92,
-      lastActive: "1 day ago",
-      portfolio: "https://emily-data.com",
-      reviews: [
-        { client: "Research Corp", rating: 5, comment: "Exceptional analytical skills" },
-        { client: "Tech Startup", rating: 4, comment: "Very thorough and detail-oriented" }
-      ]
-    }
-  ]);
+  // State for freelancers data
+  const [recommendedFreelancers, setRecommendedFreelancers] = useState([]);
+  const [loadingFreelancers, setLoadingFreelancers] = useState(true);
+  const [freelancersError, setFreelancersError] = useState(null);
 
   // Recommendation algorithms
   const getRecommendedFreelancers = (postRequirements = null) => {
@@ -250,6 +171,75 @@ function ClientDashboard() {
       setActiveTab(tabParam);
     }
   }, [location.search]);
+
+  // Fetch freelancers from API
+  useEffect(() => {
+    const fetchFreelancers = async () => {
+      try {
+        setLoadingFreelancers(true);
+        setFreelancersError(null);
+        
+        const response = await fetch('http://localhost:5000/api/freelancer/freelancers');
+        if (!response.ok) {
+          throw new Error('Failed to fetch freelancers');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data.freelancers) {
+          // Transform the data to match the expected format
+          const transformedFreelancers = data.data.freelancers.map(freelancer => ({
+            id: freelancer._id,
+            name: `${freelancer.firstName} ${freelancer.lastName}`,
+            university: freelancer.university || 'Not specified',
+            degreeProgram: freelancer.degreeProgram || 'Not specified',
+            gpa: freelancer.gpa || 'Not specified',
+            skills: freelancer.skills || freelancer.technicalSkills || [],
+            experience: freelancer.experience || 'Not specified',
+            completedProjects: freelancer.portfolio?.length || 0,
+            rating: 4.5, // Default rating since it's not in the model
+            hourlyRate: freelancer.hourlyRate || 25,
+            availability: 'Available', // Default since it's not in the model
+            profileCompleteness: calculateProfileCompleteness(freelancer),
+            lastActive: 'Recently', // Default since it's not in the model
+            portfolio: freelancer.portfolio || [],
+            reviews: [], // Default empty reviews since they're not in the model
+            profileImage: freelancer.profileImage?.url || null
+          }));
+          
+          setRecommendedFreelancers(transformedFreelancers);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (error) {
+        console.error('Error fetching freelancers:', error);
+        setFreelancersError(error.message);
+      } finally {
+        setLoadingFreelancers(false);
+      }
+    };
+
+    fetchFreelancers();
+  }, []);
+
+  // Helper function to calculate profile completeness
+  const calculateProfileCompleteness = (freelancer) => {
+    let score = 0;
+    const fields = [
+      freelancer.firstName, freelancer.lastName, freelancer.email,
+      freelancer.university, freelancer.degreeProgram, freelancer.gpa,
+      freelancer.skills?.length > 0, freelancer.experience,
+      freelancer.profileImage?.url, freelancer.portfolio?.length > 0
+    ];
+    
+    fields.forEach(field => {
+      if (field && (typeof field === 'string' ? field.trim() !== '' : field)) {
+        score += 10;
+      }
+    });
+    
+    return Math.min(score, 100);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('userData');
@@ -385,26 +375,72 @@ function ClientDashboard() {
           </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {getRecommendedFreelancers().slice(0, 4).map(freelancer => (
-            <div key={freelancer.id} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors duration-300">
-              <div className="flex justify-between items-start mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">{freelancer.name.charAt(0)}</span>
+          {loadingFreelancers ? (
+            // Loading skeleton
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="border border-gray-200 rounded-xl p-4 animate-pulse">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                  <div className="w-8 h-4 bg-gray-300 rounded"></div>
                 </div>
-                <span className="text-xs font-bold text-green-600">{freelancer.rating}★</span>
+                <div className="h-4 bg-gray-300 rounded mb-1"></div>
+                <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                <div className="flex justify-between items-center">
+                  <div className="h-3 bg-gray-300 rounded w-16"></div>
+                  <div className="h-3 bg-gray-300 rounded w-20"></div>
+                </div>
               </div>
-              <h4 className="font-bold text-gray-900 text-sm mb-1">{freelancer.name}</h4>
-              <p className="text-gray-600 text-xs mb-2">{freelancer.university}</p>
-              <div className="text-xs text-gray-500 mb-2">
-                {freelancer.skills.slice(0, 2).join(', ')}
-                {freelancer.skills.length > 2 && '...'}
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-green-600 font-semibold">${freelancer.hourlyRate}/hr</span>
-                <span className="text-gray-500">{freelancer.completedProjects} projects</span>
-              </div>
+            ))
+          ) : freelancersError ? (
+            // Error state
+            <div className="col-span-full text-center py-8">
+              <div className="text-red-500 mb-2">⚠️</div>
+              <p className="text-gray-600 mb-4">Failed to load freelancers</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              >
+                Try Again
+              </button>
             </div>
-          ))}
+          ) : recommendedFreelancers.length === 0 ? (
+            // Empty state
+            <div className="col-span-full text-center py-8">
+              <div className="text-gray-400 mb-2">👥</div>
+              <p className="text-gray-600">No freelancers available at the moment</p>
+            </div>
+          ) : (
+            // Freelancer cards
+            getRecommendedFreelancers().slice(0, 4).map(freelancer => (
+              <div key={freelancer.id} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors duration-300">
+                <div className="flex justify-between items-start mb-2">
+                  {freelancer.profileImage ? (
+                    <img 
+                      src={freelancer.profileImage} 
+                      alt={freelancer.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{freelancer.name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <span className="text-xs font-bold text-green-600">{freelancer.rating}★</span>
+                </div>
+                <h4 className="font-bold text-gray-900 text-sm mb-1">{freelancer.name}</h4>
+                <p className="text-gray-600 text-xs mb-2">{freelancer.university}</p>
+                <div className="text-xs text-gray-500 mb-2">
+                  {freelancer.skills.slice(0, 2).join(', ')}
+                  {freelancer.skills.length > 2 && '...'}
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-green-600 font-semibold">${freelancer.hourlyRate}/hr</span>
+                  <span className="text-gray-500">{freelancer.completedProjects} projects</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -806,106 +842,179 @@ function ClientDashboard() {
 
       {/* Freelancer Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {getRecommendedFreelancers().map(freelancer => (
-          <div key={freelancer.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300">
-            {/* Recommendation Score Badge */}
-            {freelancer.recommendationScore && (
-              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                {freelancer.recommendationScore}% Match
-              </div>
-            )}
-            
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-xl">{freelancer.name.charAt(0)}</span>
+        {loadingFreelancers ? (
+          // Loading skeleton
+          Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-16 h-16 bg-gray-300 rounded-full"></div>
+                  <div>
+                    <div className="h-5 bg-gray-300 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-300 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-300 rounded"></div>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900">{freelancer.name}</h4>
-                  <p className="text-gray-600 text-sm">{freelancer.university}</p>
-                  <p className="text-blue-600 text-sm font-medium">{freelancer.degreeProgram}</p>
+                <div className="text-right">
+                  <div className="h-6 bg-gray-300 rounded mb-1"></div>
+                  <div className="h-4 bg-gray-300 rounded"></div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">{freelancer.rating}★</div>
-                <div className="text-sm text-gray-500">{freelancer.completedProjects} projects</div>
-              </div>
-            </div>
-
-            {/* Skills Match */}
-            {freelancer.skillMatchCount !== undefined && (
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Skills Match:</span>
-                  <span className="text-sm font-semibold text-green-600">
-                    {freelancer.skillMatchCount}/{freelancer.totalRequiredSkills} skills
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full transition-all duration-500" 
-                    style={{ width: `${(freelancer.skillMatchCount / freelancer.totalRequiredSkills) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-            
-            <div className="space-y-3 mb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Hourly Rate:</span>
-                <span className="font-semibold text-green-600">${freelancer.hourlyRate}/hr</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Availability:</span>
-                <span className="font-semibold">{freelancer.availability}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Profile Complete:</span>
-                <span className="font-semibold">{freelancer.profileCompleteness}%</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Last Active:</span>
-                <span className="font-semibold">{freelancer.lastActive}</span>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-2">Skills:</p>
-              <div className="flex flex-wrap gap-1">
-                {freelancer.skills.map(skill => (
-                  <span key={skill} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Reviews */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-500 mb-2">Recent Reviews:</p>
-              <div className="space-y-2">
-                {freelancer.reviews.slice(0, 2).map((review, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs font-medium text-gray-700">{review.client}</span>
-                      <span className="text-xs text-yellow-600">{review.rating}★</span>
-                    </div>
-                    <p className="text-xs text-gray-600 line-clamp-2">{review.comment}</p>
+              <div className="space-y-3 mb-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 bg-gray-300 rounded w-20"></div>
+                    <div className="h-4 bg-gray-300 rounded w-16"></div>
                   </div>
                 ))}
               </div>
+              <div className="mb-4">
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="flex flex-wrap gap-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-6 bg-gray-300 rounded w-16"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <div className="flex-1 h-10 bg-gray-300 rounded-xl"></div>
+                <div className="w-20 h-10 bg-gray-300 rounded-xl"></div>
+              </div>
             </div>
-            
-            <div className="flex space-x-2">
-              <button className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600 transition-all duration-300">
-                View Profile
-              </button>
-              <button className="px-4 py-2 border-2 border-green-500 text-green-500 rounded-xl font-medium hover:bg-green-500 hover:text-white transition-all duration-300">
-                Contact
-              </button>
-            </div>
+          ))
+        ) : freelancersError ? (
+          // Error state
+          <div className="col-span-full text-center py-12">
+            <div className="text-red-500 text-4xl mb-4">⚠️</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Failed to load freelancers</h3>
+            <p className="text-gray-600 mb-6">{freelancersError}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
-        ))}
+        ) : recommendedFreelancers.length === 0 ? (
+          // Empty state
+          <div className="col-span-full text-center py-12">
+            <div className="text-gray-400 text-4xl mb-4">👥</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">No freelancers available</h3>
+            <p className="text-gray-600">There are currently no freelancers registered in the system.</p>
+          </div>
+        ) : (
+          // Freelancer cards
+          getRecommendedFreelancers().map(freelancer => (
+            <div key={freelancer.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300 relative">
+              {/* Recommendation Score Badge */}
+              {freelancer.recommendationScore && (
+                <div className="absolute -top-3 -right-3 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                  {freelancer.recommendationScore}% Match
+                </div>
+              )}
+              
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3">
+                  {freelancer.profileImage ? (
+                    <img 
+                      src={freelancer.profileImage} 
+                      alt={freelancer.name}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xl">{freelancer.name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-900">{freelancer.name}</h4>
+                    <p className="text-gray-600 text-sm">{freelancer.university}</p>
+                    <p className="text-blue-600 text-sm font-medium">{freelancer.degreeProgram}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-green-600">{freelancer.rating}★</div>
+                  <div className="text-sm text-gray-500">{freelancer.completedProjects} projects</div>
+                </div>
+              </div>
+
+              {/* Skills Match */}
+              {freelancer.skillMatchCount !== undefined && (
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Skills Match:</span>
+                    <span className="text-sm font-semibold text-green-600">
+                      {freelancer.skillMatchCount}/{freelancer.totalRequiredSkills} skills
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                      style={{ width: `${(freelancer.skillMatchCount / freelancer.totalRequiredSkills) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Hourly Rate:</span>
+                  <span className="font-semibold text-green-600">${freelancer.hourlyRate}/hr</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Availability:</span>
+                  <span className="font-semibold">{freelancer.availability}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Profile Complete:</span>
+                  <span className="font-semibold">{freelancer.profileCompleteness}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Last Active:</span>
+                  <span className="font-semibold">{freelancer.lastActive}</span>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Skills:</p>
+                <div className="flex flex-wrap gap-1">
+                  {freelancer.skills.map(skill => (
+                    <span key={skill} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Reviews */}
+              {freelancer.reviews.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-500 mb-2">Recent Reviews:</p>
+                  <div className="space-y-2">
+                    {freelancer.reviews.slice(0, 2).map((review, index) => (
+                      <div key={index} className="bg-gray-50 rounded-lg p-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-xs font-medium text-gray-700">{review.client}</span>
+                          <span className="text-xs text-yellow-600">{review.rating}★</span>
+                        </div>
+                        <p className="text-xs text-gray-600 line-clamp-2">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex space-x-2">
+                <button className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600 transition-all duration-300">
+                  View Profile
+                </button>
+                <button className="px-4 py-2 border-2 border-green-500 text-green-500 rounded-xl font-medium hover:bg-green-500 hover:text-white transition-all duration-300">
+                  Contact
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
