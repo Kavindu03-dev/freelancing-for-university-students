@@ -16,6 +16,151 @@ function AdminDashboard() {
   console.log('🔍 navigate function:', typeof navigate);
   console.log('🔍 logout import:', typeof logout);
 
+  // Fetch pending posts for approval
+  const fetchPendingPosts = async () => {
+    try {
+      setPostsLoading(true);
+      setPostsError(null);
+      
+      // Try to get admin token first, fallback to userToken
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('/api/posts/admin/pending', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please login again.');
+        }
+        throw new Error('Failed to fetch pending posts');
+      }
+      
+      const data = await response.json();
+      setPendingPosts(data.posts || []);
+    } catch (err) {
+      setPostsError(err.message);
+      console.error('Error fetching pending posts:', err);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  // Approve a post
+  const approvePost = async (postId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`/api/posts/admin/${postId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please login again.');
+        }
+        throw new Error('Failed to approve post');
+      }
+      
+      // Remove from pending list
+      setPendingPosts(prev => prev.filter(post => post._id !== postId));
+      
+      // Show success message
+      alert('Post approved successfully!');
+    } catch (err) {
+      console.error('Error approving post:', err);
+      alert('Failed to approve post: ' + err.message);
+    }
+  };
+
+  // Reject a post
+  const rejectPost = async (postId, rejectionReason) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('Failed to reject post');
+      }
+      
+      const response = await fetch(`/api/posts/admin/${postId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ rejectionReason })
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please login again.');
+        }
+        throw new Error('Failed to reject post');
+      }
+      
+      // Remove from pending list
+      setPendingPosts(prev => prev.filter(post => post._id !== postId));
+      
+      // Show success message
+      alert('Post rejected successfully!');
+    } catch (err) {
+      console.error('Error rejecting post:', err);
+      alert('Failed to reject post: ' + err.message);
+    }
+  };
+
+  // Approve a client post
+  const approveService = async (service) => {
+    try {
+      // All services are client posts now
+      await approvePost(service._id);
+      
+      // Remove from pending services list
+      setPendingServices(prev => prev.filter(s => s._id !== service._id));
+      
+      // Show success message
+      alert('Post approved successfully!');
+    } catch (err) {
+      console.error('Error approving post:', err);
+      alert('Failed to approve post: ' + err.message);
+    }
+  };
+
+  // Reject a client post
+  const rejectService = async (service) => {
+    try {
+      // All services are client posts now
+      const reason = prompt('Please provide a reason for rejection:');
+      if (reason) {
+        await rejectPost(service._id, reason);
+      }
+      
+      // Remove from pending services list
+      setPendingServices(prev => prev.filter(s => s._id !== service._id));
+      
+      // Show success message
+      alert('Post rejected successfully!');
+    } catch (err) {
+      console.error('Error rejecting post:', err);
+      alert('Failed to reject post: ' + err.message);
+    }
+  };
+
   // Enhanced mock data for dashboard
   const [stats, setStats] = useState({
     totalUsers: 0,
@@ -63,36 +208,70 @@ function AdminDashboard() {
     { id: 5, title: "Digital Marketing Campaign", client: "Growth Co", freelancer: "Emily Rodriguez", status: "Completed", budget: "$1200", progress: 100, category: "Marketing" }
   ]);
 
-  // Mock data for pending services of the admin dashboard
-  const [pendingServices] = useState([
-    { 
-      id: 1, 
-      title: "Professional Website Development", 
-      freelancer: "Alex Johnson", 
-      category: "Web Development",
-      price: 500,
-      description: "I will create a modern, responsive website using React and Node.js.",
-      createdAt: "2024-01-16"
-    },
-    { 
-      id: 2, 
-      title: "Logo Design & Brand Identity", 
-      freelancer: "Sarah Chen", 
-      category: "Design",
-      price: 150,
-      description: "Professional logo design with brand guidelines.",
-      createdAt: "2024-01-15"
-    },
-    { 
-      id: 3, 
-      title: "Content Writing & SEO", 
-      freelancer: "Michael Rodriguez", 
-      category: "Writing",
-      price: 80,
-      description: "High-quality content writing for blogs and websites.",
-      createdAt: "2024-01-14"
+  // Fetch pending services and posts when component mounts
+  useEffect(() => {
+    fetchPendingPosts();
+    fetchPendingServices();
+  }, []);
+
+  // Fetch pending client posts only
+  const fetchPendingServices = async () => {
+    try {
+      setServicesLoading(true);
+      setServicesError(null);
+      
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      // Fetch only pending client posts
+      const response = await fetch('/api/posts/admin/pending', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch pending posts');
+      }
+      
+      const postsData = await response.json();
+      const pendingPosts = postsData.posts || [];
+      
+      // Format posts for display
+      const formattedPosts = pendingPosts.map(post => ({
+        ...post,
+        type: 'job',
+        source: 'client',
+        price: post.budget,
+        freelancer: post.clientName,
+        category: post.category
+      }));
+      
+      // Sort by creation date
+      formattedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setPendingServices(formattedPosts);
+      
+    } catch (err) {
+      setServicesError(err.message);
+      console.error('Error fetching pending posts:', err);
+    } finally {
+      setServicesLoading(false);
     }
-  ]);
+  };
+
+  // State for pending services (both freelancer gigs and client posts)
+  const [pendingServices, setPendingServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState(null);
+
+  // State for pending posts approval
+  const [pendingPosts, setPendingPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState(null);
 
   // Mock data for reported content of the admin dashboard
   const [reportedContent] = useState([
@@ -657,6 +836,122 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderPostsApproval = () => (
+    <div className="space-y-6">
+      {/* Posts Approval Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Posts Approval</h3>
+            <p className="text-gray-600 mt-1">Review and approve/reject client job posts before they appear in services</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
+              {pendingPosts.length} Pending Posts
+            </span>
+            <button 
+              onClick={fetchPendingPosts}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Loading and Error States */}
+        {postsLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading pending posts...</p>
+          </div>
+        )}
+
+        {postsError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-800">Error: {postsError}</p>
+          </div>
+        )}
+
+        {/* Posts Table */}
+        {!postsLoading && !postsError && (
+          <div className="overflow-x-auto">
+            {pendingPosts.length === 0 ? (
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Pending Posts</h3>
+                <p className="text-gray-600">All client posts have been reviewed.</p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Details</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {pendingPosts.map(post => (
+                    <tr key={post._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{post.title}</div>
+                          <div className="text-sm text-gray-500 mt-1 line-clamp-2">{post.description}</div>
+                          <div className="text-xs text-gray-400 mt-2">
+                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{post.type}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{post.clientName}</div>
+                        <div className="text-sm text-gray-500">{post.clientOrganization}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          {post.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${post.budget}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(post.deadline).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button 
+                            onClick={() => approvePost(post._id)}
+                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const reason = prompt('Please provide a reason for rejection:');
+                              if (reason) rejectPost(post._id, reason);
+                            }}
+                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors duration-200"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderUsers = () => (
     <div className="space-y-6">
       {/* User Management Header */}
@@ -1039,22 +1334,39 @@ function AdminDashboard() {
     <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Service Approvals</h3>
-          <p className="text-gray-600 mt-1">Review and approve new service submissions</p>
+          <h3 className="text-2xl font-bold text-gray-900">Client Post Approvals</h3>
+          <p className="text-gray-600 mt-1">Review and approve new client job post submissions</p>
         </div>
         <div className="flex items-center space-x-4">
           <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
             {pendingServices.length} Pending
           </span>
-          <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-            Bulk Actions
+          <button 
+            onClick={fetchPendingServices}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+          >
+            Refresh Posts
           </button>
         </div>
       </div>
+
+      {/* Loading and Error States */}
+      {servicesLoading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading pending client posts...</p>
+        </div>
+      )}
+
+      {servicesError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-800">Error: {servicesError}</p>
+        </div>
+      )}
       
       <div className="space-y-6">
-        {pendingServices.map(service => (
-          <div key={service.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
+        {!servicesLoading && !servicesError && pendingServices.map(service => (
+          <div key={service._id || service.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-3">
@@ -1065,7 +1377,12 @@ function AdminDashboard() {
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-gray-900">{service.title}</h4>
-                    <p className="text-yellow-600 font-medium">${service.price}</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-yellow-600 font-medium">${service.price || service.budget}</p>
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                        Client Job
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4 leading-relaxed">{service.description}</p>
@@ -1074,7 +1391,7 @@ function AdminDashboard() {
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span className="text-gray-600">By: <span className="font-medium">{service.freelancer}</span></span>
+                    <span className="text-gray-600">By: <span className="font-medium">{service.freelancer || service.clientName}</span></span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1086,25 +1403,31 @@ function AdminDashboard() {
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                     </svg>
-                    <span className="text-gray-600">Price: <span className="font-medium">${service.price}</span></span>
+                    <span className="text-gray-600">Price: <span className="font-medium">${service.price || service.budget}</span></span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-gray-600">Posted: <span className="font-medium">{service.createdAt}</span></span>
+                    <span className="text-gray-600">Posted: <span className="font-medium">{new Date(service.createdAt).toLocaleDateString()}</span></span>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex space-x-4">
-              <button className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
+              <button 
+                onClick={() => approveService(service)}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span>Approve</span>
               </button>
-              <button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
+              <button 
+                onClick={() => rejectService(service)}
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1121,7 +1444,7 @@ function AdminDashboard() {
           </div>
         ))}
         
-        {pendingServices.length === 0 && (
+        {!servicesLoading && !servicesError && pendingServices.length === 0 && (
           <div className="text-center py-12">
             <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
               <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1129,7 +1452,7 @@ function AdminDashboard() {
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">All caught up!</h3>
-            <p className="text-gray-600 max-w-md mx-auto">No pending services to review. All submissions have been processed.</p>
+            <p className="text-gray-600 max-w-md mx-auto">No pending client posts to review. All submissions have been processed.</p>
           </div>
         )}
       </div>
@@ -1747,6 +2070,7 @@ function AdminDashboard() {
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
                 { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
+                { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
                 { id: "moderation", name: "Moderation", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
                 { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
@@ -1792,11 +2116,12 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-                    {activeTab === "services" && renderServices()}
-        {activeTab === "skills" && renderSkills()}
-        {activeTab === "moderation" && renderModeration()}
-        {activeTab === "analytics" && renderAnalytics()}
-        {activeTab === "settings" && renderSettings()}
+            {activeTab === "services" && renderServices()}
+            {activeTab === "skills" && renderSkills()}
+            {activeTab === "posts" && renderPostsApproval()}
+            {activeTab === "moderation" && renderModeration()}
+            {activeTab === "analytics" && renderAnalytics()}
+            {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>

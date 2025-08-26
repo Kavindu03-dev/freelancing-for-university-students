@@ -298,9 +298,9 @@ const adminLogin = async (req, res) => {
       });
     }
 
-    // Check if admin exists
-    const admin = await Admin.findOne({ email });
-    if (!admin) {
+    // Check if admin user exists in User model
+    const adminUser = await User.findOne({ email, userType: 'admin' });
+    if (!adminUser) {
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid admin credentials' 
@@ -308,7 +308,7 @@ const adminLogin = async (req, res) => {
     }
 
     // Check password
-    const isMatch = await bcrypt.compare(password, admin.password);
+    const isMatch = await bcrypt.compare(password, adminUser.password);
     if (!isMatch) {
       return res.status(401).json({ 
         success: false, 
@@ -320,10 +320,10 @@ const adminLogin = async (req, res) => {
       success: true,
       message: 'Admin login successful',
       data: {
-        _id: admin._id,
-        email: admin.email,
+        _id: adminUser._id,
+        email: adminUser.email,
         userType: 'admin',
-        token: generateToken(admin._id)
+        token: generateToken(adminUser._id)
       }
     });
   } catch (error) {
