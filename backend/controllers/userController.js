@@ -265,10 +265,292 @@ const removeProfileImage = async (req, res) => {
   }
 };
 
+// @desc    Get all users (admin only)
+// @route   GET /api/users/admin/all
+// @access  Private (Admin only)
+const getAllUsers = async (req, res) => {
+  try {
+    // Get query parameters for filtering and pagination
+    const { 
+      page = 1, 
+      limit = 20, 
+      userType, 
+      status, 
+      search 
+    } = req.query;
+
+    // Build filter object
+    const filter = {};
+    
+    if (userType && userType !== 'all') {
+      filter.userType = userType;
+    }
+    
+
+    
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        filter.status = 'active';
+      } else if (status === 'suspended') {
+        filter.status = 'suspended';
+      }
+    }
+    
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Get users with pagination and filtering
+    const users = await User.find(filter)
+      .select('-password') // Exclude password field
+      .sort({ createdAt: -1 }) // Sort by newest first
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count for pagination
+    const totalUsers = await User.countDocuments(filter);
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Get statistics
+    const stats = {
+      total: totalUsers,
+      freelancers: await User.countDocuments({ userType: 'freelancer' }),
+      clients: await User.countDocuments({ userType: 'client' }),
+      universityStaff: await User.countDocuments({ userType: 'universityStaff' }),
+      active: await User.countDocuments({ status: 'active' }),
+      suspended: await User.countDocuments({ status: 'suspended' })
+    };
+
+    res.json({
+      success: true,
+      data: users,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalUsers,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
+      stats
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Verify user (admin only)
+// @route   PUT /api/users/admin/:id/verify
+// @access  Private (Admin only)
+const verifyUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User verified successfully',
+      data: {
+        _id: user._id,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (error) {
+    console.error('Verify user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to verify user',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Unverify user (admin only)
+// @route   PUT /api/users/admin/:id/unverify
+// @access  Private (Admin only)
+const unverifyUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.isVerified = false;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User unverified successfully',
+      data: {
+        _id: user._id,
+        isVerified: user.isVerified
+      }
+    });
+  } catch (error) {
+    console.error('Unverify user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to unverify user',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Suspend user (admin only)
+// @route   PUT /api/users/admin/:id/suspend
+// @access  Private (Admin only)
+const suspendUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.status = 'suspended';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User suspended successfully',
+      data: {
+        _id: user._id,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Suspend user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to suspend user',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Activate user (admin only)
+// @route   PUT /api/users/admin/:id/activate
+// @access  Private (Admin only)
+const activateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    user.status = 'active';
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'User activated successfully',
+      data: {
+        _id: user._id,
+        status: user.status
+      }
+    });
+  } catch (error) {
+    console.error('Activate user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to activate user',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Delete user (admin only)
+// @route   DELETE /api/users/admin/:id
+// @access  Private (Admin only)
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Delete CV file if it exists (for freelancers)
+    if (user.cvFile && user.cvFile.filePath) {
+      try {
+        const fs = await import('fs');
+        if (fs.existsSync(user.cvFile.filePath)) {
+          fs.unlinkSync(user.cvFile.filePath);
+        }
+      } catch (fileError) {
+        console.error('Error deleting CV file:', fileError);
+      }
+    }
+
+    // Delete profile image if it exists
+    if (user.profileImage && user.profileImage.url) {
+      try {
+        await cleanupTempFile(user.profileImage.deleteUrl);
+      } catch (imageError) {
+        console.error('Error deleting profile image:', imageError);
+      }
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete user',
+      error: error.message
+    });
+  }
+};
+
 export default {
   getUserProfile,
   updateUserProfile,
   deleteAccount,
   uploadProfileImage,
-  removeProfileImage
+  removeProfileImage,
+  getAllUsers,
+  verifyUser,
+  unverifyUser,
+  suspendUser,
+  activateUser,
+  deleteUser
 };
