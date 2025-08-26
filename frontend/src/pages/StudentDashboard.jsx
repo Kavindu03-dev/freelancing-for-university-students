@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import VerificationRequestPopup from "../components/VerificationRequestPopup";
 import OnboardingWizard from "../components/OnboardingWizard";
 import ApplicationTracker from "../components/ApplicationTracker";
 import SkillsAssessment from "../components/SkillsAssessment";
@@ -31,6 +32,14 @@ function StudentDashboard() {
   const [isSavingSummary, setIsSavingSummary] = useState(false);
   const [summarySaveMessage, setSummarySaveMessage] = useState('');
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
+  
+  // Verification state
+  const [showVerificationPopup, setShowVerificationPopup] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState({
+    isVerified: false,
+    verificationRequest: null
+  });
+  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -1077,10 +1086,45 @@ function StudentDashboard() {
     }
   }, [location.search, profileCompleteness]);
 
+  // Fetch verification status when component mounts
+  useEffect(() => {
+    if (studentData) {
+      fetchVerificationStatus();
+    }
+  }, [studentData]);
+
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
     navigate('/');
+  };
+
+  // Verification functions
+  const fetchVerificationStatus = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/verification/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setVerificationStatus(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
+
+  const handleVerificationRequest = () => {
+    setShowVerificationPopup(true);
+  };
+
+  const handleVerificationRequestSubmitted = () => {
+    fetchVerificationStatus();
   };
 
   const handleApply = (post) => {
@@ -2094,6 +2138,19 @@ function StudentDashboard() {
             <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
               View Portfolio
             </button>
+            {!verificationStatus.isVerified && (
+              <button 
+                onClick={handleVerificationRequest}
+                className="bg-green-500 hover:bg-green-400 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+              >
+                {verificationStatus.verificationRequest?.status === 'pending' ? 'Request Pending' : 'Verify Now'}
+              </button>
+            )}
+            {verificationStatus.isVerified && (
+              <button className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors cursor-default">
+                ✓ Verified
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -3127,6 +3184,13 @@ function StudentDashboard() {
         onComplete={handleOnboardingComplete}
         currentProfileData={studentData}
         profileCompleteness={profileCompleteness}
+      />
+
+      {/* Verification Request Popup */}
+      <VerificationRequestPopup
+        isOpen={showVerificationPopup}
+        onClose={() => setShowVerificationPopup(false)}
+        onRequestSubmitted={handleVerificationRequestSubmitted}
       />
     </div>
   );

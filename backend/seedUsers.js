@@ -88,7 +88,7 @@ const seedUsers = async () => {
       professionalSummary: 'Experienced professor with expertise in software engineering and AI',
       agreeToTerms: true,
       agreeToMarketing: false,
-      isVerified: false
+      isVerified: true
     });
 
     // Save all users
