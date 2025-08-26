@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import Admin from '../models/Admin.js';
 
 const protect = async (req, res, next) => {
   let token;
@@ -59,16 +58,26 @@ const authenticateAdmin = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
 
-      // Get admin from the token
-      req.admin = await Admin.findById(decoded.id).select('-password');
+      // Get user from the token and check if they're an admin
+      const user = await User.findById(decoded.id).select('-password');
 
-      if (!req.admin) {
+      if (!user) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Admin not found' 
+          message: 'User not found' 
         });
       }
 
+      // Check if user is an admin
+      if (user.userType !== 'admin') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Access denied. Admin privileges required.' 
+        });
+      }
+
+      // Add admin user to request object
+      req.admin = user;
       next();
     } catch (error) {
       console.error('Token verification error:', error);

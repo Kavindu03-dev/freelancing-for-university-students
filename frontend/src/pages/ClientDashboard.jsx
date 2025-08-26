@@ -10,53 +10,28 @@ function ClientDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Mock data
-  const [stats] = useState({
-    postedProjects: 8,
-    activeProjects: 3,
-    completedProjects: 5,
-    totalSpent: 4200
+  // Posts state
+  const [jobPosts, setJobPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    postedProjects: 0,
+    activeProjects: 0,
+    completedProjects: 0,
+    totalSpent: 0
   });
 
-  const [projects] = useState([
-    { id: 1, title: "Website Redesign", freelancer: "John Student", status: "In Progress", budget: 800, progress: 60 },
-    { id: 2, title: "Logo Design", freelancer: "Sarah Wilson", status: "Completed", budget: 300, progress: 100 },
-    { id: 3, title: "Mobile App Development", freelancer: "Mike Johnson", status: "In Progress", budget: 1500, progress: 30 }
-  ]);
-
-  // Mock data for job/project posts
-  const [jobPosts, setJobPosts] = useState([
-    {
-      id: 1,
-      title: "Website Redesign for E-commerce",
-      type: "Project",
-      category: "Web Development",
-      budget: 800,
-      deadline: "2024-02-15",
-      location: "Remote",
-      status: "Active",
-      applications: 12,
-      requiredSkills: ["React", "Node.js", "MongoDB"],
-      degreeField: "Computer Science",
-      description: "Redesign an existing e-commerce website with modern UI/UX",
-      attachments: ["requirements.pdf", "design-mockup.png"]
-    },
-    {
-      id: 2,
-      title: "Logo Design for Startup",
-      type: "Project",
-      category: "Graphic Design",
-      budget: 300,
-      deadline: "2024-01-30",
-      location: "Remote",
-      status: "Completed",
-      applications: 8,
-      requiredSkills: ["Adobe Illustrator", "Logo Design"],
-      degreeField: "Graphic Design",
-      description: "Create a modern logo for a tech startup",
-      attachments: ["brand-guidelines.pdf"]
-    }
-  ]);
+  // Projects derived from posts
+  const projects = jobPosts.slice(0, 3).map(post => ({
+    id: post._id,
+    title: post.title,
+    freelancer: "Pending Assignment",
+    status: post.status,
+    budget: post.budget,
+    progress: post.status === 'Completed' ? 100 : post.status === 'In Progress' ? 60 : 0
+  }));
 
   const [applications, setApplications] = useState([
     {
@@ -174,11 +149,132 @@ function ClientDashboard() {
       .sort((a, b) => b.recommendationScore - a.recommendationScore);
   };
 
+  // API functions
+  const fetchPosts = async () => {
+    if (!clientData?._id) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`/api/posts/client/${clientData._id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
+      }
+      
+      const data = await response.json();
+      setJobPosts(data.posts || []);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createPostAPI = async (postData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('/api/posts', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create post');
+      }
+      
+      const data = await response.json();
+      return data.post;
+    } catch (err) {
+      setError(err.message);
+      console.error('Error creating post:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePostAPI = async (postId, postData) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update post');
+      }
+      
+      const data = await response.json();
+      return data.post;
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating post:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePostAPI = async (postId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete post');
+      }
+      
+      return true;
+    } catch (err) {
+      setError(err.message);
+      console.error('Error deleting post:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     if (userData) {
       const parsed = JSON.parse(userData);
-              if (parsed.userType === 'client') {
+      if (parsed.userType === 'client') {
         setClientData(parsed);
       } else {
         navigate('/signin');
@@ -187,6 +283,33 @@ function ClientDashboard() {
       navigate('/signin');
     }
   }, [navigate]);
+
+  // Calculate stats from posts
+  const calculateStats = (posts) => {
+    const totalPosts = posts.length;
+    const activePosts = posts.filter(post => post.status === 'Active').length;
+    const completedPosts = posts.filter(post => post.status === 'Completed').length;
+    const totalSpent = posts.reduce((sum, post) => sum + (post.budget || 0), 0);
+    
+    setStats({
+      postedProjects: totalPosts,
+      activeProjects: activePosts,
+      completedProjects: completedPosts,
+      totalSpent
+    });
+  };
+
+  // Fetch posts when client data is available
+  useEffect(() => {
+    if (clientData?._id) {
+      fetchPosts();
+    }
+  }, [clientData]);
+
+  // Update stats when posts change
+  useEffect(() => {
+    calculateStats(jobPosts);
+  }, [jobPosts]);
 
   // Handle URL query parameter for tab
   useEffect(() => {
@@ -353,53 +476,38 @@ function ClientDashboard() {
     navigate('/');
   };
 
-  // Freelancer profile popup handlers
-  const handleViewProfile = (freelancer) => {
-    setSelectedFreelancer(freelancer);
-    setShowFreelancerPopup(true);
-  };
-
-  const handleContactFreelancer = (freelancer) => {
-    // Navigate to messages page with the freelancer's conversation
-    navigate(`/messages?freelancer=${freelancer.id}`);
-  };
-
-  const handleCloseFreelancerPopup = () => {
-    setShowFreelancerPopup(false);
-    setSelectedFreelancer(null);
-  };
-
-  const handleCreatePost = () => {
-    if (editingPost) {
-      // Update existing post
-      setJobPosts(prev => prev.map(post => 
-        post.id === editingPost.id ? { ...post, ...postForm } : post
-      ));
-      setEditingPost(null);
-    } else {
-      // Create new post
-      const newPost = {
-        id: Date.now(),
-        ...postForm,
-        status: "Active",
-        applications: 0,
-        createdDate: new Date().toISOString().split('T')[0]
-      };
-      setJobPosts(prev => [newPost, ...prev]);
+  const handleCreatePost = async () => {
+    try {
+      if (editingPost) {
+        // Update existing post
+        const updatedPost = await updatePostAPI(editingPost._id, postForm);
+        setJobPosts(prev => prev.map(post => 
+          post._id === editingPost._id ? updatedPost : post
+        ));
+        setEditingPost(null);
+      } else {
+        // Create new post
+        const newPost = await createPostAPI(postForm);
+        setJobPosts(prev => [newPost, ...prev]);
+      }
+      
+      setShowCreateForm(false);
+      setPostForm({
+        title: "",
+        type: "Project",
+        category: "",
+        budget: "",
+        deadline: "",
+        location: "Remote",
+        requiredSkills: "",
+        degreeField: "",
+        description: "",
+        attachments: []
+      });
+    } catch (error) {
+      // Error is already handled in the API functions
+      console.error('Error in handleCreatePost:', error);
     }
-    setShowCreateForm(false);
-    setPostForm({
-      title: "",
-      type: "Project",
-      category: "",
-      budget: "",
-      deadline: "",
-      location: "Remote",
-      requiredSkills: "",
-      degreeField: "",
-      description: "",
-      attachments: []
-    });
   };
 
   const handleEditPost = (post) => {
@@ -409,20 +517,26 @@ function ClientDashboard() {
       type: post.type,
       category: post.category,
       budget: post.budget,
-      deadline: post.deadline,
+      deadline: post.deadline.split('T')[0], // Convert ISO date to YYYY-MM-DD format
       location: post.location,
-      requiredSkills: post.requiredSkills.join(", "),
+      requiredSkills: Array.isArray(post.requiredSkills) ? post.requiredSkills.join(", ") : post.requiredSkills,
       degreeField: post.degreeField,
       description: post.description,
-      attachments: post.attachments
+      attachments: post.attachments || []
     });
     setShowCreateForm(true);
   };
 
-  const handleDeletePost = (postId) => {
+  const handleDeletePost = async (postId) => {
     if (window.confirm("Are you sure you want to delete this post?")) {
-      setJobPosts(prev => prev.filter(post => post.id !== postId));
-      setApplications(prev => prev.filter(app => app.postId !== postId));
+      try {
+        await deletePostAPI(postId);
+        setJobPosts(prev => prev.filter(post => post._id !== postId));
+        setApplications(prev => prev.filter(app => app.postId !== postId));
+      } catch (error) {
+        // Error is already handled in the API function
+        console.error('Error in handleDeletePost:', error);
+      }
     }
   };
 
@@ -438,6 +552,23 @@ function ClientDashboard() {
       ...prev,
       attachments: [...prev.attachments, ...files.map(f => f.name)]
     }));
+  };
+
+  // Freelancer popup functions
+  const handleViewProfile = (freelancer) => {
+    setSelectedFreelancer(freelancer);
+    setShowFreelancerPopup(true);
+  };
+
+  const handleCloseFreelancerPopup = () => {
+    setShowFreelancerPopup(false);
+    setSelectedFreelancer(null);
+  };
+
+  const handleContactFreelancer = (freelancer) => {
+    // TODO: Implement contact functionality
+    console.log('Contacting freelancer:', freelancer);
+    // You can add logic here to open a contact form or redirect to messaging
   };
 
   const renderOverview = () => (
@@ -755,9 +886,21 @@ function ClientDashboard() {
           </button>
           <button
             type="submit"
-            className="px-6 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600"
+            disabled={loading}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
+              loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600'
+            } text-white`}
           >
-            {editingPost ? 'Update Post' : 'Create Post'}
+            {loading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                {editingPost ? 'Updating...' : 'Creating...'}
+              </div>
+            ) : (
+              editingPost ? 'Update Post' : 'Create Post'
+            )}
           </button>
         </div>
       </form>
@@ -778,64 +921,108 @@ function ClientDashboard() {
 
       {showCreateForm && renderCreatePost()}
 
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applications</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {jobPosts.map(post => (
-                <tr key={post.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{post.title}</div>
-                      <div className="text-sm text-gray-500">{post.category}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                      {post.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">${post.budget}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{post.deadline}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{post.applications}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      post.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {post.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => handleEditPost(post)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeletePost(post.id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {loading && (
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading posts...</p>
         </div>
-      </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error loading posts</h3>
+              <p className="mt-2 text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && (
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applications</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {jobPosts.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                      <div className="flex flex-col items-center">
+                        <svg className="h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-lg font-medium text-gray-900 mb-2">No posts yet</p>
+                        <p className="text-gray-600">Create your first job or project post to get started!</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  jobPosts.map(post => (
+                    <tr key={post._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{post.title}</div>
+                          <div className="text-sm text-gray-500">{post.category}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                          {post.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">${post.budget}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {new Date(post.deadline).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{post.applications}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          post.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                          post.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                          post.status === 'Completed' ? 'bg-purple-100 text-purple-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {post.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => handleEditPost(post)}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeletePost(post._id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 

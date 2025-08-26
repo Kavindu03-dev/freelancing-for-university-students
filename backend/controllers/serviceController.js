@@ -1,4 +1,5 @@
 import Service from '../models/Service.js';
+import Post from '../models/Post.js';
 import User from '../models/User.js';
 
 // @desc    Create a new service
@@ -41,63 +42,95 @@ const createService = async (req, res) => {
   }
 };
 
-// @desc    Get all services (with filters)
+// @desc    Get all services (with filters) - including posts and gigs
 // @route   GET /api/services
 // @access  Public
 const getServices = async (req, res) => {
   try {
-    const { category, search, status, page = 1, limit = 10 } = req.query;
+    const { category, search, type, page = 1, limit = 10 } = req.query;
 
-    // Build filter object
-    const filter = { isActive: true };
-    
+    // Build filter for gigs (services)
+    const gigFilter = { isActive: true };
     if (category && category !== 'All') {
-      filter.category = category;
+      gigFilter.category = category;
     }
-    
-    if (status) {
-      filter.status = status;
-    } else {
-      // By default, only show approved services to public
-      filter.status = 'approved';
-    }
-
-    // Build search query
-    let searchQuery = {};
     if (search) {
-      searchQuery = {
-        $or: [
-          { title: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } },
-          { skills: { $regex: search, $options: 'i' } }
-        ]
-      };
+      gigFilter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { skills: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    // Combine filters
-    const finalFilter = { ...filter, ...searchQuery };
+    // Build filter for posts (client jobs)
+    const postFilter = { isActive: true, approvalStatus: 'Approved' };
+    if (category && category !== 'All') {
+      postFilter.category = category;
+    }
+    if (search) {
+      postFilter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { requiredSkills: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
 
     // Calculate pagination
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Get services with pagination
-    const services = await Service.find(finalFilter)
-      .populate('freelancer', 'firstName lastName email')
+    // Get gigs (services)
+    const gigs = await Service.find(gigFilter)
+      .populate('freelancerId', 'firstName lastName email university degreeProgram')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Get total count
-    const total = await Service.countDocuments(finalFilter);
+    // Get posts (client jobs)
+    const posts = await Post.find(postFilter)
+      .populate('clientId', 'firstName lastName email organization')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Combine and format results
+    const allServices = [
+      ...gigs.map(gig => ({
+        ...gig.toObject(),
+        type: 'gig',
+        source: 'freelancer'
+      })),
+      ...posts.map(post => ({
+        ...post.toObject(),
+        type: 'job',
+        source: 'client',
+        price: post.budget,
+        priceType: 'Fixed',
+        deliveryTime: Math.ceil((new Date(post.deadline) - new Date()) / (1000 * 60 * 60 * 24)),
+        deliveryUnit: 'Days'
+      }))
+    ];
+
+    // Sort by creation date
+    allServices.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Get total counts
+    const totalGigs = await Service.countDocuments(gigFilter);
+    const totalPosts = await Post.countDocuments(postFilter);
+    const total = totalGigs + totalPosts;
 
     res.json({
       success: true,
-      data: services,
+      data: allServices,
       pagination: {
         current: parseInt(page),
-        total: Math.ceil(total / limit),
+        total: Math.ceil(total / parseInt(limit)),
         hasNext: page * limit < total,
         hasPrev: page > 1
+      },
+      summary: {
+        totalGigs,
+        totalPosts,
+        total
       }
     });
   } catch (error) {
