@@ -3035,6 +3035,7 @@ function StudentDashboard() {
               { id: "gigs", name: "My Gigs", icon: "💼" },
               { id: "portfolio", name: "Portfolio", icon: "🎨" },
               { id: "skills", name: "Skills", icon: "🛠️" },
+              { id: "messages", name: "Messages", icon: "💬" },
               { id: "profile", name: "Profile", icon: "👤" }
             ].map(tab => (
               <button
@@ -3098,6 +3099,19 @@ function StudentDashboard() {
                   console.log('Update learning path:', path);
                 }}
               />
+            )}
+            {activeTab === "messages" && (
+              <div className="text-center py-12">
+                <div className="text-gray-400 text-4xl mb-4">💬</div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
+                <p className="text-gray-600 mb-6">Connect with clients and manage your conversations.</p>
+                <a
+                  href="/messages"
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-medium hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300"
+                >
+                  Open Messages
+                </a>
+              </div>
             )}
             {activeTab === "profile" && renderProfile()}
           </div>

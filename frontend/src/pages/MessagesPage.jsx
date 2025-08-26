@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { isAuthenticated, getUserData } from '../utils/auth';
 
 function MessagesPage() {
@@ -11,6 +11,7 @@ function MessagesPage() {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const currentUser = getUserData();
+  const location = useLocation();
 
   // Mock conversations data
   const mockConversations = [
@@ -145,13 +146,55 @@ function MessagesPage() {
 
   useEffect(() => {
     if (isAuthenticated()) {
-      setConversations(mockConversations);
-      if (mockConversations.length > 0) {
-        setSelectedConversation(mockConversations[0]);
-        setMessages(mockMessages[mockConversations[0].id] || []);
+      // Check if there's a freelancer parameter in the URL
+      const searchParams = new URLSearchParams(location.search);
+      const freelancerId = searchParams.get('freelancer');
+      
+      if (freelancerId) {
+        // Check if conversation already exists with this freelancer
+        const existingConversation = mockConversations.find(conv => conv.participant.id === parseInt(freelancerId));
+        
+        if (existingConversation) {
+          // Select existing conversation
+          setConversations(mockConversations);
+          setSelectedConversation(existingConversation);
+          setMessages(mockMessages[existingConversation.id] || []);
+        } else {
+          // Create new conversation with freelancer
+          const newConversation = {
+            id: Date.now(),
+            participant: {
+              id: parseInt(freelancerId),
+              name: 'Freelancer', // This would be fetched from API
+              avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
+              isOnline: true,
+              lastSeen: 'Online'
+            },
+            lastMessage: {
+              text: 'Start a new conversation',
+              timestamp: new Date().toISOString(),
+              senderId: currentUser?.id || 1
+            },
+            unreadCount: 0,
+            projectTitle: 'New Project Discussion',
+            status: 'pending'
+          };
+          
+          const updatedConversations = [newConversation, ...mockConversations];
+          setConversations(updatedConversations);
+          setSelectedConversation(newConversation);
+          setMessages([]);
+        }
+      } else {
+        // Normal flow - show existing conversations
+        setConversations(mockConversations);
+        if (mockConversations.length > 0) {
+          setSelectedConversation(mockConversations[0]);
+          setMessages(mockMessages[mockConversations[0].id] || []);
+        }
       }
     }
-  }, []);
+  }, [location.search, currentUser?.id]);
 
   useEffect(() => {
     scrollToBottom();

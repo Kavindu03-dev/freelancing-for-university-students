@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import FreelancerProfilePopup from "../components/FreelancerProfilePopup";
 
 function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -108,6 +109,10 @@ function ClientDashboard() {
   const [recommendedFreelancers, setRecommendedFreelancers] = useState([]);
   const [loadingFreelancers, setLoadingFreelancers] = useState(true);
   const [freelancersError, setFreelancersError] = useState(null);
+  
+  // State for freelancer profile popup
+  const [selectedFreelancer, setSelectedFreelancer] = useState(null);
+  const [showFreelancerPopup, setShowFreelancerPopup] = useState(false);
   
   // Edit profile state
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -346,6 +351,22 @@ function ClientDashboard() {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
     navigate('/');
+  };
+
+  // Freelancer profile popup handlers
+  const handleViewProfile = (freelancer) => {
+    setSelectedFreelancer(freelancer);
+    setShowFreelancerPopup(true);
+  };
+
+  const handleContactFreelancer = (freelancer) => {
+    // Navigate to messages page with the freelancer's conversation
+    navigate(`/messages?freelancer=${freelancer.id}`);
+  };
+
+  const handleCloseFreelancerPopup = () => {
+    setShowFreelancerPopup(false);
+    setSelectedFreelancer(null);
   };
 
   const handleCreatePost = () => {
@@ -1106,10 +1127,16 @@ function ClientDashboard() {
               )}
               
               <div className="flex space-x-2">
-                <button className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600 transition-all duration-300">
+                <button 
+                  onClick={() => handleViewProfile(freelancer)}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600 transition-all duration-300"
+                >
                   View Profile
                 </button>
-                <button className="px-4 py-2 border-2 border-green-500 text-green-500 rounded-xl font-medium hover:bg-green-500 hover:text-white transition-all duration-300">
+                <button 
+                  onClick={() => handleContactFreelancer(freelancer)}
+                  className="px-4 py-2 border-2 border-green-500 text-green-500 rounded-xl font-medium hover:bg-green-500 hover:text-white transition-all duration-300"
+                >
                   Contact
                 </button>
               </div>
@@ -1607,6 +1634,14 @@ function ClientDashboard() {
             </div>
           </div>
         )}
+
+        {/* Freelancer Profile Popup */}
+        <FreelancerProfilePopup
+          freelancer={selectedFreelancer}
+          isOpen={showFreelancerPopup}
+          onClose={handleCloseFreelancerPopup}
+          onContact={handleContactFreelancer}
+        />
     </div>
   );
 }
