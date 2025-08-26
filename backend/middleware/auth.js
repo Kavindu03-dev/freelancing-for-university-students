@@ -13,11 +13,6 @@ const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
 
-      // Debug logging
-      console.log('Auth Middleware Debug:');
-      console.log('Decoded token ID:', decoded.id);
-      console.log('Decoded token type:', typeof decoded.id);
-
       // Get user from the token
       req.user = await User.findById(decoded.id).select('-password');
 
@@ -27,10 +22,6 @@ const protect = async (req, res, next) => {
           message: 'User not found' 
         });
       }
-
-      // Debug logging
-      console.log('User found:', req.user._id);
-      console.log('User type:', req.user.userType);
 
       next();
     } catch (error) {

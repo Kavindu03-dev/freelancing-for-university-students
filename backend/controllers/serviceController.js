@@ -173,7 +173,8 @@ const getServicesByFreelancer = async (req, res) => {
   try {
     const services = await Service.find({
       freelancer: req.params.id,
-      isActive: true
+      isActive: true,
+      status: 'approved'
     }).populate('freelancer', 'firstName lastName email');
 
     res.json({
@@ -223,52 +224,10 @@ const updateService = async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    // Enhanced debugging and ownership verification
-    console.log('=== UPDATE SERVICE DEBUG ===');
-    console.log('Service ID:', req.params.id);
-    console.log('Service freelancer ID:', service.freelancer);
-    console.log('Service freelancer ID type:', typeof service.freelancer);
-    console.log('Service freelancer ID toString:', service.freelancer.toString());
-    console.log('User ID from token:', req.user._id);
-    console.log('User ID type:', typeof req.user._id);
-    console.log('User type:', req.user.userType);
-    
-    // Multiple comparison methods
-    const stringComparison = service.freelancer.toString() === req.user._id;
-    const directComparison = service.freelancer == req.user._id;
-    const strictComparison = service.freelancer === req.user._id;
-    
-    console.log('String comparison:', stringComparison);
-    console.log('Direct comparison:', directComparison);
-    console.log('Strict comparison:', strictComparison);
-    
     // Check if user owns the service or is admin
-    const isOwner = stringComparison || directComparison;
-    const isAdmin = req.user.userType === 'admin';
-    
-    console.log('Is owner?', isOwner);
-    console.log('Is admin?', isAdmin);
-    
-    // TEMPORARY: Allow operation for debugging (remove this in production)
-    if (!isOwner && !isAdmin) {
-      console.log('⚠️ TEMPORARY BYPASS: Allowing operation for debugging');
-      console.log('This bypass should be removed in production!');
+    if (service.freelancer.toString() !== req.user._id && req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
-    
-    // Original check (commented out for debugging)
-    /*
-    if (!isOwner && !isAdmin) {
-      console.log('ACCESS DENIED - User does not own service and is not admin');
-      return res.status(403).json({ 
-        message: 'Access denied - You can only edit your own services',
-        debug: {
-          serviceOwner: service.freelancer.toString(),
-          currentUser: req.user._id,
-          userType: req.user.userType
-        }
-      });
-    }
-    */
 
     // Update service
     const updatedService = await Service.findByIdAndUpdate(
@@ -285,8 +244,6 @@ const updateService = async (req, res) => {
       },
       { new: true }
     ).populate('freelancer', 'firstName lastName email');
-
-    console.log('Service updated successfully');
 
     res.json({
       success: true,
@@ -310,56 +267,12 @@ const deleteService = async (req, res) => {
       return res.status(404).json({ message: 'Service not found' });
     }
 
-    // Enhanced debugging and ownership verification
-    console.log('=== DELETE SERVICE DEBUG ===');
-    console.log('Service ID:', req.params.id);
-    console.log('Service freelancer ID:', service.freelancer);
-    console.log('Service freelancer ID type:', typeof service.freelancer);
-    console.log('Service freelancer ID toString:', service.freelancer.toString());
-    console.log('User ID from token:', req.user._id);
-    console.log('User ID type:', typeof req.user._id);
-    console.log('User type:', req.user.userType);
-    
-    // Multiple comparison methods
-    const stringComparison = service.freelancer.toString() === req.user._id;
-    const directComparison = service.freelancer == req.user._id;
-    const strictComparison = service.freelancer === req.user._id;
-    
-    console.log('String comparison:', stringComparison);
-    console.log('Direct comparison:', directComparison);
-    console.log('Strict comparison:', strictComparison);
-    
     // Check if user owns the service or is admin
-    const isOwner = stringComparison || directComparison;
-    const isAdmin = req.user.userType === 'admin';
-    
-    console.log('Is owner?', isOwner);
-    console.log('Is admin?', isAdmin);
-    
-    // TEMPORARY: Allow operation for debugging (remove this in production)
-    if (!isOwner && !isAdmin) {
-      console.log('⚠️ TEMPORARY BYPASS: Allowing operation for debugging');
-      console.log('This bypass should be removed in production!');
+    if (service.freelancer.toString() !== req.user._id && req.user.userType !== 'admin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
-    
-    // Original check (commented out for debugging)
-    /*
-    if (!isOwner && !isAdmin) {
-      console.log('ACCESS DENIED - User does not own service and is not admin');
-      return res.status(500).json({ 
-        message: 'Access denied - You can only delete your own services',
-        debug: {
-          serviceOwner: service.freelancer.toString(),
-          currentUser: req.user._id,
-          userType: req.user.userType
-        }
-      });
-    }
-    */
 
     await Service.findByIdAndDelete(req.params.id);
-
-    console.log('Service deleted successfully');
 
     res.json({
       success: true,
@@ -424,34 +337,6 @@ const addReview = async (req, res) => {
   }
 };
 
-// @desc    Test endpoint to verify user authentication
-// @route   GET /api/services/test-auth
-// @access  Private
-const testAuth = async (req, res) => {
-  try {
-    console.log('=== TEST AUTH ENDPOINT ===');
-    console.log('User object:', req.user);
-    console.log('User ID:', req.user._id);
-    console.log('User type:', req.user.userType);
-    console.log('User email:', req.user.email);
-    
-    res.json({
-      success: true,
-      message: 'Authentication test successful',
-      user: {
-        id: req.user._id,
-        type: req.user.userType,
-        email: req.user.email,
-        firstName: req.user.firstName,
-        lastName: req.user.lastName
-      }
-    });
-  } catch (error) {
-    console.error('Error in test auth:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
 export default {
   createService,
   getServices,
@@ -461,6 +346,5 @@ export default {
   getPendingServices,
   updateService,
   deleteService,
-  addReview,
-  testAuth
+  addReview
 };

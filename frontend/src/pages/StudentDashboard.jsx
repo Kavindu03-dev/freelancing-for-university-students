@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import OnboardingWizard from "../components/OnboardingWizard";
-import ApplicationTracker from "../components/ApplicationTracker";
-import SkillsAssessment from "../components/SkillsAssessment";
-import EnhancedRecommendations from "../components/EnhancedRecommendations";
-import GigManagement from "../components/GigManagement";
 
 function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -30,7 +25,6 @@ function StudentDashboard() {
   });
   const [isSavingSummary, setIsSavingSummary] = useState(false);
   const [summarySaveMessage, setSummarySaveMessage] = useState('');
-  const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -414,66 +408,6 @@ function StudentDashboard() {
     setShowEditPopup(false);
     setEditFormData({});
     setEditErrors({});
-  };
-
-  const handleOnboardingComplete = async (formData) => {
-    try {
-      // Get the auth token
-      const token = localStorage.getItem('userToken');
-      if (!token) {
-        alert('Authentication token not found. Please log in again.');
-        return;
-      }
-
-      // Prepare the data to send to backend
-      const updateData = {
-        ...formData,
-        // Convert skills back to string if needed
-        technicalSkills: Array.isArray(formData.technicalSkills) ? 
-          formData.technicalSkills.join(', ') : formData.technicalSkills
-      };
-
-      // Make API call to update profile
-      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update the student data with edited values
-        const updatedData = { 
-          ...studentData, 
-          ...updateData
-        };
-        
-        setStudentData(updatedData);
-        
-        // Save to localStorage
-        localStorage.setItem('userData', JSON.stringify(updatedData));
-        
-        // Close onboarding wizard
-        setShowOnboardingWizard(false);
-        
-        // Recalculate profile completeness
-        const newCompleteness = calculateProfileCompleteness(updatedData);
-        setProfileCompleteness(newCompleteness);
-        
-        // Show success message
-        alert("Profile completed successfully!");
-      } else {
-        // Show error message from backend
-        alert(`Failed to complete profile: ${result.message}`);
-      }
-    } catch (error) {
-      console.error('Error completing profile:', error);
-      alert('Failed to complete profile. Please try again.');
-    }
   };
 
   const handleSaveProfessionalSummary = async () => {
@@ -1136,7 +1070,7 @@ function StudentDashboard() {
               </div>
             </div>
             <button
-              onClick={() => setShowOnboardingWizard(true)}
+              onClick={() => setActiveTab("completeProfile")}
               className="px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300"
             >
               Complete Now
@@ -1163,7 +1097,7 @@ function StudentDashboard() {
           <p className="text-gray-600">Profile Complete</p>
           {profileCompleteness < 100 && (
             <button
-              onClick={() => setShowOnboardingWizard(true)}
+              onClick={() => setActiveTab("completeProfile")}
               className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-xs font-medium hover:bg-blue-600 transition-all duration-300"
             >
               Complete Now
@@ -1675,13 +1609,236 @@ function StudentDashboard() {
     </div>
   );
 
+  const renderApplications = () => (
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-900">My Applications</h3>
+      
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opportunity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {applications && Array.isArray(applications) ? applications.map(app => (
+                <tr key={app.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">{app.postTitle}</div>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">{app.appliedDate}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      app.status === 'Shortlisted' ? 'bg-blue-100 text-blue-800' :
+                      app.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {app.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900">
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="4" className="px-6 py-4 text-center text-gray-500">
+                    No applications yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 
+  const renderRecommendations = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">Recommended for You</h3>
+          <p className="text-gray-600 mt-2">Based on your skills, degree, and profile completeness</p>
+        </div>
+        <div className="text-right">
+          <div className="text-sm text-gray-600">Profile Completeness</div>
+          <div className="text-2xl font-bold text-blue-600">{profileCompleteness}%</div>
+        </div>
+      </div>
 
+      {/* Profile Completeness Bar */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="text-lg font-semibold text-gray-900">Complete Your Profile</h4>
+          <span className="text-sm text-gray-600">{profileCompleteness}% Complete</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div 
+            className="bg-gradient-to-r from-blue-400 to-blue-500 h-3 rounded-full transition-all duration-500" 
+            style={{ width: `${profileCompleteness}%` }}
+          ></div>
+        </div>
+        {profileCompleteness < 100 && (
+          <div className="mt-2">
+            <p className="text-sm text-gray-600 mb-2">
+              Complete your profile to get better recommendations and increase your chances of being hired!
+            </p>
+            <button
+              onClick={() => setActiveTab("completeProfile")}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-all duration-300"
+            >
+              Complete Now
+            </button>
+          </div>
+        )}
+      </div>
 
+      {recommendations && Array.isArray(recommendations) && recommendations.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-200">
+          <div className="text-6xl mb-4">🎯</div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No recommendations yet</h3>
+          <p className="text-gray-600 mb-6">
+            {profileCompleteness < 50 
+              ? "Complete your profile to get personalized recommendations!" 
+              : "Try updating your skills or browse all opportunities to find relevant projects."
+            }
+          </p>
+          <button
+            onClick={() => setActiveTab("profile")}
+            className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-all duration-300"
+          >
+            {profileCompleteness < 50 ? "Complete Profile" : "Browse All Opportunities"}
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {recommendations && Array.isArray(recommendations) ? recommendations.map(opportunity => (
+            <div key={opportunity.id} className="bg-white rounded-2xl shadow-xl border border-blue-200 p-6 hover:shadow-2xl transition-shadow duration-300 relative">
+              {/* Recommendation Score Badge */}
+              <div className="absolute -top-3 -right-3 bg-gradient-to-r from-green-400 to-green-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
+                {opportunity.recommendationScore}% Match
+              </div>
+              
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex space-x-2">
+                  <span className={`px-3 py-1 text-xs rounded-full ${
+                    opportunity.type === 'Project' ? 'bg-blue-100 text-blue-800' :
+                    opportunity.type === 'Internship' ? 'bg-green-100 text-green-800' :
+                    opportunity.type === 'Freelance' ? 'bg-purple-100 text-purple-800' :
+                    'bg-orange-100 text-orange-800'
+                  }`}>
+                    {opportunity.type}
+                  </span>
+                  <span className={`px-3 py-1 text-xs rounded-full ${
+                    opportunity.degreeRelevance >= 90 ? 'bg-green-100 text-green-800' :
+                    opportunity.degreeRelevance >= 70 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {opportunity.degreeRelevance}% Degree Match
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => toggleBookmark(opportunity.id)}
+                    className={`text-2xl transition-all duration-300 ${
+                      opportunity.isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'
+                    }`}
+                  >
+                    {opportunity.isBookmarked ? '★' : '☆'}
+                  </button>
+                  <span className="text-sm text-gray-500">{opportunity.postedDate}</span>
+                </div>
+              </div>
+              
+              <h4 className="text-lg font-bold text-gray-900 mb-2">{opportunity.title}</h4>
+              <p className="text-gray-600 text-sm mb-3">{opportunity.client}</p>
+              
+              {/* Skills Match Indicator */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Skills Match:</span>
+                  <span className="text-sm font-semibold text-green-600">
+                    {opportunity.skillMatchCount}/{opportunity.totalSkills} skills
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+                    style={{ width: `${(opportunity.skillMatchCount / opportunity.totalSkills) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="space-y-3 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Budget:</span>
+                  <span className="font-semibold text-green-600">${opportunity.budget}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Deadline:</span>
+                  <span className="font-semibold">{opportunity.deadline}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Location:</span>
+                  <span className="font-semibold">{opportunity.location}</span>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Required Skills:</p>
+                <div className="flex flex-wrap gap-1">
+                  {opportunity.requiredSkills && Array.isArray(opportunity.requiredSkills) ? 
+                    opportunity.requiredSkills.map(skill => (
+                      <span key={skill} className={`px-2 py-1 text-xs rounded-full ${
+                        studentData?.technicalSkills && typeof studentData.technicalSkills === 'string' && studentData.technicalSkills.toLowerCase().includes(skill.toLowerCase())
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {skill}
+                      </span>
+                    )) : <span className="text-gray-400 text-xs">No skills specified</span>
+                  }
+                </div>
+              </div>
 
-
-
-
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-2">Tags:</p>
+                <div className="flex flex-wrap gap-1">
+                  {opportunity.tags && Array.isArray(opportunity.tags) ? 
+                    opportunity.tags.map(tag => (
+                      <span key={tag} className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">
+                        {tag}
+                      </span>
+                    )) : <span className="text-gray-400 text-xs">No tags specified</span>
+                  }
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4 line-clamp-3">{opportunity.description}</p>
+              
+              <button
+                onClick={() => handleApply(opportunity)}
+                className="w-full px-4 py-2 bg-gradient-to-r from-green-400 to-green-500 text-white rounded-xl font-medium hover:from-green-500 hover:to-green-600 transition-all duration-300"
+              >
+                Apply Now - Perfect Match!
+              </button>
+            </div>
+          )) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500">No recommendations available</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 
   const renderBookmarks = () => (
     <div className="space-y-6">
@@ -1853,9 +2010,331 @@ function StudentDashboard() {
     </div>
   );
 
+  const renderSkills = () => (
+    <div className="space-y-6">
+      <h3 className="text-2xl font-bold text-gray-900">Skills Management</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {skills && Array.isArray(skills) ? skills.map(skill => (
+          <div key={skill.name} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="text-lg font-bold text-gray-900">{skill.name}</h4>
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                skill.level === 'Advanced' ? 'bg-green-100 text-green-800' :
+                skill.level === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-blue-100 text-blue-800'
+              }`}>
+                {skill.level}
+              </span>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Used in {skill.projects} projects</p>
+            <div className="space-y-2">
+              <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600">
+                Update Level
+              </button>
+              <button className="w-full px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50">
+                View Projects
+              </button>
+            </div>
+          </div>
+        )) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-500">No skills added yet</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
+  const renderCompleteProfile = () => (
+    <div className="space-y-8">
+      {/* Profile Completion Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white rounded-2xl shadow-xl p-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold mb-4">Complete Your Profile</h1>
+          <p className="text-xl text-blue-100 mb-6">
+            Add the missing information to unlock better opportunities and recommendations
+          </p>
+          <div className="w-full bg-blue-200 rounded-full h-3 mb-4">
+            <div 
+              className="bg-white h-3 rounded-full transition-all duration-500" 
+              style={{ width: `${profileCompleteness}%` }}
+            ></div>
+          </div>
+          <p className="text-blue-100">{profileCompleteness}% Complete</p>
+        </div>
+      </div>
 
+      {/* Profile Completion Form */}
+      <div className="bg-white rounded-2xl shadow-xl p-8">
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Degree Program *
+              </label>
+              <select
+                name="degreeProgram"
+                value={studentData?.degreeProgram || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    degreeProgram: e.target.value
+                  }));
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              >
+                <option value="">Select Degree Program</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Computer Engineering">Computer Engineering</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                <option value="Machine Learning">Machine Learning</option>
+                <option value="Cybersecurity">Cybersecurity</option>
+                <option value="Business Administration">Business Administration</option>
+                <option value="Business Management">Business Management</option>
+                <option value="Finance">Finance</option>
+                <option value="Accounting">Accounting</option>
+                <option value="Economics">Economics</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Digital Marketing">Digital Marketing</option>
+                <option value="Human Resource Management">Human Resource Management</option>
+                <option value="Project Management">Project Management</option>
+                <option value="Design">Design</option>
+                <option value="Graphic Design">Graphic Design</option>
+                <option value="UI/UX Design">UI/UX Design</option>
+                <option value="Interior Design">Interior Design</option>
+                <option value="Fashion Design">Fashion Design</option>
+                <option value="Architecture">Architecture</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Mechanical Engineering">Mechanical Engineering</option>
+                <option value="Electrical Engineering">Electrical Engineering</option>
+                <option value="Chemical Engineering">Chemical Engineering</option>
+                <option value="Biomedical Engineering">Biomedical Engineering</option>
+                <option value="Environmental Engineering">Environmental Engineering</option>
+                <option value="Medicine">Medicine</option>
+                <option value="Nursing">Nursing</option>
+                <option value="Pharmacy">Pharmacy</option>
+                <option value="Psychology">Psychology</option>
+                <option value="Sociology">Sociology</option>
+                <option value="Education">Education</option>
+                <option value="Law">Law</option>
+                <option value="Journalism">Journalism</option>
+                <option value="Media Studies">Media Studies</option>
+                <option value="Film Studies">Film Studies</option>
+                <option value="Music">Music</option>
+                <option value="Arts">Arts</option>
+                <option value="Agriculture">Agriculture</option>
+                <option value="Veterinary Science">Veterinary Science</option>
+                <option value="Food Science">Food Science</option>
+                <option value="Nutrition">Nutrition</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                University *
+              </label>
+              <input
+                type="text"
+                name="university"
+                value={studentData?.university || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    university: e.target.value
+                  }));
+                }}
+                placeholder="Enter your university name"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                GPA *
+              </label>
+              <input
+                type="text"
+                name="gpa"
+                value={studentData?.gpa || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    gpa: e.target.value
+                  }));
+                }}
+                placeholder="e.g., 3.8"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Graduation Year *
+              </label>
+              <input
+                type="number"
+                name="graduationYear"
+                value={studentData?.graduationYear || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    graduationYear: e.target.value
+                  }));
+                }}
+                placeholder="e.g., 2025"
+                min="2020"
+                max="2030"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={studentData?.dateOfBirth || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    dateOfBirth: e.target.value
+                  }));
+                }}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CV/Resume Upload
+              </label>
+              {isValidCVFile(studentData?.cvFile) ? (
+                <div className="border-2 border-green-200 bg-green-50 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{studentData.cvFile.originalName || 'CV Uploaded'}</p>
+                        <p className="text-sm text-gray-500">File uploaded successfully</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCVDelete}
+                      className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={handleCVUpload}
+                      className="hidden"
+                      disabled={isUploadingCV}
+                    />
+                    <div className="space-y-2">
+                      <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600">Click to upload CV/Resume</p>
+                      <p className="text-xs text-gray-500">PDF, DOC, DOCX, JPEG, JPG, PNG (max 5MB)</p>
+                    </div>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={() => setActiveTab("profile")}
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  // Get the auth token
+                  const token = localStorage.getItem('userToken');
+                  if (!token) {
+                    alert('Authentication token not found. Please log in again.');
+                    return;
+                  }
+
+                  // Prepare the data to send to backend
+                  const updateData = {
+                    firstName: studentData.firstName,
+                    lastName: studentData.lastName,
+                    email: studentData.email,
+                    phoneNumber: studentData.phoneNumber,
+                    address: studentData.address,
+                    degreeProgram: studentData.degreeProgram,
+                    university: studentData.university,
+                    gpa: studentData.gpa,
+                    graduationYear: studentData.graduationYear,
+                    dateOfBirth: studentData.dateOfBirth
+                  };
+
+                  // Make API call to update profile
+                  const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updateData)
+                  });
+
+                  const result = await response.json();
+
+                  if (result.success) {
+                    // Save to localStorage and update the profile
+                    localStorage.setItem('userData', JSON.stringify(studentData));
+                    
+                    // Recalculate profile completeness
+                    const newCompleteness = calculateProfileCompleteness(studentData);
+                    setProfileCompleteness(newCompleteness);
+                    
+                    alert("Profile updated successfully!");
+                    setActiveTab("profile");
+                  } else {
+                    // Show error message from backend
+                    alert(`Failed to update profile: ${result.message}`);
+                  }
+                } catch (error) {
+                  console.error('Error updating profile:', error);
+                  alert('Failed to update profile. Please try again.');
+                }
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600"
+            >
+              Save Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 
   const renderProfile = () => (
     <div className="space-y-8">
@@ -3032,10 +3511,11 @@ function StudentDashboard() {
               { id: "opportunities", name: "Browse Opportunities", icon: "🔍" },
               { id: "bookmarks", name: "Bookmarks", icon: "📚" },
               { id: "applications", name: "My Applications", icon: "📝" },
-              { id: "gigs", name: "My Gigs", icon: "💼" },
-              { id: "portfolio", name: "Portfolio", icon: "🎨" },
+              { id: "portfolio", name: "Portfolio", icon: "💼" },
               { id: "skills", name: "Skills", icon: "🛠️" },
-              { id: "profile", name: "Profile", icon: "👤" }
+              { id: "profile", name: "Profile", icon: "👤" },
+              // Only show Complete Profile tab when profile is incomplete
+              ...(profileCompleteness < 100 ? [{ id: "completeProfile", name: "Complete Profile", icon: "✏️" }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
@@ -3058,62 +3538,19 @@ function StudentDashboard() {
         <div className="flex-1 p-8 pt-8 overflow-y-auto mt-20">
           <div className="max-w-7xl mx-auto">
             {activeTab === "overview" && renderOverview()}
-            {activeTab === "recommendations" && (
-              <EnhancedRecommendations
-                availableOpportunities={availableOpportunities}
-                studentData={studentData}
-                profileCompleteness={profileCompleteness}
-                onApply={handleApply}
-                onBookmark={toggleBookmark}
-              />
-            )}
+            {activeTab === "recommendations" && renderRecommendations()}
             {activeTab === "opportunities" && renderBrowseOpportunities()}
             {activeTab === "bookmarks" && renderBookmarks()}
-            {activeTab === "applications" && (
-              <ApplicationTracker
-                applications={applications}
-                onUpdateApplication={(id, status) => {
-                  // Handle application status update
-                  console.log('Update application:', id, status);
-                }}
-                onWithdrawApplication={(id) => {
-                  // Handle application withdrawal
-                  console.log('Withdraw application:', id);
-                }}
-              />
-            )}
-            {activeTab === "gigs" && (
-              <GigManagement user={studentData} />
-            )}
+            {activeTab === "applications" && renderApplications()}
             {activeTab === "portfolio" && renderPortfolio()}
-            {activeTab === "skills" && (
-              <SkillsAssessment
-                currentSkills={studentData?.technicalSkills}
-                onSkillsUpdate={(skills) => {
-                  // Handle skills update
-                  console.log('Update skills:', skills);
-                }}
-                onLearningPathUpdate={(path) => {
-                  // Handle learning path update
-                  console.log('Update learning path:', path);
-                }}
-              />
-            )}
+            {activeTab === "skills" && renderSkills()}
             {activeTab === "profile" && renderProfile()}
+            {activeTab === "completeProfile" && renderCompleteProfile()}
           </div>
         </div>
 
       {showApplicationForm && renderApplicationForm()}
       {renderEditProfilePopup()}
-      
-      {/* Onboarding Wizard */}
-      <OnboardingWizard
-        isOpen={showOnboardingWizard}
-        onClose={() => setShowOnboardingWizard(false)}
-        onComplete={handleOnboardingComplete}
-        currentProfileData={studentData}
-        profileCompleteness={profileCompleteness}
-      />
     </div>
   );
 }
