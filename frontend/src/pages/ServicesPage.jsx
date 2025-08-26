@@ -125,6 +125,7 @@ function ServicesPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          console.log('Raw services data from backend:', data.data);
           // Transform the data to match the expected format
           const transformedServices = data.data.map(item => {
             if (item.type === 'gig') {
@@ -135,12 +136,13 @@ function ServicesPage() {
                 description: item.description,
                 category: item.category,
                 price: item.price,
-                                 duration: item.deliveryTime ? `${item.deliveryTime} Days` : (item.duration || 'Custom'),
-                                 skills: Array.isArray(item.skills) ? item.skills.join(', ') : item.skills,
+                duration: item.deliveryTime ? `${item.deliveryTime} Days` : (item.duration || 'Custom'),
+                skills: Array.isArray(item.skills) ? item.skills.join(', ') : item.skills,
+                images: item.images || [], // Include images from backend
                 freelancer: {
-                  name: item.freelancerId ? `${item.freelancerId.firstName} ${item.freelancerId.lastName}` : 'Unknown',
+                  name: item.freelancerName || (item.freelancerId ? `${item.freelancerId.firstName} ${item.freelancerId.lastName}` : 'Unknown'),
                   rating: item.rating || 0,
-                  reviews: item.reviews?.length || 0,
+                  reviews: item.totalReviews || item.reviews?.length || 0,
                   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
                 },
                 status: 'approved',
@@ -157,12 +159,13 @@ function ServicesPage() {
                 category: item.category,
                 price: item.price || item.budget,
                 duration: `${item.deliveryTime || 'Custom'} ${item.deliveryUnit || 'Days'}`,
-                                 skills: Array.isArray(item.requiredSkills) ? item.requiredSkills.join(', ') : (item.requiredSkills || 'Not specified'),
+                skills: Array.isArray(item.requiredSkills) ? item.requiredSkills.join(', ') : (item.requiredSkills || 'Not specified'),
+                images: item.images || [], // Include images from backend
                 freelancer: {
-                  name: item.clientId ? `${item.clientId.firstName} ${item.clientId.lastName}` : 'Unknown',
+                  name: item.clientId ? `${item.clientId.firstName} ${item.clientName}` : 'Unknown',
                   rating: 0,
                   reviews: 0,
-                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=4.0.3&auto=format&fit=crop&w=100&q=80'
+                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
                 },
                 status: 'approved',
                 createdAt: new Date(item.createdAt).toISOString().split('T')[0],
@@ -174,6 +177,7 @@ function ServicesPage() {
             }
           });
           
+          console.log('Transformed services data:', transformedServices);
           setServices(transformedServices);
           setFilteredServices(transformedServices);
         }
@@ -478,20 +482,53 @@ function ServicesPage() {
                   </div>
                 )}
 
-                {/* Service Image Placeholder */}
-                                 <div className={`h-48 bg-gradient-to-br flex items-center justify-center ${
-                   activeTab === 'gigs' 
-                     ? 'from-yellow-400 to-yellow-600' 
-                     : 'from-yellow-500 to-yellow-700'
-                 }`}>
-                  <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {activeTab === 'gigs' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                    )}
-                  </svg>
-                </div>
+                                 {/* Service Images or Placeholder */}
+                 {service.images && service.images.length > 0 ? (
+                   <div className="h-48 relative overflow-hidden">
+                     {service.images.map((image, index) => (
+                       <img
+                         key={index}
+                         src={image.url}
+                         alt={image.caption || `Service image ${index + 1}`}
+                         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                           index === 0 ? 'opacity-100' : 'opacity-0'
+                         }`}
+                         style={{
+                           animation: service.images.length > 1 ? `fadeInOut ${service.images.length * 3}s infinite` : 'none',
+                           animationDelay: `${index * 3}s`
+                         }}
+                       />
+                     ))}
+                     {service.images.length > 1 && (
+                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+                         {service.images.map((_, index) => (
+                           <div
+                             key={index}
+                             className="w-2 h-2 rounded-full bg-white/70 transition-all duration-300"
+                             style={{
+                               animation: `pulse ${service.images.length * 3}s infinite`,
+                               animationDelay: `${index * 3}s`
+                             }}
+                           />
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 ) : (
+                   <div className={`h-48 bg-gradient-to-br flex items-center justify-center ${
+                     activeTab === 'gigs' 
+                       ? 'from-yellow-400 to-yellow-600' 
+                       : 'from-yellow-500 to-yellow-700'
+                   }`}>
+                     <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       {activeTab === 'gigs' ? (
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                       ) : (
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                       )}
+                     </svg>
+                   </div>
+                 )}
 
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -519,27 +556,7 @@ function ServicesPage() {
                      {service.description}
                    </p>
 
-                   {/* Service Images */}
-                   {service.images && service.images.length > 0 && (
-                     <div className="mb-4">
-                       <div className="grid grid-cols-2 gap-2">
-                         {service.images.slice(0, 4).map((image, index) => (
-                           <div key={index} className="relative">
-                             <img
-                               src={image.url}
-                               alt={image.caption || `Service image ${index + 1}`}
-                               className="w-full h-20 object-cover rounded-lg border border-gray-200"
-                             />
-                             {index === 3 && service.images.length > 4 && (
-                               <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                                 <span className="text-white text-xs font-medium">+{service.images.length - 4}</span>
-                               </div>
-                             )}
-                           </div>
-                         ))}
-                       </div>
-                     </div>
-                   )}
+                   
 
                   <div className="flex items-center mb-4">
                     <img
