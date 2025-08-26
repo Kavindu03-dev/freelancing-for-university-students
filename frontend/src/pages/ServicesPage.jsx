@@ -13,6 +13,8 @@ function ServicesPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFreelancer, setIsFreelancer] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Form state for posting a job
   const [jobForm, setJobForm] = useState({
@@ -107,10 +109,89 @@ function ServicesPage() {
       setIsClient(userData.userType === 'client');
     }
 
-    // Load services (in real app, this would be an API call)
-    setServices(mockServices);
-    setFilteredServices(mockServices);
+    // Fetch services from backend API
+    fetchServices();
   }, []);
+
+  // Function to fetch services from backend
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/services');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Transform the data to match the expected format
+          const transformedServices = data.data.map(item => {
+            if (item.type === 'gig') {
+              // This is a freelancer service
+              return {
+                id: item._id,
+                title: item.title,
+                description: item.description,
+                category: item.category,
+                price: item.price,
+                duration: item.duration || 'Custom',
+                skills: item.skills,
+                freelancer: {
+                  name: item.freelancerId ? `${item.freelancerId.firstName} ${item.freelancerId.lastName}` : 'Unknown',
+                  rating: item.rating || 0,
+                  reviews: item.reviews?.length || 0,
+                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'
+                },
+                status: 'approved',
+                createdAt: new Date(item.createdAt).toISOString().split('T')[0],
+                type: 'gig',
+                source: 'freelancer'
+              };
+            } else {
+              // This is a client job post
+              return {
+                id: item._id,
+                title: item.title,
+                description: item.description,
+                category: item.category,
+                price: item.price || item.budget,
+                duration: `${item.deliveryTime || 'Custom'} ${item.deliveryUnit || 'Days'}`,
+                skills: item.requiredSkills?.join(', ') || 'Not specified',
+                freelancer: {
+                  name: item.clientId ? `${item.clientId.firstName} ${item.clientId.lastName}` : 'Unknown',
+                  rating: 0,
+                  reviews: 0,
+                  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=4.0.3&auto=format&fit=crop&w=100&q=80'
+                },
+                status: 'approved',
+                createdAt: new Date(item.createdAt).toISOString().split('T')[0],
+                type: 'job',
+                source: 'client',
+                deadline: item.deadline,
+                location: item.location
+              };
+            }
+          });
+          
+          setServices(transformedServices);
+          setFilteredServices(transformedServices);
+        }
+      } else {
+        console.error('Failed to fetch services');
+        setError('Failed to fetch services from server');
+        // Fallback to mock data if API fails
+        setServices(mockServices);
+        setFilteredServices(mockServices);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      setError('Error connecting to server');
+      // Fallback to mock data if API fails
+      setServices(mockServices);
+      setFilteredServices(mockServices);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Filter services based on category and search query
@@ -183,7 +264,8 @@ function ServicesPage() {
 
   const confirmHire = () => {
     // In real app, this would send a request to the backend
-    alert(`You have successfully hired ${selectedService.freelancer.name} for ${selectedService.title}!`);
+    const action = selectedService.type === 'gig' ? 'hired' : 'applied to';
+    alert(`You have successfully ${action} ${selectedService.freelancer.name} for ${selectedService.title}!`);
     setShowHireModal(false);
     setSelectedService(null);
   };
@@ -256,17 +338,46 @@ function ServicesPage() {
       {/* Services Grid */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              Available Services
-            </h2>
-            <p className="text-gray-600">
-              {filteredServices.length} services found
-            </p>
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                Available Services
+              </h2>
+              <p className="text-gray-600">
+                {filteredServices.length} services found
+              </p>
+            </div>
+            <button
+              onClick={fetchServices}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300 flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map((service) => (
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading services...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-16">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                <p className="text-red-800">Error: {error}</p>
+                <button
+                  onClick={fetchServices}
+                  className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredServices.map((service) => (
               <div key={service.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-200 relative">
                 {/* Status Badge */}
                 {service.status === 'pending' && (
@@ -286,7 +397,25 @@ function ServicesPage() {
 
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800">{service.title}</h3>
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-gray-800">{service.title}</h3>
+                      <div className="flex items-center space-x-2 mt-1">
+                        {service.type === 'gig' ? (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            Freelancer Service
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Client Job
+                          </span>
+                        )}
+                        {service.source === 'client' && service.deadline && (
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+                            Deadline: {new Date(service.deadline).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                     <span className="text-2xl font-bold text-green-600">${service.price}</span>
                   </div>
 
@@ -322,14 +451,23 @@ function ServicesPage() {
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Duration: {service.duration}
+                      {service.type === 'gig' ? 'Duration' : 'Timeline'}: {service.duration}
                     </div>
                     <div className="flex items-center text-sm text-gray-500">
                       <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                       </svg>
-                      Skills: {service.skills}
+                      {service.type === 'gig' ? 'Skills' : 'Required Skills'}: {service.skills}
                     </div>
+                    {service.source === 'client' && service.location && (
+                      <div className="flex items-center text-sm text-gray-500">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Location: {service.location}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -338,7 +476,7 @@ function ServicesPage() {
                         onClick={() => handleHire(service)}
                         className="w-full bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
                       >
-                        Hire Now
+                        {service.type === 'gig' ? 'Hire Now' : 'Apply Now'}
                       </button>
                     )}
                     
@@ -369,15 +507,15 @@ function ServicesPage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {filteredServices.length === 0 && (
-            <div className="text-center py-16">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-500 mb-2">No services found</h3>
-              <p className="text-gray-400">Try adjusting your search or category filter</p>
+              {filteredServices.length === 0 && (
+                <div className="text-center py-16">
+                  <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+                  </svg>
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">No services found</h3>
+                  <p className="text-gray-400">Try adjusting your search or category filter</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -586,26 +724,34 @@ function ServicesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-8 max-w-md w-full">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Confirm Hire</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                {selectedService.type === 'gig' ? 'Confirm Hire' : 'Confirm Application'}
+              </h2>
               <p className="text-gray-600 mb-6">
-                Are you sure you want to hire <span className="text-yellow-600 font-semibold">{selectedService.freelancer.name}</span> for <span className="text-yellow-600 font-semibold">{selectedService.title}</span>?
+                Are you sure you want to {selectedService.type === 'gig' ? 'hire' : 'apply to'} <span className="text-yellow-600 font-semibold">{selectedService.freelancer.name}</span> for <span className="text-yellow-600 font-semibold">{selectedService.title}</span>?
               </p>
               
               <div className="bg-gray-50 rounded-lg p-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600">Service Price:</span>
+                  <span className="text-gray-600">
+                    {selectedService.type === 'gig' ? 'Service Price:' : 'Job Budget:'}
+                  </span>
                   <span className="text-2xl font-bold text-green-600">${selectedService.price}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600">Duration:</span>
+                  <span className="text-gray-600">
+                    {selectedService.type === 'gig' ? 'Duration:' : 'Timeline:'}
+                  </span>
                   <span className="text-gray-800">{selectedService.duration}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Freelancer Rating:</span>
+                  <span className="text-gray-600">
+                    {selectedService.type === 'gig' ? 'Freelancer Rating:' : 'Client Rating:'}
+                  </span>
                   <div className="flex items-center">
                     <span className="text-yellow-600 mr-1">{selectedService.freelancer.rating}</span>
                     <svg className="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292c.3.921-.755 1.688-1.54 1.118l-2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   </div>
                 </div>
@@ -616,7 +762,7 @@ function ServicesPage() {
                   onClick={confirmHire}
                   className="flex-1 bg-yellow-500 text-black py-3 px-6 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
                 >
-                  Confirm Hire
+                  {selectedService.type === 'gig' ? 'Confirm Hire' : 'Confirm Application'}
                 </button>
                 <button
                   onClick={() => setShowHireModal(false)}

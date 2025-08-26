@@ -4,88 +4,72 @@ const serviceSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 100
+    trim: true
   },
   description: {
     type: String,
     required: true,
-    trim: true,
-    maxlength: 1000
+    trim: true
   },
   category: {
     type: String,
     required: true,
-    enum: [
-      'Web Development',
-      'Mobile Development',
-      'Design',
-      'Writing',
-      'Marketing',
-      'Data Analysis',
-      'Video & Animation',
-      'Music & Audio',
-      'Programming',
-      'Business',
-      'Other'
-    ]
+    trim: true
+  },
+  subcategory: {
+    type: String,
+    trim: true
   },
   price: {
     type: Number,
     required: true,
+    min: 0
+  },
+  priceType: {
+    type: String,
+    required: true,
+    enum: ['Fixed', 'Hourly', 'Daily', 'Weekly', 'Monthly']
+  },
+  deliveryTime: {
+    type: Number,
+    required: true,
     min: 1
   },
-  duration: {
+  deliveryUnit: {
     type: String,
     required: true,
-    trim: true
+    enum: ['Days', 'Hours', 'Weeks', 'Months']
   },
-  skills: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  portfolio: {
+  skills: [{
     type: String,
     trim: true
-  },
-  freelancer: {
+  }],
+  portfolio: [{
+    title: String,
+    description: String,
+    imageUrl: String,
+    projectUrl: String
+  }],
+  freelancerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  status: {
+  freelancerName: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
+    required: true
   },
+  freelancerAvatar: String,
+  university: String,
+  degreeProgram: String,
+  gpa: String,
+  experience: String,
   rating: {
     type: Number,
     default: 0,
     min: 0,
     max: 5
   },
-  reviews: [{
-    client: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5
-    },
-    comment: {
-      type: String,
-      trim: true,
-      maxlength: 500
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
   totalReviews: {
     type: Number,
     default: 0
@@ -94,31 +78,29 @@ const serviceSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  featured: {
+    type: Boolean,
+    default: false
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  tags: [String],
+  requirements: String,
+  whatYouGet: [String],
+  faqs: [{
+    question: String,
+    answer: String
+  }]
+}, {
+  timestamps: true
 });
 
-// Update the updatedAt field before saving
-serviceSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// Indexes for better query performance
+serviceSchema.index({ freelancerId: 1, isActive: 1 });
+serviceSchema.index({ category: 1, isActive: 1 });
+serviceSchema.index({ skills: 1 });
+serviceSchema.index({ rating: -1 });
+serviceSchema.index({ createdAt: -1 });
+serviceSchema.index({ featured: 1, isActive: 1 });
 
-// Calculate average rating
-serviceSchema.methods.calculateAverageRating = function() {
-  if (this.reviews.length === 0) {
-    this.rating = 0;
-  } else {
-    const totalRating = this.reviews.reduce((sum, review) => sum + review.rating, 0);
-    this.rating = totalRating / this.reviews.length;
-  }
-  this.totalReviews = this.reviews.length;
-};
+const Service = mongoose.model('Service', serviceSchema);
 
-export default mongoose.model('Service', serviceSchema);
+export default Service;

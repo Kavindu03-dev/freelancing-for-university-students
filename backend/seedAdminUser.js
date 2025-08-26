@@ -1,7 +1,6 @@
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import Admin from './models/Admin.js';
+import User from './models/User.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,15 +11,16 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true,
 });
 
-const seedAdmin = async () => {
+const seedAdminUser = async () => {
   try {
-    // Check if admin already exists
-    const existingAdmin = await Admin.findOne({ email: 'admin@gmail.com' });
+    // Check if admin user already exists
+    const existingAdmin = await User.findOne({ email: 'admin@gmail.com', userType: 'admin' });
     
     if (existingAdmin) {
-      console.log('Admin user already exists!');
-      console.log('Email:', existingAdmin.email);
-      console.log('Created at:', existingAdmin.createdAt);
+      console.log('✅ Admin user already exists in User model!');
+      console.log('📧 Email:', existingAdmin.email);
+      console.log('👤 User Type:', existingAdmin.userType);
+      console.log('📅 Created at:', existingAdmin.createdAt);
       mongoose.connection.close();
       return;
     }
@@ -29,18 +29,25 @@ const seedAdmin = async () => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash('admin123', saltRounds);
 
-    // Create new admin user
-    const adminUser = new Admin({
+    // Create new admin user in User model
+    const adminUser = new User({
+      firstName: 'Admin',
+      lastName: 'User',
       email: 'admin@gmail.com',
-      password: hashedPassword
+      password: hashedPassword,
+      userType: 'admin',
+      agreeToTerms: true,
+      isVerified: true,
+      status: 'active'
     });
 
     // Save to database
     await adminUser.save();
     
-    console.log('✅ Admin user created successfully!');
+    console.log('✅ Admin user created successfully in User model!');
     console.log('📧 Email: admin@gmail.com');
     console.log('🔑 Password: admin123');
+    console.log('👤 User Type: admin');
     console.log('🆔 ID:', adminUser._id);
     console.log('📅 Created at:', adminUser.createdAt);
 
@@ -52,5 +59,4 @@ const seedAdmin = async () => {
 };
 
 // Run the seed function
-seedAdmin();
-
+seedAdminUser();
