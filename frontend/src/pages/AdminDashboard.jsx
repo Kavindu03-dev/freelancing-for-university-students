@@ -1,18 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState("all");
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
-  const [selectedUserType, setSelectedUserType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const searchTimeout = useRef(null);
   const navigate = useNavigate();
 
   // Debug imports and functions
@@ -20,11 +16,11 @@ function AdminDashboard() {
   console.log('🔍 navigate function:', typeof navigate);
   console.log('🔍 logout import:', typeof logout);
 
-  // User statistics
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalFreelancers: 0,
-    totalClients: 0,
+  // Enhanced mock data for dashboard
+  const [stats] = useState({
+    totalUsers: 1247,
+    totalFreelancers: 892,
+    totalClients: 355,
     totalProjects: 2341,
     totalRevenue: 45678,
     pendingApprovals: 23,
@@ -34,11 +30,14 @@ function AdminDashboard() {
     conversionRate: 8.3
   });
 
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
+  const [recentUsers] = useState([
+    { id: 1, name: "John Doe", email: "john@example.com", type: "Freelancer", status: "Active", date: "2024-01-15", avatar: "JD" },
+    { id: 2, name: "Jane Smith", email: "jane@example.com", type: "Client", status: "Active", date: "2024-01-14", avatar: "JS" },
+    { id: 3, name: "Mike Johnson", email: "mike@example.com", type: "Freelancer", status: "Pending", date: "2024-01-13", avatar: "MJ" },
+    { id: 4, name: "Sarah Wilson", email: "sarah@example.com", type: "Client", status: "Active", date: "2024-01-12", avatar: "SW" },
+    { id: 5, name: "Alex Chen", email: "alex@example.com", type: "Freelancer", status: "Active", date: "2024-01-11", avatar: "AC" },
+    { id: 6, name: "Emily Rodriguez", email: "emily@example.com", type: "Client", status: "Pending", date: "2024-01-10", avatar: "ER" }
+  ]);
 
   const [recentProjects] = useState([
     { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
@@ -302,178 +301,6 @@ function AdminDashboard() {
     fetchSkills(); // Fetch skills when component mounts
   }, [navigate]);
 
-  // Function to fetch all users with filters
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) params.append('search', searchQuery.trim());
-      if (selectedUserType !== 'all') params.append('userType', selectedUserType);
-      if (selectedStatus !== 'all') params.append('status', selectedStatus);
-      
-      console.log('🔍 Filtering users with:', {
-        search: searchQuery.trim(),
-        userType: selectedUserType,
-        status: selectedStatus
-      });
-      
-      const url = `http://localhost:5000/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.data);
-      } else {
-        setError(data.message || 'Failed to fetch users');
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to update user status
-  const updateUserStatus = async (userId, newStatus) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update user status');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        // Refresh users list
-        fetchUsers();
-      } else {
-        setError(data.message || 'Failed to update user status');
-      }
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      setError(error.message);
-    }
-  };
-
-  // Function to view user details
-  const viewUserDetails = (user) => {
-    setSelectedUser(user);
-    setShowUserModal(true);
-  };
-
-  // Function to delete user
-  const deleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete user');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        // Refresh users list
-        fetchUsers();
-      } else {
-        setError(data.message || 'Failed to delete user');
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      setError(error.message);
-    }
-  };
-
-  // Function to fetch user statistics
-  const fetchUserStats = async () => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/users/stats', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch user statistics');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setStats(prevStats => ({
-          ...prevStats,
-          totalUsers: data.data.totalUsers,
-          totalFreelancers: data.data.freelancers,
-          totalClients: data.data.clients
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching user statistics:', error);
-    }
-  };
-
-  // Fetch users when component mounts or when users tab is active
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [activeTab]);
-
-  // Fetch users when filters change
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [selectedUserType, selectedStatus]);
-
-  // Fetch user statistics when component mounts
-  useEffect(() => {
-    fetchUserStats();
-    
-    // Cleanup function to clear timeout
-    return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
-    };
-  }, []);
-
   const handleLogout = () => {
     console.log('🚪 handleLogout clicked!');
     try {
@@ -628,38 +455,29 @@ function AdminDashboard() {
             <button className="text-yellow-600 hover:text-yellow-700 font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {users.slice(0, 4).map(user => (
-              <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
+            {recentUsers.slice(0, 4).map(user => (
+              <div key={user.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-black font-bold text-sm">
-                    {user.firstName ? user.firstName.charAt(0) : 'U'}
-                  </span>
+                  <span className="text-black font-bold text-sm">{user.avatar}</span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="font-semibold text-gray-900">{user.name}</p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'active' || !user.status ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
+                      {user.status}
                     </span>
                     <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">
-                      {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
-                    </span>
+                    <span className="text-xs text-gray-500">{user.type}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{user.date}</p>
                 </div>
               </div>
             ))}
-            {users.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No users found
-              </div>
-            )}
           </div>
         </div>
 
@@ -715,110 +533,40 @@ function AdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {users.length} Total Users
+              {recentUsers.length} Total Users
             </span>
-            <button 
-              onClick={fetchUsers}
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loading...' : 'Refresh'}
+            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+              Add User
             </button>
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-6">
-            <strong className="font-bold">Error: </strong>
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-
         {/* User Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <select 
-            value={selectedUserType}
-            onChange={(e) => setSelectedUserType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          >
-            <option value="all">All Types</option>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Types</option>
             <option value="freelancer">Freelancer</option>
             <option value="client">Client</option>
-            <option value="universityStaff">University Staff</option>
+            <option value="admin">Admin</option>
           </select>
-          <select 
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          >
-            <option value="all">All Status</option>
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Status</option>
             <option value="active">Active</option>
+            <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Universities</option>
+            <option value="mit">MIT</option>
+            <option value="stanford">Stanford</option>
+            <option value="harvard">Harvard</option>
           </select>
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              // Debounce search to avoid too many API calls
-              clearTimeout(searchTimeout.current);
-              searchTimeout.current = setTimeout(() => {
-                fetchUsers();
-              }, 300);
-            }}
-            placeholder="Search users, emails, or universities..."
+            placeholder="Search users..."
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           />
-        </div>
-        
-        {/* Filter Summary and Clear Button */}
-        <div className="flex justify-between items-center mb-6">
-          {/* Active Filters Summary */}
-          <div className="flex flex-wrap gap-2">
-            {searchQuery && (
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-                Search: "{searchQuery}"
-              </span>
-            )}
-            {selectedUserType !== 'all' && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                Type: {selectedUserType}
-              </span>
-            )}
-            {selectedStatus !== 'all' && (
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                Status: {selectedStatus}
-              </span>
-            )}
-          </div>
-          
-          {/* Clear Filters Button */}
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedUserType('all');
-              setSelectedStatus('all');
-            }}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-4 text-sm text-gray-600">
-          {loading ? (
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500 mr-2"></div>
-              <span>Applying filters...</span>
-            </div>
-          ) : (
-            <>
-              Showing {users.length} user{users.length !== 1 ? 's' : ''}
-              {(searchQuery || selectedUserType !== 'all' || selectedStatus !== 'all') && ' (filtered)'}
-            </>
-          )}
         </div>
 
         {/* Enhanced User Table */}
@@ -835,116 +583,92 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
-                      <span className="ml-2 text-gray-600">Loading users...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    No users found
-                  </td>
-                </tr>
-              ) : (
-                users.map(user => (
-                  <tr key={user._id} className="hover:bg-gray-50">
-                                      <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="relative mr-3">
-                          {user.profileImage && user.profileImage.url ? (
-                            <img 
-                              src={user.profileImage.url} 
-                              alt={`${user.firstName} ${user.lastName}`}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-yellow-200"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div className={`w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center border-2 border-yellow-200 ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
-                            <span className="text-black font-bold text-sm">
-                              {user.firstName ? user.firstName.charAt(0) : 'U'}
-                            </span>
-                          </div>
-                        </div>
+              {recentUsers.map(user => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-black font-bold text-sm">{user.avatar}</span>
+                      </div>
                       <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.userType === 'freelancer' ? 'bg-blue-100 text-blue-800' : 
-                        user.userType === 'client' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
+                      user.type === 'Freelancer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                     }`}>
-                        {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
+                      {user.type}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        user.status === 'suspended' ? 'bg-orange-100 text-orange-800' :
-                        user.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
+                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                      user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      user.status === 'Suspended' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.status}
                     </span>
                   </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.university || user.organization || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MIT</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.date}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => viewUserDetails(user)}
-                          className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50"
-                        >
-                          View
-                        </button>
-                        {user.status === 'active' || !user.status ? (
-                          <button 
-                            onClick={() => updateUserStatus(user._id, 'suspended')}
-                            className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50"
-                          >
-                            Suspend
-                          </button>
-                        ) : user.status === 'suspended' ? (
-                          <button 
-                            onClick={() => updateUserStatus(user._id, 'active')}
-                            className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
-                          >
-                            Activate
-                          </button>
+                      <button className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50">Edit</button>
+                      {user.status === 'Active' ? (
+                        <button className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50">Suspend</button>
+                      ) : user.status === 'Suspended' ? (
+                        <button className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50">Activate</button>
                       ) : null}
-                        <button 
-                          onClick={() => deleteUser(user._id)}
-                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50"
-                        >
-                          Delete
-                        </button>
+                      <button className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50">Ban</button>
                     </div>
                   </td>
                 </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-
+      {/* Account Management Tools */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <h3 className="text-xl font-bold text-gray-900 mb-6">Account Management Tools</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Bulk Actions</h4>
+            <div className="space-y-3">
+              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Suspend Selected Users
+              </button>
+              <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Ban Selected Users
+              </button>
+              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Activate Selected Users
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Automated Rules</h4>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
+                <span className="text-sm text-gray-700">Auto-suspend after 3 violations</span>
+              </label>
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
+                <span className="text-sm text-gray-700">Auto-ban after 5 violations</span>
+              </label>
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" />
+                <span className="text-sm text-gray-700">Require email verification</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -1863,6 +1587,123 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Skills Modal */}
+      {showAddSkillModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Skill</h3>
+              <button
+                onClick={() => setShowAddSkillModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSkill} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Skill Name</label>
+                <input
+                  type="text"
+                  value={newSkill.name}
+                  onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., React Development"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newSkill.description}
+                  onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the skill..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={newSkill.category}
+                  onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {skillCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <input
+                  type="text"
+                  value={newSkill.icon}
+                  onChange={(e) => setNewSkill({...newSkill, icon: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="⚡"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Average Price ($)</label>
+                  <input
+                    type="number"
+                    value={newSkill.avgPrice}
+                    onChange={(e) => setNewSkill({...newSkill, avgPrice: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Popularity (%)</label>
+                  <input
+                    type="number"
+                    value={newSkill.popularity}
+                    onChange={(e) => setNewSkill({...newSkill, popularity: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Add Skill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSkillModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
