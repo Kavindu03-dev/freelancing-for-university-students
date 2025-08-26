@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUniversity, setSelectedUniversity] = useState("all");
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
-  const [selectedUserType, setSelectedUserType] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const searchTimeout = useRef(null);
   const navigate = useNavigate();
 
   // Debug imports and functions
@@ -19,11 +16,11 @@ function AdminDashboard() {
   console.log('🔍 navigate function:', typeof navigate);
   console.log('🔍 logout import:', typeof logout);
 
-  // User statistics
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalFreelancers: 0,
-    totalClients: 0,
+  // Enhanced mock data for dashboard
+  const [stats] = useState({
+    totalUsers: 1247,
+    totalFreelancers: 892,
+    totalClients: 355,
     totalProjects: 2341,
     totalRevenue: 45678,
     pendingApprovals: 23,
@@ -33,11 +30,14 @@ function AdminDashboard() {
     conversionRate: 8.3
   });
 
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [showUserModal, setShowUserModal] = useState(false);
+  const [recentUsers] = useState([
+    { id: 1, name: "John Doe", email: "john@example.com", type: "Freelancer", status: "Active", date: "2024-01-15", avatar: "JD" },
+    { id: 2, name: "Jane Smith", email: "jane@example.com", type: "Client", status: "Active", date: "2024-01-14", avatar: "JS" },
+    { id: 3, name: "Mike Johnson", email: "mike@example.com", type: "Freelancer", status: "Pending", date: "2024-01-13", avatar: "MJ" },
+    { id: 4, name: "Sarah Wilson", email: "sarah@example.com", type: "Client", status: "Active", date: "2024-01-12", avatar: "SW" },
+    { id: 5, name: "Alex Chen", email: "alex@example.com", type: "Freelancer", status: "Active", date: "2024-01-11", avatar: "AC" },
+    { id: 6, name: "Emily Rodriguez", email: "emily@example.com", type: "Client", status: "Pending", date: "2024-01-10", avatar: "ER" }
+  ]);
 
   const [recentProjects] = useState([
     { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
@@ -138,190 +138,168 @@ function AdminDashboard() {
     { name: "Digital Marketing", projects: 167, revenue: 9800, successRate: 87.3, avgBudget: 1200 }
   ]);
 
-  useEffect(() => {
-    // Check if admin is logged in of the admin dashboard
-    const isLoggedIn = localStorage.getItem('adminLoggedIn');
-    const adminEmail = localStorage.getItem('adminEmail');
-    
-    if (!isLoggedIn || !adminEmail) {
-      navigate('/admin/login');
-      return;
-    }
-    
-    setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
-  }, [navigate]);
+  // Skills management state
+  const [skills, setSkills] = useState([]);
+  const [showAddSkillModal, setShowAddSkillModal] = useState(false);
+  const [newSkill, setNewSkill] = useState({
+    name: '',
+    description: '',
+    category: '',
+    icon: '⚡',
+    avgPrice: 0,
+    popularity: 0
+  });
+  const [skillCategories] = useState([
+    'Programming & Tech',
+    'Design & Creative',
+    'Digital Marketing',
+    'Writing & Translation',
+    'Video & Animation',
+    'Music & Audio',
+    'Business & Consulting',
+    'Data & Analytics'
+  ]);
 
-  // Function to fetch all users with filters
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
+  // Skills management functions
+  const fetchSkills = async () => {
     try {
+      console.log('🔍 fetchSkills called');
       const adminToken = localStorage.getItem('adminToken');
+      console.log('🔍 adminToken:', adminToken ? 'exists' : 'missing');
       
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) params.append('search', searchQuery.trim());
-      if (selectedUserType !== 'all') params.append('userType', selectedUserType);
-      if (selectedStatus !== 'all') params.append('status', selectedStatus);
-      
-      console.log('🔍 Filtering users with:', {
-        search: searchQuery.trim(),
-        userType: selectedUserType,
-        status: selectedStatus
-      });
-      
-      const url = `http://localhost:5000/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
-      
-      const response = await fetch(url, {
-        method: 'GET',
+      const response = await fetch('http://localhost:5000/api/skills/admin/all', {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.data);
+      
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Skills data received:', data);
+        setSkills(data.data || []);
+        console.log('🔍 Skills state updated with:', data.data || []);
       } else {
-        setError(data.message || 'Failed to fetch users');
+        const errorData = await response.json();
+        console.error('🔍 Error response:', errorData);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
+      console.error('🔍 Error fetching skills:', error);
     }
   };
 
-  // Function to update user status
-  const updateUserStatus = async (userId, newStatus) => {
+  const handleAddSkill = async (e) => {
+    e.preventDefault();
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/status`, {
-        method: 'PUT',
+      const response = await fetch('http://localhost:5000/api/skills', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(newSkill)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update user status');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        // Refresh users list
-        fetchUsers();
-      } else {
-        setError(data.message || 'Failed to update user status');
+      if (response.ok) {
+        setShowAddSkillModal(false);
+        setNewSkill({
+          name: '',
+          description: '',
+          category: '',
+          icon: '⚡',
+          avgPrice: 0,
+          popularity: 0
+        });
+        fetchSkills();
       }
     } catch (error) {
-      console.error('Error updating user status:', error);
-      setError(error.message);
+      console.error('Error adding skill:', error);
     }
   };
 
-  // Function to view user details
-  const viewUserDetails = (user) => {
-    setSelectedUser(user);
-    setShowUserModal(true);
-  };
-
-  // Function to delete user
-  const deleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return;
-    }
-
+  const handleDeleteSkill = async (skillId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete user');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        // Refresh users list
-        fetchUsers();
-      } else {
-        setError(data.message || 'Failed to delete user');
+      if (response.ok) {
+        // Update local state to mark skill as inactive
+        setSkills(skills.map(skill => 
+          skill._id === skillId ? { ...skill, isActive: false } : skill
+        ));
       }
     } catch (error) {
-      console.error('Error deleting user:', error);
-      setError(error.message);
+      console.error('Error deleting skill:', error);
     }
   };
 
-  // Function to fetch user statistics
-  const fetchUserStats = async () => {
+  const handleRestoreSkill = async (skillId) => {
     try {
       const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/users/stats', {
-        method: 'GET',
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/restore`, {
+        method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`
         }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch user statistics');
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setStats(prevStats => ({
-          ...prevStats,
-          totalUsers: data.data.totalUsers,
-          totalFreelancers: data.data.freelancers,
-          totalClients: data.data.clients
-        }));
+      if (response.ok) {
+        // Update local state to mark skill as active
+        setSkills(skills.map(skill => 
+          skill._id === skillId ? { ...skill, isActive: true } : skill
+        ));
       }
     } catch (error) {
-      console.error('Error fetching user statistics:', error);
+      console.error('Error restoring skill:', error);
+    }
+    };
+
+  const handlePermanentlyDeleteSkill = async (skillId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/permanent`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Remove the skill completely from the local state
+        setSkills(skills.filter(skill => skill._id !== skillId));
+      }
+    } catch (error) {
+      console.error('Error permanently deleting skill:', error);
     }
   };
 
-  // Fetch users when component mounts or when users tab is active
   useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [activeTab]);
-
-  // Fetch users when filters change
-  useEffect(() => {
-    if (activeTab === 'users') {
-      fetchUsers();
-    }
-  }, [selectedUserType, selectedStatus]);
-
-  // Fetch user statistics when component mounts
-  useEffect(() => {
-    fetchUserStats();
+    console.log('🔍 useEffect triggered');
+    // Check if admin is logged in of the admin dashboard
+    const isLoggedIn = localStorage.getItem('adminLoggedIn');
+    const adminEmail = localStorage.getItem('adminEmail');
     
-    // Cleanup function to clear timeout
-    return () => {
-      if (searchTimeout.current) {
-        clearTimeout(searchTimeout.current);
-      }
-    };
-  }, []);
+    console.log('🔍 isLoggedIn:', isLoggedIn);
+    console.log('🔍 adminEmail:', adminEmail);
+    
+    if (!isLoggedIn || !adminEmail) {
+      console.log('🔍 Redirecting to admin login');
+      navigate('/admin/login');
+      return;
+    }
+    
+    console.log('🔍 Admin is logged in, setting username and fetching skills');
+    setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
+    fetchSkills(); // Fetch skills when component mounts
+  }, [navigate]);
 
   const handleLogout = () => {
     console.log('🚪 handleLogout clicked!');
@@ -477,38 +455,29 @@ function AdminDashboard() {
             <button className="text-yellow-600 hover:text-yellow-700 font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {users.slice(0, 4).map(user => (
-              <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
+            {recentUsers.slice(0, 4).map(user => (
+              <div key={user.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-black font-bold text-sm">
-                    {user.firstName ? user.firstName.charAt(0) : 'U'}
-                  </span>
+                  <span className="text-black font-bold text-sm">{user.avatar}</span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
+                  <p className="font-semibold text-gray-900">{user.name}</p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'active' || !user.status ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
+                      {user.status}
                     </span>
                     <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">
-                      {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
-                    </span>
+                    <span className="text-xs text-gray-500">{user.type}</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-gray-500">{user.date}</p>
                 </div>
               </div>
             ))}
-            {users.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No users found
-              </div>
-            )}
           </div>
         </div>
 
@@ -564,110 +533,40 @@ function AdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {users.length} Total Users
+              {recentUsers.length} Total Users
             </span>
-            <button 
-              onClick={fetchUsers}
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Loading...' : 'Refresh'}
+            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
+              Add User
             </button>
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-6">
-            <strong className="font-bold">Error: </strong>
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-
         {/* User Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <select 
-            value={selectedUserType}
-            onChange={(e) => setSelectedUserType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          >
-            <option value="all">All Types</option>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Types</option>
             <option value="freelancer">Freelancer</option>
             <option value="client">Client</option>
-            <option value="universityStaff">University Staff</option>
+            <option value="admin">Admin</option>
           </select>
-          <select 
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          >
-            <option value="all">All Status</option>
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Status</option>
             <option value="active">Active</option>
+            <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+            <option value="">All Universities</option>
+            <option value="mit">MIT</option>
+            <option value="stanford">Stanford</option>
+            <option value="harvard">Harvard</option>
           </select>
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              // Debounce search to avoid too many API calls
-              clearTimeout(searchTimeout.current);
-              searchTimeout.current = setTimeout(() => {
-                fetchUsers();
-              }, 300);
-            }}
-            placeholder="Search users, emails, or universities..."
+            placeholder="Search users..."
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           />
-        </div>
-        
-        {/* Filter Summary and Clear Button */}
-        <div className="flex justify-between items-center mb-6">
-          {/* Active Filters Summary */}
-          <div className="flex flex-wrap gap-2">
-            {searchQuery && (
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
-                Search: "{searchQuery}"
-              </span>
-            )}
-            {selectedUserType !== 'all' && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                Type: {selectedUserType}
-              </span>
-            )}
-            {selectedStatus !== 'all' && (
-              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                Status: {selectedStatus}
-              </span>
-            )}
-          </div>
-          
-          {/* Clear Filters Button */}
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedUserType('all');
-              setSelectedStatus('all');
-            }}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-4 text-sm text-gray-600">
-          {loading ? (
-            <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500 mr-2"></div>
-              <span>Applying filters...</span>
-            </div>
-          ) : (
-            <>
-              Showing {users.length} user{users.length !== 1 ? 's' : ''}
-              {(searchQuery || selectedUserType !== 'all' || selectedStatus !== 'all') && ' (filtered)'}
-            </>
-          )}
         </div>
 
         {/* Enhanced User Table */}
@@ -684,6 +583,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
+<<<<<<< HEAD
               {loading ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-8 text-center">
@@ -721,79 +621,94 @@ function AdminDashboard() {
                               {user.firstName ? user.firstName.charAt(0) : 'U'}
                             </span>
                           </div>
+=======
+              {recentUsers.map(user => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-black font-bold text-sm">{user.avatar}</span>
+>>>>>>> main
                       </div>
                       <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
+                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.userType === 'freelancer' ? 'bg-blue-100 text-blue-800' : 
-                        user.userType === 'client' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
+                      user.type === 'Freelancer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                     }`}>
-                        {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
+                      {user.type}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        user.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        user.status === 'suspended' ? 'bg-orange-100 text-orange-800' :
-                        user.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
+                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 
+                      user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      user.status === 'Suspended' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user.status}
                     </span>
                   </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.university || user.organization || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MIT</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.date}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                        <button 
-                          onClick={() => viewUserDetails(user)}
-                          className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50"
-                        >
-                          View
-                        </button>
-                        {user.status === 'active' || !user.status ? (
-                          <button 
-                            onClick={() => updateUserStatus(user._id, 'suspended')}
-                            className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50"
-                          >
-                            Suspend
-                          </button>
-                        ) : user.status === 'suspended' ? (
-                          <button 
-                            onClick={() => updateUserStatus(user._id, 'active')}
-                            className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
-                          >
-                            Activate
-                          </button>
+                      <button className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50">Edit</button>
+                      {user.status === 'Active' ? (
+                        <button className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50">Suspend</button>
+                      ) : user.status === 'Suspended' ? (
+                        <button className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50">Activate</button>
                       ) : null}
-                        <button 
-                          onClick={() => deleteUser(user._id)}
-                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50"
-                        >
-                          Delete
-                        </button>
+                      <button className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50">Ban</button>
                     </div>
                   </td>
                 </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-
+      {/* Account Management Tools */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <h3 className="text-xl font-bold text-gray-900 mb-6">Account Management Tools</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Bulk Actions</h4>
+            <div className="space-y-3">
+              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Suspend Selected Users
+              </button>
+              <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Ban Selected Users
+              </button>
+              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
+                Activate Selected Users
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-800">Automated Rules</h4>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
+                <span className="text-sm text-gray-700">Auto-suspend after 3 violations</span>
+              </label>
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
+                <span className="text-sm text-gray-700">Auto-ban after 5 violations</span>
+              </label>
+              <label className="flex items-center space-x-3">
+                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" />
+                <span className="text-sm text-gray-700">Require email verification</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -1047,6 +962,137 @@ function AdminDashboard() {
       </div>
     </div>
   );
+
+  const renderSkills = () => {
+    console.log('🔍 renderSkills called with skills:', skills);
+    return (
+    <div className="space-y-8">
+      {/* Skills Management Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Skills Management</h3>
+            <p className="text-gray-600 mt-1">Manage platform skills and categories</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
+              {skills.filter(s => s.isActive).length} Active / {skills.length} Total
+            </span>
+            <button 
+              onClick={() => setShowAddSkillModal(true)}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Add Skill</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Skills Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Skill</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Category</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Popularity</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Avg Price</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {skills.map(skill => (
+                <tr key={skill._id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
+                  !skill.isActive ? 'bg-gray-100 opacity-75' : ''
+                }`}>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-2xl">{skill.icon}</span>
+                      <div>
+                        <div className="font-medium text-gray-900">{skill.name}</div>
+                        <div className="text-sm text-gray-500">{skill.description}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {skill.category}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-yellow-500 h-2 rounded-full" 
+                          style={{ width: `${Math.min(skill.popularity, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm text-gray-600">{skill.popularity}%</span>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className="font-medium text-gray-900">${skill.avgPrice}</span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      skill.isActive 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {skill.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="py-4 px-4">
+                    <div className="flex space-x-2">
+                      {skill.isActive ? (
+                        <button
+                          onClick={() => handleDeleteSkill(skill._id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleRestoreSkill(skill._id)}
+                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handlePermanentlyDeleteSkill(skill._id)}
+                            className="text-red-800 hover:text-red-900 text-sm font-medium"
+                          >
+                            Permanent Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {skills.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No skills yet</h3>
+              <p className="text-gray-600 max-w-md mx-auto">Start by adding the first skill to your platform.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  };
 
   const renderModeration = () => (
     <div className="space-y-8">
@@ -1527,6 +1573,7 @@ function AdminDashboard() {
                 { id: "users", name: "Users", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" },
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
+                { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
                 { id: "moderation", name: "Moderation", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
                 { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
@@ -1572,260 +1619,128 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-            {activeTab === "services" && renderServices()}
-            {activeTab === "moderation" && renderModeration()}
-            {activeTab === "analytics" && renderAnalytics()}
-            {activeTab === "settings" && renderSettings()}
+                    {activeTab === "services" && renderServices()}
+        {activeTab === "skills" && renderSkills()}
+        {activeTab === "moderation" && renderModeration()}
+        {activeTab === "analytics" && renderAnalytics()}
+        {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>
 
-      {/* User Details Modal */}
-      {showUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
-                <button 
-                  onClick={() => setShowUserModal(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
-                >
-                  ×
-                </button>
-              </div>
-              
-              {/* Profile Picture */}
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  {selectedUser.profileImage && selectedUser.profileImage.url ? (
-                    <img 
-                      src={selectedUser.profileImage.url} 
-                      alt={`${selectedUser.firstName} ${selectedUser.lastName}`}
-                      className="w-32 h-32 rounded-full object-cover border-4 border-yellow-200 shadow-lg"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center border-4 border-yellow-200 shadow-lg ${selectedUser.profileImage && selectedUser.profileImage.url ? 'hidden' : ''}`}>
-                    <span className="text-4xl font-bold text-white">
-                      {selectedUser.firstName ? selectedUser.firstName.charAt(0).toUpperCase() : 'U'}
-                      {selectedUser.lastName ? selectedUser.lastName.charAt(0).toUpperCase() : ''}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                {/* Basic Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Basic Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                      <p className="text-gray-900">{selectedUser.firstName} {selectedUser.lastName}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Email</label>
-                      <p className="text-gray-900">{selectedUser.email}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">User Type</label>
-                      <p className="text-gray-900 capitalize">{selectedUser.userType}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Status</label>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedUser.status === 'active' ? 'bg-green-100 text-green-800' : 
-                        selectedUser.status === 'suspended' ? 'bg-orange-100 text-orange-800' :
-                        selectedUser.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {selectedUser.status ? selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1) : 'Active'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                      <p className="text-gray-900">{selectedUser.phoneNumber || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                      <p className="text-gray-900">{selectedUser.dateOfBirth || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Address</label>
-                      <p className="text-gray-900">{selectedUser.address || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Joined Date</label>
-                      <p className="text-gray-900">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* User Type Specific Information */}
-                {selectedUser.userType === 'freelancer' && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Freelancer Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">University</label>
-                        <p className="text-gray-900">{selectedUser.university || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Degree Program</label>
-                        <p className="text-gray-900">{selectedUser.degreeProgram || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">GPA</label>
-                        <p className="text-gray-900">{selectedUser.gpa || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Graduation Year</label>
-                        <p className="text-gray-900">{selectedUser.graduationYear || 'N/A'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Technical Skills</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedUser.technicalSkills && selectedUser.technicalSkills.length > 0 ? (
-                            selectedUser.technicalSkills.map((skill, index) => (
-                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                                {skill}
-                              </span>
-                            ))
-                          ) : (
-                            <p className="text-gray-500">No skills listed</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedUser.userType === 'client' && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Client Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Organization</label>
-                        <p className="text-gray-900">{selectedUser.organization || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Job Title</label>
-                        <p className="text-gray-900">{selectedUser.jobTitle || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
-                        <p className="text-gray-900">{selectedUser.contactPhone || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Company Size</label>
-                        <p className="text-gray-900">{selectedUser.companySize || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Industry</label>
-                        <p className="text-gray-900">{selectedUser.industry || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Website</label>
-                        <p className="text-gray-900">{selectedUser.website || 'N/A'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Project Categories</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedUser.projectCategories && selectedUser.projectCategories.length > 0 ? (
-                            selectedUser.projectCategories.map((category, index) => (
-                              <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                                {category}
-                              </span>
-                            ))
-                          ) : (
-                            <p className="text-gray-500">No categories listed</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Company Description</label>
-                        <p className="text-gray-900">{selectedUser.companyDescription || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedUser.userType === 'universityStaff' && (
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-3">University Staff Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Staff Role</label>
-                        <p className="text-gray-900">{selectedUser.staffRole || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Department</label>
-                        <p className="text-gray-900">{selectedUser.department || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Employee ID</label>
-                        <p className="text-gray-900">{selectedUser.employeeId || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Qualification</label>
-                        <p className="text-gray-900">{selectedUser.qualification || 'N/A'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Experience</label>
-                        <p className="text-gray-900">{selectedUser.experience || 'N/A'}</p>
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Professional Summary</label>
-                        <p className="text-gray-900">{selectedUser.professionalSummary || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Account Information */}
-                <div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Account Information</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Email Verified</label>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedUser.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {selectedUser.isVerified ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Agreed to Terms</label>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedUser.agreeToTerms ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {selectedUser.agreeToTerms ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Marketing Consent</label>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        selectedUser.agreeToMarketing ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
-                        {selectedUser.agreeToMarketing ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end mt-8">
-                <button 
-                  onClick={() => setShowUserModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
-                >
-                  Close
-                </button>
-              </div>
+      {/* Skills Modal */}
+      {showAddSkillModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Skill</h3>
+              <button
+                onClick={() => setShowAddSkillModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+
+            <form onSubmit={handleAddSkill} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Skill Name</label>
+                <input
+                  type="text"
+                  value={newSkill.name}
+                  onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., React Development"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newSkill.description}
+                  onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the skill..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={newSkill.category}
+                  onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {skillCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <input
+                  type="text"
+                  value={newSkill.icon}
+                  onChange={(e) => setNewSkill({...newSkill, icon: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="⚡"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Average Price ($)</label>
+                  <input
+                    type="number"
+                    value={newSkill.avgPrice}
+                    onChange={(e) => setNewSkill({...newSkill, avgPrice: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Popularity (%)</label>
+                  <input
+                    type="number"
+                    value={newSkill.popularity}
+                    onChange={(e) => setNewSkill({...newSkill, popularity: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Add Skill
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSkillModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

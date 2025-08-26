@@ -1,5 +1,5 @@
 import express from 'express';
-import auth from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 import freelancerController from '../controllers/studentController.js';
 import portfolioController from '../controllers/portfolioController.js';
 import upload from '../middleware/upload.js';
@@ -8,7 +8,7 @@ import imgbbUpload from '../middleware/imgbbUpload.js';
 const router = express.Router();
 
 // Protected routes (require authentication)
-router.use(auth.protect);
+router.use(protect);
 
 // Freelancer profile management
 router.route('/profile')
