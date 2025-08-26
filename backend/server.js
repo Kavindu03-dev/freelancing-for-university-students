@@ -1,6 +1,17 @@
+<<<<<<< Updated upstream
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+=======
+import express from 'express';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import freelancerRoutes from './routes/student.js';
+import clientRoutes from './routes/client.js';
+import serviceRoutes from './routes/services.js';
+>>>>>>> Stashed changes
 
 // Load environment variables
 dotenv.config();
@@ -27,10 +38,18 @@ app.use((req, res, next) => {
 });
 
 // Routes
+<<<<<<< Updated upstream
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/student', require('./routes/student'));
 app.use('/api/services', require('./routes/services'));
+=======
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/freelancer', freelancerRoutes);
+app.use('/api/client', clientRoutes);
+app.use('/api/services', serviceRoutes);
+>>>>>>> Stashed changes
 
 // Basic route
 app.get('/', (req, res) => {
