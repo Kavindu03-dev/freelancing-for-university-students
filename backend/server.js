@@ -5,7 +5,7 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import freelancerRoutes from './routes/student.js';
 import serviceRoutes from './routes/services.js';
-import adminRoutes from './routes/admin.js';
+import skillRoutes from './routes/skills.js';
 
 // Load environment variables
 dotenv.config();
@@ -39,7 +39,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/services', serviceRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/skills', skillRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
