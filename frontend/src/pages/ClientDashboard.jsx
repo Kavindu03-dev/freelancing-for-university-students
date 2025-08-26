@@ -476,54 +476,37 @@ function ClientDashboard() {
     navigate('/');
   };
 
-  // Freelancer profile popup handlers
-  const handleViewProfile = (freelancer) => {
-    setSelectedFreelancer(freelancer);
-    setShowFreelancerPopup(true);
-  };
-
-  const handleContactFreelancer = (freelancer) => {
-    // Navigate to messages page with the freelancer's conversation
-    navigate(`/messages?freelancer=${freelancer.id}`);
-  };
-
-  const handleCloseFreelancerPopup = () => {
-    setShowFreelancerPopup(false);
-    setSelectedFreelancer(null);
-  };
-
-  const handleCreatePost = async () => {
-    try {
-      if (editingPost) {
-        // Update existing post
-        const updatedPost = await updatePostAPI(editingPost._id, postForm);
-        setJobPosts(prev => prev.map(post => 
-          post._id === editingPost._id ? updatedPost : post
-        ));
-        setEditingPost(null);
-      } else {
-        // Create new post
-        const newPost = await createPostAPI(postForm);
-        setJobPosts(prev => [newPost, ...prev]);
-      }
-      
-      setShowCreateForm(false);
-      setPostForm({
-        title: "",
-        type: "Project",
-        category: "",
-        budget: "",
-        deadline: "",
-        location: "Remote",
-        requiredSkills: "",
-        degreeField: "",
-        description: "",
-        attachments: []
-      });
-    } catch (error) {
-      // Error is already handled in the API functions
-      console.error('Error in handleCreatePost:', error);
+  const handleCreatePost = () => {
+    if (editingPost) {
+      // Update existing post
+      setJobPosts(prev => prev.map(post => 
+        post.id === editingPost.id ? { ...post, ...postForm } : post
+      ));
+      setEditingPost(null);
+    } else {
+      // Create new post
+      const newPost = {
+        id: Date.now(),
+        ...postForm,
+        status: "Active",
+        applications: 0,
+        createdDate: new Date().toISOString().split('T')[0]
+      };
+      setJobPosts(prev => [newPost, ...prev]);
     }
+    setShowCreateForm(false);
+    setPostForm({
+      title: "",
+      type: "Project",
+      category: "",
+      budget: "",
+      deadline: "",
+      location: "Remote",
+      requiredSkills: "",
+      degreeField: "",
+      description: "",
+      attachments: []
+    });
   };
 
   const handleEditPost = (post) => {
