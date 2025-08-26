@@ -308,30 +308,17 @@ function AdminDashboard() {
     }
   ]);
 
-  // Mock data for university and faculty analytics of the admin dashboard
-  const [universityStats] = useState([
-    { name: "MIT", users: 245, projects: 156, revenue: 12500, growth: 15.2 },
-    { name: "Stanford", users: 198, projects: 134, revenue: 10800, growth: 12.8 },
-    { name: "Harvard", users: 167, projects: 98, revenue: 8900, growth: 9.5 },
-    { name: "UC Berkeley", users: 145, projects: 87, revenue: 7200, growth: 11.3 },
-    { name: "CMU", users: 123, projects: 76, revenue: 6500, growth: 8.9 }
-  ]);
-
-  const [facultyStats] = useState([
-    { name: "Computer Science", users: 456, projects: 289, revenue: 23400, growth: 18.5 },
-    { name: "Engineering", users: 389, projects: 234, revenue: 19800, growth: 14.2 },
-    { name: "Business", users: 234, projects: 156, revenue: 12300, growth: 12.1 },
-    { name: "Design", users: 198, projects: 134, revenue: 9800, growth: 16.8 },
-    { name: "Marketing", users: 167, projects: 98, revenue: 7600, growth: 11.5 }
-  ]);
-
-  const [categoryStats] = useState([
-    { name: "Web Development", projects: 456, revenue: 23400, successRate: 92.5, avgBudget: 2500 },
-    { name: "Graphic Design", projects: 389, revenue: 18900, successRate: 88.7, avgBudget: 800 },
-    { name: "Content Writing", projects: 234, revenue: 12300, successRate: 85.2, avgBudget: 300 },
-    { name: "Mobile Development", projects: 198, revenue: 15600, successRate: 90.1, avgBudget: 4500 },
-    { name: "Digital Marketing", projects: 167, revenue: 9800, successRate: 87.3, avgBudget: 1200 }
-  ]);
+  // Analytics state
+  const [universityStats, setUniversityStats] = useState([]);
+  const [facultyStats, setFacultyStats] = useState([]);
+  const [categoryStats, setCategoryStats] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
+  
+  // Filtered analytics data
+  const [filteredUniversityStats, setFilteredUniversityStats] = useState([]);
+  const [filteredFacultyStats, setFilteredFacultyStats] = useState([]);
+  const [filteredCategoryStats, setFilteredCategoryStats] = useState([]);
 
   // Skills management state
   const [skills, setSkills] = useState([]);
@@ -568,6 +555,122 @@ function AdminDashboard() {
     } catch (error) {
       console.error('Error permanently deleting skill:', error);
     }
+    };
+
+  // Analytics functions
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+      const adminToken = localStorage.getItem('adminToken');
+      
+      // Build query parameters with filters
+      const params = new URLSearchParams({
+        dateRange: dateRange,
+        university: selectedUniversity !== 'all' ? selectedUniversity : '',
+        faculty: selectedFaculty !== 'all' ? selectedFaculty : '',
+        category: selectedCategory !== 'all' ? selectedCategory : ''
+      });
+      
+      // Fetch all analytics data in parallel
+      const [universityResponse, facultyResponse, categoryResponse] = await Promise.all([
+        fetch(`http://localhost:5000/api/analytics/university?${params}`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        }),
+        fetch(`http://localhost:5000/api/analytics/faculty?${params}`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        }),
+        fetch(`http://localhost:5000/api/analytics/category?${params}`, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        })
+      ]);
+
+      if (universityResponse.ok && facultyResponse.ok && categoryResponse.ok) {
+        const [universityData, facultyData, categoryData] = await Promise.all([
+          universityResponse.json(),
+          facultyResponse.json(),
+          categoryResponse.json()
+        ]);
+
+        setUniversityStats(universityData.data || []);
+        setFacultyStats(facultyData.data || []);
+        setCategoryStats(categoryData.data || []);
+        
+        // Apply filters to the data
+        applyFilters(universityData.data || [], facultyData.data || [], categoryData.data || []);
+      } else {
+        setAnalyticsError('Failed to fetch analytics data');
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setAnalyticsError('Error fetching analytics data');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  // Apply filters to analytics data
+  const applyFilters = (universityData, facultyData, categoryData) => {
+    let filteredUni = universityData;
+    let filteredFaculty = facultyData;
+    let filteredCat = categoryData;
+
+    // Apply university filter
+    if (selectedUniversity !== 'all') {
+      filteredUni = universityData.filter(uni => uni.name === selectedUniversity);
+      filteredFaculty = facultyData.filter(faculty => 
+        faculty.university === selectedUniversity || !faculty.university
+      );
+      filteredCat = categoryData.filter(cat => 
+        cat.university === selectedUniversity || !cat.university
+      );
+    }
+
+    // Apply faculty filter
+    if (selectedFaculty !== 'all') {
+      filteredFaculty = filteredFaculty.filter(faculty => faculty.name === selectedFaculty);
+      filteredUni = filteredUni.filter(uni => 
+        uni.faculty === selectedFaculty || !uni.faculty
+      );
+      filteredCat = filteredCat.filter(cat => 
+        cat.faculty === selectedFaculty || !cat.faculty
+      );
+    }
+
+    // Apply category filter
+    if (selectedCategory !== 'all') {
+      filteredCat = filteredCat.filter(cat => cat.name === selectedCategory);
+      filteredUni = filteredUni.filter(uni => 
+        uni.category === selectedCategory || !uni.category
+      );
+      filteredFaculty = filteredFaculty.filter(faculty => 
+        faculty.category === selectedCategory || !faculty.category
+      );
+    }
+
+    setFilteredUniversityStats(filteredUni);
+    setFilteredFacultyStats(filteredFaculty);
+    setFilteredCategoryStats(filteredCat);
+  };
+
+  // Handle filter changes
+  const handleAnalyticsFilterChange = (filterType, value) => {
+    switch (filterType) {
+      case 'university':
+        setSelectedUniversity(value);
+        break;
+      case 'faculty':
+        setSelectedFaculty(value);
+        break;
+      case 'category':
+        setSelectedCategory(value);
+        break;
+      case 'dateRange':
+        setDateRange(value);
+        break;
+      default:
+        break;
+    }
   };
 
   useEffect(() => {
@@ -589,7 +692,15 @@ function AdminDashboard() {
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
     fetchSkills(); // Fetch skills when component mounts
     fetchUsers(); // Fetch users when component mounts
+    fetchAnalytics(); // Fetch analytics when component mounts
   }, [navigate]);
+
+  // Fetch analytics when filters or activeTab changes
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalytics();
+    }
+  }, [dateRange, selectedUniversity, selectedFaculty, selectedCategory, activeTab]);
 
   const handleLogout = () => {
     console.log('🚪 handleLogout clicked!');
@@ -1041,7 +1152,7 @@ function AdminDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Institution</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -1096,7 +1207,14 @@ function AdminDashboard() {
                     </span>
                   </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.university || 'N/A'}
+                        {user.userType === 'freelancer' 
+                          ? (user.university || 'Not specified')
+                          : user.userType === 'client'
+                          ? (user.organization || 'Not specified')
+                          : user.userType === 'universityStaff'
+                          ? (user.department || 'Not specified')
+                          : 'N/A'
+                        }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(user.createdAt).toLocaleDateString()}
@@ -1780,7 +1898,7 @@ function AdminDashboard() {
           <div className="flex items-center space-x-4">
             <select
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              onChange={(e) => handleAnalyticsFilterChange('dateRange', e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
             >
               <option value="7">Last 7 days</option>
@@ -1798,7 +1916,7 @@ function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <select
             value={selectedUniversity}
-            onChange={(e) => setSelectedUniversity(e.target.value)}
+            onChange={(e) => handleAnalyticsFilterChange('university', e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           >
             <option value="all">All Universities</option>
@@ -1808,7 +1926,7 @@ function AdminDashboard() {
           </select>
           <select
             value={selectedFaculty}
-            onChange={(e) => setSelectedFaculty(e.target.value)}
+            onChange={(e) => handleAnalyticsFilterChange('faculty', e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           >
             <option value="all">All Faculties</option>
@@ -1818,7 +1936,7 @@ function AdminDashboard() {
           </select>
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => handleAnalyticsFilterChange('category', e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           >
             <option value="all">All Categories</option>
@@ -1827,12 +1945,131 @@ function AdminDashboard() {
             ))}
           </select>
         </div>
+
+        {/* Error Message */}
+        {analyticsError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{analyticsError}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Analytics Summary Cards */}
+      {!analyticsLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-sm font-medium">Total Universities</p>
+                <p className="text-3xl font-bold">{universityStats.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Faculties</p>
+                <p className="text-3xl font-bold">{facultyStats.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Total Categories</p>
+                <p className="text-3xl font-bold">{categoryStats.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Total Revenue</p>
+                <p className="text-3xl font-bold">
+                  ${categoryStats.reduce((sum, cat) => sum + (cat.revenue || 0), 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* University Performance */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <h3 className="text-xl font-bold text-gray-900 mb-6">University Performance</h3>
+        
+        {/* University Performance Chart */}
+        {!analyticsLoading && filteredUniversityStats.length > 0 && (
+          <div className="mb-8">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Revenue by University</h4>
+            <div className="space-y-3">
+              {filteredUniversityStats.slice(0, 5).map((uni, index) => {
+                const maxRevenue = Math.max(...filteredUniversityStats.map(u => u.revenue));
+                const percentage = maxRevenue > 0 ? (uni.revenue / maxRevenue) * 100 : 0;
+                return (
+                  <div key={uni.name} className="flex items-center space-x-4">
+                    <div className="w-32 text-sm font-medium text-gray-700 truncate">{uni.name}</div>
+                    <div className="flex-1 bg-gray-200 rounded-full h-4">
+                      <div 
+                        className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-4 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="w-20 text-sm font-medium text-gray-900">${uni.revenue.toLocaleString()}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
+          {analyticsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+              <span className="ml-2 text-gray-600">Loading university data...</span>
+            </div>
+          ) : filteredUniversityStats.length === 0 ? (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No university data</h3>
+              <p className="mt-1 text-sm text-gray-500">No university performance data available for the selected time period.</p>
+            </div>
+          ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -1844,7 +2081,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {universityStats.map(uni => (
+                {filteredUniversityStats.map(uni => (
                 <tr key={uni.name} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{uni.name}</div>
@@ -1863,13 +2100,54 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
       {/* Faculty Performance */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <h3 className="text-xl font-bold text-gray-900 mb-6">Faculty Performance</h3>
+        
+        {/* Faculty Performance Chart */}
+        {!analyticsLoading && filteredFacultyStats.length > 0 && (
+          <div className="mb-8">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Users by Faculty</h4>
+            <div className="space-y-3">
+              {filteredFacultyStats.slice(0, 5).map((faculty, index) => {
+                const maxUsers = Math.max(...filteredFacultyStats.map(f => f.users));
+                const percentage = maxUsers > 0 ? (faculty.users / maxUsers) * 100 : 0;
+                return (
+                  <div key={faculty.name} className="flex items-center space-x-4">
+                    <div className="w-32 text-sm font-medium text-gray-700 truncate">{faculty.name}</div>
+                    <div className="flex-1 bg-gray-200 rounded-full h-4">
+                      <div 
+                        className="bg-gradient-to-r from-blue-400 to-blue-600 h-4 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="w-20 text-sm font-medium text-gray-900">{faculty.users.toLocaleString()}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
+          {analyticsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+              <span className="ml-2 text-gray-600">Loading faculty data...</span>
+            </div>
+          ) : filteredFacultyStats.length === 0 ? (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No faculty data</h3>
+              <p className="mt-1 text-sm text-gray-500">No faculty performance data available for the selected time period.</p>
+            </div>
+          ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -1881,7 +2159,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {facultyStats.map(faculty => (
+                {filteredFacultyStats.map(faculty => (
                 <tr key={faculty.name} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{faculty.name}</div>
@@ -1900,13 +2178,55 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
       {/* Category Performance */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <h3 className="text-xl font-bold text-gray-900 mb-6">Category Performance</h3>
+        
+        {/* Category Performance Chart */}
+        {!analyticsLoading && filteredCategoryStats.length > 0 && (
+          <div className="mb-8">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Success Rate by Category</h4>
+            <div className="space-y-3">
+              {filteredCategoryStats.slice(0, 5).map((cat, index) => {
+                return (
+                  <div key={cat.name} className="flex items-center space-x-4">
+                    <div className="w-32 text-sm font-medium text-gray-700 truncate">{cat.name}</div>
+                    <div className="flex-1 bg-gray-200 rounded-full h-4">
+                      <div 
+                        className={`h-4 rounded-full transition-all duration-500 ${
+                          cat.successRate > 90 ? 'bg-green-500' : 
+                          cat.successRate > 80 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                        style={{ width: `${cat.successRate}%` }}
+                      ></div>
+                    </div>
+                    <div className="w-20 text-sm font-medium text-gray-900">{cat.successRate}%</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
         <div className="overflow-x-auto">
+          {analyticsLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+              <span className="ml-2 text-gray-600">Loading category data...</span>
+            </div>
+          ) : filteredCategoryStats.length === 0 ? (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No category data</h3>
+              <p className="mt-1 text-sm text-gray-500">No category performance data available for the selected time period.</p>
+            </div>
+          ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -1918,7 +2238,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {categoryStats.map(cat => (
+                {filteredCategoryStats.map(cat => (
                 <tr key={cat.name} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{cat.name}</div>
@@ -1938,6 +2258,7 @@ function AdminDashboard() {
               ))}
             </tbody>
           </table>
+          )}
         </div>
       </div>
     </div>
@@ -2005,29 +2326,7 @@ function AdminDashboard() {
           </div>
         </div>
 
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">System Settings</h4>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Email Notifications</p>
-                <p className="text-sm text-gray-600">Receive email notifications for important events</p>
-              </div>
-              <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
-                Enabled
-              </button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Two-Factor Authentication</p>
-                <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
-              </div>
-              <button className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-xl font-medium">
-                Disabled
-              </button>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
@@ -2116,12 +2415,12 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-            {activeTab === "services" && renderServices()}
-            {activeTab === "skills" && renderSkills()}
+                    {activeTab === "services" && renderServices()}
+        {activeTab === "skills" && renderSkills()}
             {activeTab === "posts" && renderPostsApproval()}
-            {activeTab === "moderation" && renderModeration()}
-            {activeTab === "analytics" && renderAnalytics()}
-            {activeTab === "settings" && renderSettings()}
+        {activeTab === "moderation" && renderModeration()}
+        {activeTab === "analytics" && renderAnalytics()}
+        {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>
@@ -2300,17 +2599,83 @@ function AdminDashboard() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
                     <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg capitalize">
-                      {selectedUser.userType}
+                      {selectedUser.userType === 'freelancer' ? 'Freelancer' : 
+                       selectedUser.userType === 'client' ? 'Client' : 
+                       selectedUser.userType === 'universityStaff' ? 'University Staff' : 
+                       selectedUser.userType}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {selectedUser.userType === 'freelancer' ? 'University' : 
+                       selectedUser.userType === 'client' ? 'Organization' : 
+                       selectedUser.userType === 'universityStaff' ? 'Department' : 'Institution'}
+                    </label>
                     <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                      {selectedUser.university || 'Not specified'}
+                      {selectedUser.userType === 'freelancer' 
+                        ? (selectedUser.university || 'Not specified')
+                        : selectedUser.userType === 'client'
+                        ? (selectedUser.organization || 'Not specified')
+                        : selectedUser.userType === 'universityStaff'
+                        ? (selectedUser.department || 'Not specified')
+                        : 'Not specified'
+                      }
                     </p>
                   </div>
                 </div>
+
+                {/* Additional fields based on user type */}
+                {selectedUser.userType === 'freelancer' && (
+                  <div className="space-y-4">
+                    {selectedUser.degreeProgram && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Degree Program</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.degreeProgram}</p>
+                      </div>
+                    )}
+                    {selectedUser.graduationYear && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.graduationYear}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedUser.userType === 'client' && (
+                  <div className="space-y-4">
+                    {selectedUser.jobTitle && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Job Title</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.jobTitle}</p>
+                      </div>
+                    )}
+                    {selectedUser.industry && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.industry}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedUser.userType === 'universityStaff' && (
+                  <div className="space-y-4">
+                    {selectedUser.staffRole && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Staff Role</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.staffRole}</p>
+                      </div>
+                    )}
+                    {selectedUser.employeeId && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                        <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.employeeId}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-4">
                   <div>

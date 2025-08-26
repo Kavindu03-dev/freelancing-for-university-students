@@ -8,6 +8,7 @@ import serviceRoutes from './routes/services.js';
 import skillRoutes from './routes/skills.js';
 import postRoutes from './routes/posts.js';
 import verificationRoutes from './routes/verification.js';
+import analyticsRoutes from './routes/analytics.js';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +45,7 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
