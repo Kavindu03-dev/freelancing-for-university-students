@@ -811,19 +811,76 @@ function Signup() {
     return { strength: "Strong", color: "green", score, feedback };
   };
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  // Phone number validation function
+  const validatePhoneNumber = (phoneNumber) => {
+    // Remove any non-digit characters except the +94 prefix
+    const cleanNumber = phoneNumber.replace(/[^\d+]/g, '');
     
-    // Clear error when user starts typing
-    if (errors[e.target.name]) {
-      setErrors({
-        ...errors,
-        [e.target.name]: ""
+    // Check if it starts with +94
+    if (!cleanNumber.startsWith('+94')) {
+      return { isValid: false, message: "Phone number must start with +94" };
+    }
+    
+    // Check if it has exactly 9 digits after +94
+    const digitsAfterPrefix = cleanNumber.substring(3);
+    if (digitsAfterPrefix.length !== 9) {
+      return { isValid: false, message: "Phone number must have exactly 9 digits after +94" };
+    }
+    
+    // Check if all characters after +94 are digits
+    if (!/^\d{9}$/.test(digitsAfterPrefix)) {
+      return { isValid: false, message: "Only numbers are allowed after +94" };
+    }
+    
+    return { isValid: true, message: "" };
+  };
+
+  // Format phone number with +94 prefix
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // If it doesn't start with 94, add it
+    if (!digitsOnly.startsWith('94')) {
+      return `+94${digitsOnly}`;
+    }
+    
+    // If it starts with 94, add the + prefix
+    return `+${digitsOnly}`;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Special handling for phone number fields
+    if (name === 'phoneNumber' || name === 'contactPhone') {
+      const formattedValue = formatPhoneNumber(value);
+      setFormData({
+        ...formData,
+        [name]: formattedValue
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
       });
     }
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: ""
+      });
+    }
+  };
+
+  // Prevent suggestions on input fields
+  const preventSuggestions = (e) => {
+    e.target.setAttribute('autocomplete', 'off');
+    e.target.setAttribute('autocorrect', 'off');
+    e.target.setAttribute('autocapitalize', 'off');
+    e.target.setAttribute('spellcheck', 'false');
   };
 
   const handleSkillToggle = (skill) => {
@@ -865,41 +922,124 @@ function Signup() {
     const newErrors = {};
     
     // Common validations
-    if (!formData.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email is invalid";
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
     
-    if (!formData.password) newErrors.password = "Password is required";
-    else if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = "Password must contain at least one lowercase letter, one uppercase letter, and one number";
+    }
     
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
-    if (!formData.firstName) newErrors.firstName = "First name is required";
-    if (!formData.lastName) newErrors.lastName = "Last name is required";
+    if (!formData.firstName) {
+      newErrors.firstName = "First name is required";
+    } else if (formData.firstName.length < 2) {
+      newErrors.firstName = "First name must be at least 2 characters";
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName)) {
+      newErrors.firstName = "First name can only contain letters and spaces";
+    }
     
-    if (!acceptedTerms) newErrors.terms = "You must accept the terms and conditions";
-
-    // User type specific validations
-    if (userType === "freelancer") {
-      // Removed validation for degreeProgram, university, gpa, graduationYear
+    if (!formData.lastName) {
+      newErrors.lastName = "Last name is required";
+    } else if (formData.lastName.length < 2) {
+      newErrors.lastName = "Last name must be at least 2 characters";
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName)) {
+      newErrors.lastName = "Last name can only contain letters and spaces";
     }
 
+    // Phone number validation for freelancer
+    if (userType === "freelancer" && formData.phoneNumber) {
+      const phoneValidation = validatePhoneNumber(formData.phoneNumber);
+      if (!phoneValidation.isValid) {
+        newErrors.phoneNumber = phoneValidation.message;
+      }
+    }
+
+    // Phone number validation for client
+    if (userType === "client" && formData.contactPhone) {
+      const phoneValidation = validatePhoneNumber(formData.contactPhone);
+      if (!phoneValidation.isValid) {
+        newErrors.contactPhone = phoneValidation.message;
+      }
+    }
+
+    // Address validation
+    if (userType === "freelancer" && formData.address) {
+      if (formData.address.length < 10) {
+        newErrors.address = "Address must be at least 10 characters";
+      }
+    }
+
+    // Organization validation for client
     if (userType === "client") {
-      if (!formData.organization) newErrors.organization = "Organization is required";
-      if (!formData.contactPhone) newErrors.contactPhone = "Contact phone is required";
+      if (!formData.organization) {
+        newErrors.organization = "Organization is required";
+      } else if (formData.organization.length < 2) {
+        newErrors.organization = "Organization name must be at least 2 characters";
+      }
+      
+      if (!formData.contactPhone) {
+        newErrors.contactPhone = "Contact phone is required";
+      } else {
+        const phoneValidation = validatePhoneNumber(formData.contactPhone);
+        if (!phoneValidation.isValid) {
+          newErrors.contactPhone = phoneValidation.message;
+        }
+      }
     }
 
+    // University Staff validations
     if (userType === "universityStaff") {
-      if (!formData.staffRole) newErrors.staffRole = "Staff role is required";
-      if (!formData.department) newErrors.department = "Department is required";
-      if (!formData.employeeId) newErrors.employeeId = "Employee ID is required";
+      if (!formData.staffRole) {
+        newErrors.staffRole = "Staff role is required";
+      }
+      
+      if (!formData.department) {
+        newErrors.department = "Department is required";
+      } else if (formData.department.length < 2) {
+        newErrors.department = "Department must be at least 2 characters";
+      }
+      
+      if (!formData.employeeId) {
+        newErrors.employeeId = "Employee ID is required";
+      } else if (formData.employeeId.length < 3) {
+        newErrors.employeeId = "Employee ID must be at least 3 characters";
+      }
     }
 
-    if (userType === "admin") {
-      if (!formData.adminCode) newErrors.adminCode = "Admin code is required";
+    // Website validation
+    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
+      newErrors.website = "Website must start with http:// or https://";
+    }
+
+    // Job title validation
+    if (formData.jobTitle && formData.jobTitle.length < 2) {
+      newErrors.jobTitle = "Job title must be at least 2 characters";
+    }
+
+    // Company description validation
+    if (formData.companyDescription && formData.companyDescription.length < 20) {
+      newErrors.companyDescription = "Company description must be at least 20 characters";
+    }
+
+    // Professional summary validation
+    if (formData.professionalSummary && formData.professionalSummary.length < 20) {
+      newErrors.professionalSummary = "Professional summary must be at least 20 characters";
     }
     
+    if (!acceptedTerms) {
+      newErrors.terms = "You must accept the terms and conditions";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -976,9 +1116,17 @@ function Signup() {
             name="phoneNumber"
             value={formData.phoneNumber || ""}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="+94 71 123 4567"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            maxLength={13}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.phoneNumber && (
+            <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>
+          )}
+          <p className="text-xs text-gray-500 mt-1">Format: +94 followed by 9 digits</p>
         </div>
         
         <div>
@@ -990,9 +1138,15 @@ function Signup() {
             name="address"
             value={formData.address || ""}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="Enter your full address"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.address ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.address && (
+            <p className="text-red-500 text-sm mt-1">{errors.address}</p>
+          )}
         </div>
       </div>
 
@@ -1095,6 +1249,7 @@ function Signup() {
             name="organization"
             value={formData.organization}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
             placeholder="Company or organization name"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
               errors.organization ? 'border-red-500' : 'border-gray-300'
@@ -1114,9 +1269,15 @@ function Signup() {
             name="jobTitle"
             value={formData.jobTitle}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
             placeholder="e.g., Project Manager, CEO"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.jobTitle ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.jobTitle && (
+            <p className="text-red-500 text-sm mt-1">{errors.jobTitle}</p>
+                  )}
                   </div>
                 </div>
 
@@ -1130,7 +1291,9 @@ function Signup() {
             name="contactPhone"
             value={formData.contactPhone}
                     onChange={handleChange}
+                    onFocus={preventSuggestions}
             placeholder="+94 71 123 4567"
+            maxLength={13}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
               errors.contactPhone ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -1138,6 +1301,7 @@ function Signup() {
           {errors.contactPhone && (
             <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
                   )}
+          <p className="text-xs text-gray-500 mt-1">Format: +94 followed by 9 digits</p>
                 </div>
 
                 <div>
@@ -1199,9 +1363,15 @@ function Signup() {
             name="website"
             value={formData.website || ""}
                         onChange={handleChange}
+                        onFocus={preventSuggestions}
             placeholder="https://www.company.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.website ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.website && (
+            <p className="text-red-500 text-sm mt-1">{errors.website}</p>
+                  )}
                   </div>
                 </div>
 
@@ -1213,10 +1383,16 @@ function Signup() {
           name="companyDescription"
           value={formData.companyDescription || ""}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
           placeholder="Describe your company, its mission, and what you do..."
           rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+            errors.companyDescription ? 'border-red-500' : 'border-gray-300'
+            }`}
         />
+        {errors.companyDescription && (
+          <p className="text-red-500 text-sm mt-1">{errors.companyDescription}</p>
+        )}
       </div>
 
                   <div>
@@ -1293,6 +1469,7 @@ function Signup() {
             name="department"
             value={formData.department}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
             placeholder="e.g., Computer Science"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
               errors.department ? 'border-red-500' : 'border-gray-300'
@@ -1313,6 +1490,7 @@ function Signup() {
           name="employeeId"
           value={formData.employeeId}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
           placeholder="e.g., EMP12345"
           className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
             errors.employeeId ? 'border-red-500' : 'border-gray-300'
@@ -1373,10 +1551,16 @@ function Signup() {
                     name="professionalSummary"
                     value={formData.professionalSummary || ""}
                         onChange={handleChange}
+                        onFocus={preventSuggestions}
                     placeholder="Describe your professional background, expertise, and responsibilities..."
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                      errors.professionalSummary ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {errors.professionalSummary && (
+                    <p className="text-red-500 text-sm mt-1">{errors.professionalSummary}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1431,6 +1615,7 @@ function Signup() {
             name="organization"
             value={formData.organization}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="Company or organization name"
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
               errors.organization ? 'border-red-500' : 'border-gray-300'
@@ -1450,9 +1635,15 @@ function Signup() {
             name="jobTitle"
             value={formData.jobTitle}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="e.g., Project Manager, CEO"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.jobTitle ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.jobTitle && (
+            <p className="text-red-500 text-sm mt-1">{errors.jobTitle}</p>
+          )}
         </div>
       </div>
 
@@ -1466,7 +1657,9 @@ function Signup() {
             name="contactPhone"
             value={formData.contactPhone}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="+94 71 123 4567"
+            maxLength={13}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
               errors.contactPhone ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -1474,6 +1667,7 @@ function Signup() {
           {errors.contactPhone && (
             <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
           )}
+          <p className="text-xs text-gray-500 mt-1">Format: +94 followed by 9 digits</p>
         </div>
 
         <div>
@@ -1535,9 +1729,15 @@ function Signup() {
             name="website"
             value={formData.website || ""}
             onChange={handleChange}
+            onFocus={preventSuggestions}
             placeholder="https://www.company.com"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+              errors.website ? 'border-red-500' : 'border-gray-300'
+            }`}
           />
+          {errors.website && (
+            <p className="text-red-500 text-sm mt-1">{errors.website}</p>
+          )}
         </div>
       </div>
 
@@ -1549,10 +1749,16 @@ function Signup() {
           name="companyDescription"
           value={formData.companyDescription || ""}
           onChange={handleChange}
+          onFocus={preventSuggestions}
           placeholder="Describe your company, its mission, and what you do..."
           rows="3"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+            errors.companyDescription ? 'border-red-500' : 'border-gray-300'
+          }`}
         />
+        {errors.companyDescription && (
+          <p className="text-red-500 text-sm mt-1">{errors.companyDescription}</p>
+        )}
       </div>
 
       <div>
@@ -1703,6 +1909,7 @@ function Signup() {
                   name="firstName"
                   value={formData.firstName}
                     onChange={handleChange}
+                    onFocus={preventSuggestions}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                     errors.firstName ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -1722,6 +1929,7 @@ function Signup() {
                   name="lastName"
                   value={formData.lastName}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -1742,6 +1950,7 @@ function Signup() {
                 name="email"
                 value={formData.email}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -1763,6 +1972,7 @@ function Signup() {
                     name="password"
                       value={formData.password}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
                     className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                       errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -1824,6 +2034,7 @@ function Signup() {
                     name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
+                      onFocus={preventSuggestions}
                     className={`w-full px-3 py-2 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
                     }`}
