@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
@@ -6,10 +6,12 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUniversity, setSelectedUniversity] = useState("all");
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
+  const [selectedUserType, setSelectedUserType] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const searchTimeout = useRef(null);
   const navigate = useNavigate();
 
   // Debug imports and functions
@@ -17,11 +19,11 @@ function AdminDashboard() {
   console.log('🔍 navigate function:', typeof navigate);
   console.log('🔍 logout import:', typeof logout);
 
-  // Enhanced mock data for dashboard
-  const [stats] = useState({
-    totalUsers: 1247,
-    totalFreelancers: 892,
-    totalClients: 355,
+  // User statistics
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalFreelancers: 0,
+    totalClients: 0,
     totalProjects: 2341,
     totalRevenue: 45678,
     pendingApprovals: 23,
@@ -31,14 +33,11 @@ function AdminDashboard() {
     conversionRate: 8.3
   });
 
-  const [recentUsers] = useState([
-    { id: 1, name: "John Doe", email: "john@example.com", type: "Freelancer", status: "Active", date: "2024-01-15", avatar: "JD" },
-    { id: 2, name: "Jane Smith", email: "jane@example.com", type: "Client", status: "Active", date: "2024-01-14", avatar: "JS" },
-    { id: 3, name: "Mike Johnson", email: "mike@example.com", type: "Freelancer", status: "Pending", date: "2024-01-13", avatar: "MJ" },
-    { id: 4, name: "Sarah Wilson", email: "sarah@example.com", type: "Client", status: "Active", date: "2024-01-12", avatar: "SW" },
-    { id: 5, name: "Alex Chen", email: "alex@example.com", type: "Freelancer", status: "Active", date: "2024-01-11", avatar: "AC" },
-    { id: 6, name: "Emily Rodriguez", email: "emily@example.com", type: "Client", status: "Pending", date: "2024-01-10", avatar: "ER" }
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
 
   const [recentProjects] = useState([
     { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
@@ -151,6 +150,178 @@ function AdminDashboard() {
     
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
   }, [navigate]);
+
+  // Function to fetch all users with filters
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.append('search', searchQuery.trim());
+      if (selectedUserType !== 'all') params.append('userType', selectedUserType);
+      if (selectedStatus !== 'all') params.append('status', selectedStatus);
+      
+      console.log('🔍 Filtering users with:', {
+        search: searchQuery.trim(),
+        userType: selectedUserType,
+        status: selectedStatus
+      });
+      
+      const url = `http://localhost:5000/api/admin/users${params.toString() ? `?${params.toString()}` : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data);
+      } else {
+        setError(data.message || 'Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to update user status
+  const updateUserStatus = async (userId, newStatus) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user status');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Refresh users list
+        fetchUsers();
+      } else {
+        setError(data.message || 'Failed to update user status');
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      setError(error.message);
+    }
+  };
+
+  // Function to view user details
+  const viewUserDetails = (user) => {
+    setSelectedUser(user);
+    setShowUserModal(true);
+  };
+
+  // Function to delete user
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete user');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        // Refresh users list
+        fetchUsers();
+      } else {
+        setError(data.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setError(error.message);
+    }
+  };
+
+  // Function to fetch user statistics
+  const fetchUserStats = async () => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('http://localhost:5000/api/admin/users/stats', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user statistics');
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setStats(prevStats => ({
+          ...prevStats,
+          totalUsers: data.data.totalUsers,
+          totalFreelancers: data.data.freelancers,
+          totalClients: data.data.clients
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching user statistics:', error);
+    }
+  };
+
+  // Fetch users when component mounts or when users tab is active
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
+
+  // Fetch users when filters change
+  useEffect(() => {
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [selectedUserType, selectedStatus]);
+
+  // Fetch user statistics when component mounts
+  useEffect(() => {
+    fetchUserStats();
+    
+    // Cleanup function to clear timeout
+    return () => {
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+  }, []);
 
   const handleLogout = () => {
     console.log('🚪 handleLogout clicked!');
@@ -306,29 +477,38 @@ function AdminDashboard() {
             <button className="text-yellow-600 hover:text-yellow-700 font-medium">View All</button>
           </div>
           <div className="space-y-4">
-            {recentUsers.slice(0, 4).map(user => (
-              <div key={user.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
+            {users.slice(0, 4).map(user => (
+              <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-black font-bold text-sm">{user.avatar}</span>
+                  <span className="text-black font-bold text-sm">
+                    {user.firstName ? user.firstName.charAt(0) : 'U'}
+                  </span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{user.name}</p>
+                  <p className="font-semibold text-gray-900">{user.firstName} {user.lastName}</p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      user.status === 'active' || !user.status ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {user.status}
+                      {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
                     </span>
                     <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">{user.type}</span>
+                    <span className="text-xs text-gray-500">
+                      {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{user.date}</p>
+                  <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
+            {users.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No users found
+              </div>
+            )}
           </div>
         </div>
 
@@ -384,40 +564,110 @@ function AdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {recentUsers.length} Total Users
+              {users.length} Total Users
             </span>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Add User
+            <button 
+              onClick={fetchUsers}
+              disabled={loading}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Loading...' : 'Refresh'}
             </button>
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl mb-6">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
         {/* User Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Types</option>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <select 
+            value={selectedUserType}
+            onChange={(e) => setSelectedUserType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="all">All Types</option>
             <option value="freelancer">Freelancer</option>
             <option value="client">Client</option>
-            <option value="admin">Admin</option>
+            <option value="universityStaff">University Staff</option>
           </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Status</option>
+          <select 
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="all">All Status</option>
             <option value="active">Active</option>
-            <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
-            <option value="banned">Banned</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Universities</option>
-            <option value="mit">MIT</option>
-            <option value="stanford">Stanford</option>
-            <option value="harvard">Harvard</option>
           </select>
           <input
             type="text"
-            placeholder="Search users..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              // Debounce search to avoid too many API calls
+              clearTimeout(searchTimeout.current);
+              searchTimeout.current = setTimeout(() => {
+                fetchUsers();
+              }, 300);
+            }}
+            placeholder="Search users, emails, or universities..."
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           />
+        </div>
+        
+        {/* Filter Summary and Clear Button */}
+        <div className="flex justify-between items-center mb-6">
+          {/* Active Filters Summary */}
+          <div className="flex flex-wrap gap-2">
+            {searchQuery && (
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">
+                Search: "{searchQuery}"
+              </span>
+            )}
+            {selectedUserType !== 'all' && (
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                Type: {selectedUserType}
+              </span>
+            )}
+            {selectedStatus !== 'all' && (
+              <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                Status: {selectedStatus}
+              </span>
+            )}
+          </div>
+          
+          {/* Clear Filters Button */}
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedUserType('all');
+              setSelectedStatus('all');
+            }}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            Clear Filters
+          </button>
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-4 text-sm text-gray-600">
+          {loading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500 mr-2"></div>
+              <span>Applying filters...</span>
+            </div>
+          ) : (
+            <>
+              Showing {users.length} user{users.length !== 1 ? 's' : ''}
+              {(searchQuery || selectedUserType !== 'all' || selectedStatus !== 'all') && ' (filtered)'}
+            </>
+          )}
         </div>
 
         {/* Enhanced User Table */}
@@ -434,92 +684,116 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentUsers.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-black font-bold text-sm">{user.avatar}</span>
-                      </div>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
+                      <span className="ml-2 text-gray-600">Loading users...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                    No users found
+                  </td>
+                </tr>
+              ) : (
+                users.map(user => (
+                  <tr key={user._id} className="hover:bg-gray-50">
+                                      <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="relative mr-3">
+                          {user.profileImage && user.profileImage.url ? (
+                            <img 
+                              src={user.profileImage.url} 
+                              alt={`${user.firstName} ${user.lastName}`}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-yellow-200"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div className={`w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center border-2 border-yellow-200 ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
+                            <span className="text-black font-bold text-sm">
+                              {user.firstName ? user.firstName.charAt(0) : 'U'}
+                            </span>
+                          </div>
+                        </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.type === 'Freelancer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                        user.userType === 'freelancer' ? 'bg-blue-100 text-blue-800' : 
+                        user.userType === 'client' ? 'bg-green-100 text-green-800' :
+                        'bg-purple-100 text-purple-800'
                     }`}>
-                      {user.type}
+                        {user.userType.charAt(0).toUpperCase() + user.userType.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                      user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      user.status === 'Suspended' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user.status}
+                        user.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        user.status === 'suspended' ? 'bg-orange-100 text-orange-800' :
+                        user.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {user.status ? user.status.charAt(0).toUpperCase() + user.status.slice(1) : 'Active'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MIT</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.date}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.university || user.organization || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50">Edit</button>
-                      {user.status === 'Active' ? (
-                        <button className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50">Suspend</button>
-                      ) : user.status === 'Suspended' ? (
-                        <button className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50">Activate</button>
+                        <button 
+                          onClick={() => viewUserDetails(user)}
+                          className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50"
+                        >
+                          View
+                        </button>
+                        {user.status === 'active' || !user.status ? (
+                          <button 
+                            onClick={() => updateUserStatus(user._id, 'suspended')}
+                            className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50"
+                          >
+                            Suspend
+                          </button>
+                        ) : user.status === 'suspended' ? (
+                          <button 
+                            onClick={() => updateUserStatus(user._id, 'active')}
+                            className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
+                          >
+                            Activate
+                          </button>
                       ) : null}
-                      <button className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50">Ban</button>
+                        <button 
+                          onClick={() => deleteUser(user._id)}
+                          className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Account Management Tools */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Account Management Tools</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Bulk Actions</h4>
-            <div className="space-y-3">
-              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Suspend Selected Users
-              </button>
-              <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Ban Selected Users
-              </button>
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Activate Selected Users
-              </button>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Automated Rules</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-suspend after 3 violations</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-ban after 5 violations</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" />
-                <span className="text-sm text-gray-700">Require email verification</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 
@@ -1305,6 +1579,256 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {showUserModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
+                <button 
+                  onClick={() => setShowUserModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {/* Profile Picture */}
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  {selectedUser.profileImage && selectedUser.profileImage.url ? (
+                    <img 
+                      src={selectedUser.profileImage.url} 
+                      alt={`${selectedUser.firstName} ${selectedUser.lastName}`}
+                      className="w-32 h-32 rounded-full object-cover border-4 border-yellow-200 shadow-lg"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center border-4 border-yellow-200 shadow-lg ${selectedUser.profileImage && selectedUser.profileImage.url ? 'hidden' : ''}`}>
+                    <span className="text-4xl font-bold text-white">
+                      {selectedUser.firstName ? selectedUser.firstName.charAt(0).toUpperCase() : 'U'}
+                      {selectedUser.lastName ? selectedUser.lastName.charAt(0).toUpperCase() : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Basic Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                      <p className="text-gray-900">{selectedUser.firstName} {selectedUser.lastName}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email</label>
+                      <p className="text-gray-900">{selectedUser.email}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">User Type</label>
+                      <p className="text-gray-900 capitalize">{selectedUser.userType}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Status</label>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        selectedUser.status === 'active' ? 'bg-green-100 text-green-800' : 
+                        selectedUser.status === 'suspended' ? 'bg-orange-100 text-orange-800' :
+                        selectedUser.status === 'banned' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {selectedUser.status ? selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1) : 'Active'}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Phone Number</label>
+                      <p className="text-gray-900">{selectedUser.phoneNumber || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
+                      <p className="text-gray-900">{selectedUser.dateOfBirth || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Address</label>
+                      <p className="text-gray-900">{selectedUser.address || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Joined Date</label>
+                      <p className="text-gray-900">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* User Type Specific Information */}
+                {selectedUser.userType === 'freelancer' && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Freelancer Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">University</label>
+                        <p className="text-gray-900">{selectedUser.university || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Degree Program</label>
+                        <p className="text-gray-900">{selectedUser.degreeProgram || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">GPA</label>
+                        <p className="text-gray-900">{selectedUser.gpa || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Graduation Year</label>
+                        <p className="text-gray-900">{selectedUser.graduationYear || 'N/A'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Technical Skills</label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedUser.technicalSkills && selectedUser.technicalSkills.length > 0 ? (
+                            selectedUser.technicalSkills.map((skill, index) => (
+                              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                {skill}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No skills listed</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedUser.userType === 'client' && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">Client Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Organization</label>
+                        <p className="text-gray-900">{selectedUser.organization || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Job Title</label>
+                        <p className="text-gray-900">{selectedUser.jobTitle || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Contact Phone</label>
+                        <p className="text-gray-900">{selectedUser.contactPhone || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Company Size</label>
+                        <p className="text-gray-900">{selectedUser.companySize || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Industry</label>
+                        <p className="text-gray-900">{selectedUser.industry || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Website</label>
+                        <p className="text-gray-900">{selectedUser.website || 'N/A'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Project Categories</label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedUser.projectCategories && selectedUser.projectCategories.length > 0 ? (
+                            selectedUser.projectCategories.map((category, index) => (
+                              <span key={index} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                {category}
+                              </span>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No categories listed</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Company Description</label>
+                        <p className="text-gray-900">{selectedUser.companyDescription || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedUser.userType === 'universityStaff' && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-3">University Staff Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Staff Role</label>
+                        <p className="text-gray-900">{selectedUser.staffRole || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Department</label>
+                        <p className="text-gray-900">{selectedUser.department || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Employee ID</label>
+                        <p className="text-gray-900">{selectedUser.employeeId || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Qualification</label>
+                        <p className="text-gray-900">{selectedUser.qualification || 'N/A'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Experience</label>
+                        <p className="text-gray-900">{selectedUser.experience || 'N/A'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700">Professional Summary</label>
+                        <p className="text-gray-900">{selectedUser.professionalSummary || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Account Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3">Account Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email Verified</label>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        selectedUser.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedUser.isVerified ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Agreed to Terms</label>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        selectedUser.agreeToTerms ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedUser.agreeToTerms ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Marketing Consent</label>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        selectedUser.agreeToMarketing ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedUser.agreeToMarketing ? 'Yes' : 'No'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-8">
+                <button 
+                  onClick={() => setShowUserModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
