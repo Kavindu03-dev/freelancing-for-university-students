@@ -173,3 +173,4 @@ If you encounter issues:
 3. Verify your ImgBB API key is valid
 4. Ensure all dependencies are installed
 5. Check file permissions for upload directories
+
