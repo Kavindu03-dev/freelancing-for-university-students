@@ -15,6 +15,11 @@ function ClientDashboard() {
   const [clientData, setClientData] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
+<<<<<<< Updated upstream
+=======
+  
+  // Profile editing states
+>>>>>>> Stashed changes
   const [showEditPopup, setShowEditPopup] = useState(false);
   const [editFormData, setEditFormData] = useState({});
   const [editErrors, setEditErrors] = useState({});
@@ -24,8 +29,12 @@ function ClientDashboard() {
   const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
   const [isRemovingProfileImage, setIsRemovingProfileImage] = useState(false);
   const [showProfileImageMenu, setShowProfileImageMenu] = useState(false);
+<<<<<<< Updated upstream
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveMessage, setProfileSaveMessage] = useState('');
+>>>>>>> Stashed changes
+=======
+  
 >>>>>>> Stashed changes
   const navigate = useNavigate();
 
@@ -38,6 +47,20 @@ function ClientDashboard() {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showProfileImageMenu && !event.target.closest('.profile-image-container')) {
+        setShowProfileImageMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileImageMenu]);
+
+  // Close profile image menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileImageMenu && !event.target.closest('.profile-image-menu')) {
         setShowProfileImageMenu(false);
       }
     };
@@ -302,6 +325,7 @@ function ClientDashboard() {
   };
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const sendMessage = () => {
     if (newMessage.trim()) {
       const message = {
@@ -330,6 +354,8 @@ function ClientDashboard() {
             {projects.filter(p => p.status === 'open' || p.status === 'in-progress').length}
           </p>
 =======
+=======
+>>>>>>> Stashed changes
   // Handle profile editing
   const handleEditProfile = () => {
     setShowEditPopup(true);
@@ -341,10 +367,18 @@ function ClientDashboard() {
       address: clientData?.address || '',
       organization: clientData?.organization || '',
       jobTitle: clientData?.jobTitle || '',
+<<<<<<< Updated upstream
       industry: clientData?.industry || '',
       companySize: clientData?.companySize || '',
       website: clientData?.website || '',
       bio: clientData?.bio || '',
+=======
+      contactPhone: clientData?.contactPhone || '',
+      companySize: clientData?.companySize || '',
+      industry: clientData?.industry || '',
+      website: clientData?.website || '',
+      companyDescription: clientData?.companyDescription || '',
+>>>>>>> Stashed changes
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -357,6 +391,7 @@ function ClientDashboard() {
     if (!validateEditForm()) return;
 
     try {
+<<<<<<< Updated upstream
       setIsSavingProfile(true);
       setProfileSaveMessage('');
 
@@ -364,6 +399,12 @@ function ClientDashboard() {
       const token = localStorage.getItem('userToken');
       if (!token) {
         setProfileSaveMessage('Authentication token not found. Please log in again.');
+=======
+      // Get the auth token
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+>>>>>>> Stashed changes
         return;
       }
 
@@ -371,11 +412,15 @@ function ClientDashboard() {
       const updateData = {
         firstName: editFormData.firstName,
         lastName: editFormData.lastName,
+<<<<<<< Updated upstream
         // Email is not included as it cannot be changed
+=======
+>>>>>>> Stashed changes
         phoneNumber: editFormData.phoneNumber,
         address: editFormData.address,
         organization: editFormData.organization,
         jobTitle: editFormData.jobTitle,
+<<<<<<< Updated upstream
         industry: editFormData.industry,
         companySize: editFormData.companySize,
         website: editFormData.website,
@@ -384,6 +429,17 @@ function ClientDashboard() {
 
       // Make API call to update profile
       const response = await fetch('http://localhost:5000/api/client/profile', {
+=======
+        contactPhone: editFormData.contactPhone,
+        companySize: editFormData.companySize,
+        industry: editFormData.industry,
+        website: editFormData.website,
+        companyDescription: editFormData.companyDescription
+      };
+
+      // Make API call to update profile
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+>>>>>>> Stashed changes
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -410,6 +466,7 @@ function ClientDashboard() {
         setShowEditPopup(false);
         
         // Show success message
+<<<<<<< Updated upstream
         setProfileSaveMessage('Profile updated successfully!');
         setTimeout(() => setProfileSaveMessage(''), 3000);
       } else {
@@ -421,6 +478,16 @@ function ClientDashboard() {
       setProfileSaveMessage('Failed to update profile. Please try again.');
     } finally {
       setIsSavingProfile(false);
+=======
+        alert("Profile updated successfully!");
+      } else {
+        // Show error message from backend
+        alert(`Failed to update profile: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
+>>>>>>> Stashed changes
     }
   };
 
@@ -450,7 +517,10 @@ function ClientDashboard() {
     setShowEditPopup(false);
     setEditFormData({});
     setEditErrors({});
+<<<<<<< Updated upstream
     setProfileSaveMessage('');
+=======
+>>>>>>> Stashed changes
   };
 
   // Profile Image Upload Functions
@@ -467,7 +537,11 @@ function ClientDashboard() {
       const formData = new FormData();
       formData.append('profileImage', file);
 
+<<<<<<< Updated upstream
       const response = await fetch('http://localhost:5000/api/client/profile-image', {
+=======
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+>>>>>>> Stashed changes
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -518,14 +592,19 @@ function ClientDashboard() {
         return;
       }
 
+<<<<<<< Updated upstream
       // Call backend API to remove profile image
       const response = await fetch('http://localhost:5000/api/client/profile-image', {
+=======
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+>>>>>>> Stashed changes
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
+<<<<<<< Updated upstream
       const result = await response.json();
 
       if (result.success) {
@@ -549,12 +628,42 @@ function ClientDashboard() {
       }
     } catch (error) {
       console.error('Profile image remove error:', error);
+=======
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update client data to remove profile image
+          setClientData(prev => ({
+            ...prev,
+            profileImage: null
+          }));
+          
+          // Update localStorage
+          const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+          const updatedUserData = {
+            ...currentUserData,
+            profileImage: null
+          };
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          alert('Profile image removed successfully!');
+        } else {
+          alert(result.message || 'Failed to remove profile image');
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to remove profile image');
+      }
+    } catch (error) {
+      console.error('Profile image removal error:', error);
+>>>>>>> Stashed changes
       alert('Failed to remove profile image. Please try again.');
     } finally {
       setIsRemovingProfileImage(false);
     }
   };
 
+<<<<<<< Updated upstream
   // Function to delete user account
   const handleDeleteAccount = async () => {
     // Show confirmation dialog
@@ -608,6 +717,8 @@ function ClientDashboard() {
     }
   };
 
+=======
+>>>>>>> Stashed changes
   const renderOverview = () => (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -951,6 +1062,7 @@ function ClientDashboard() {
   );
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   const renderProposalsTab = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
@@ -982,6 +1094,298 @@ function ClientDashboard() {
                   <p className="text-sm text-gray-600">{proposal.timeline}</p>
                 </div>
 =======
+=======
+  // Edit Profile Popup Modal
+  const renderEditProfileModal = () => {
+    if (!showEditPopup) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-900">Edit Profile</h2>
+              <button
+                onClick={handleCancelEdit}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+                    <input
+                      type="text"
+                      value={editFormData.firstName}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 ${
+                        editErrors.firstName ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                    />
+                    {editErrors.firstName && <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+                    <input
+                      type="text"
+                      value={editFormData.lastName}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 ${
+                        editErrors.lastName ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                    />
+                    {editErrors.lastName && <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={editFormData.email}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-gray-50"
+                      readOnly
+                    />
+                    <p className="text-gray-500 text-sm mt-1">Email cannot be changed</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editFormData.phoneNumber}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                    <input
+                      type="text"
+                      value={editFormData.address}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Enter address"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Information */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Company Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Organization *</label>
+                    <input
+                      type="text"
+                      value={editFormData.organization}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, organization: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 ${
+                        editErrors.organization ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      placeholder="Enter organization name"
+                    />
+                    {editErrors.organization && <p className="text-red-500 text-sm mt-1">{editErrors.organization}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Job Title *</label>
+                    <input
+                      type="text"
+                      value={editFormData.jobTitle}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, jobTitle: e.target.value }))}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 ${
+                        editErrors.jobTitle ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                      }`}
+                      placeholder="Enter job title"
+                    />
+                    {editErrors.jobTitle && <p className="text-red-500 text-sm mt-1">{editErrors.jobTitle}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
+                    <input
+                      type="tel"
+                      value={editFormData.contactPhone}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, contactPhone: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Enter contact phone"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Size</label>
+                    <select
+                      value={editFormData.companySize}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, companySize: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    >
+                      <option value="">Select company size</option>
+                      <option value="1-10">1-10 employees</option>
+                      <option value="11-50">11-50 employees</option>
+                      <option value="51-200">51-200 employees</option>
+                      <option value="201-500">201-500 employees</option>
+                      <option value="500+">500+ employees</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                    <input
+                      type="text"
+                      value={editFormData.industry}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, industry: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="e.g., Technology, Healthcare, Education"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                    <input
+                      type="url"
+                      value={editFormData.website}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, website: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="https://www.example.com"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Company Description</label>
+                    <textarea
+                      rows="3"
+                      value={editFormData.companyDescription}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, companyDescription: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Describe your company and what you do..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Password Change Section */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Change Password (Optional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={editFormData.currentPassword}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 pr-12 ${
+                          editErrors.currentPassword ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                        }`}
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {editErrors.currentPassword && <p className="text-red-500 text-sm mt-1">{editErrors.currentPassword}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={editFormData.newPassword}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 pr-12 ${
+                          editErrors.newPassword ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                        }`}
+                        placeholder="Enter new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showNewPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {editErrors.newPassword && <p className="text-red-500 text-sm mt-1">{editErrors.newPassword}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={editFormData.confirmPassword}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 pr-12 ${
+                          editErrors.confirmPassword ? 'border-red-500' : 'border-gray-300 focus:border-blue-500'
+                        }`}
+                        placeholder="Confirm new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showConfirmPassword ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                    {editErrors.confirmPassword && <p className="text-red-500 text-sm mt-1">{editErrors.confirmPassword}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button
+                onClick={handleCancelEdit}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+>>>>>>> Stashed changes
   const renderProfile = () => (
     <div className="space-y-8">
       {/* Profile Header */}
@@ -989,6 +1393,7 @@ function ClientDashboard() {
         <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
           {/* Profile Picture */}
           <div className="relative">
+<<<<<<< Updated upstream
             {clientData?.profileImage ? (
               <img
                 src={clientData.profileImage}
@@ -1001,6 +1406,76 @@ function ClientDashboard() {
               </div>
             )}
             <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 border-4 border-white rounded-full"></div>
+=======
+            {clientData?.profileImage?.url ? (
+              <div className="relative">
+                <img 
+                  src={clientData.profileImage.url} 
+                  alt="Profile" 
+                  className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 border-4 border-white rounded-full"></div>
+                <button
+                  onClick={() => setShowProfileImageMenu(!showProfileImageMenu)}
+                  className="absolute top-0 right-0 w-8 h-8 bg-gray-800 bg-opacity-75 text-white rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all duration-200"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+                
+                {showProfileImageMenu && (
+                  <div className="absolute top-10 right-0 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[150px] profile-image-menu">
+                    <label className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files[0]) {
+                            handleProfileImageUpload(e.target.files[0]);
+                            setShowProfileImageMenu(false);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      Change Photo
+                    </label>
+                    <button
+                      onClick={() => {
+                        handleProfileImageRemove();
+                        setShowProfileImageMenu(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      Remove Photo
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black">
+                  {clientData?.firstName?.charAt(0)}{clientData?.lastName?.charAt(0)}
+                </div>
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 border-4 border-white rounded-full"></div>
+                <label className="absolute top-0 right-0 w-8 h-8 bg-gray-800 bg-opacity-75 text-white rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all duration-200 cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files[0]) {
+                        handleProfileImageUpload(e.target.files[0]);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </label>
+              </div>
+            )}
+>>>>>>> Stashed changes
           </div>
 
           {/* Profile Info */}
@@ -1333,6 +1808,7 @@ function ClientDashboard() {
         </div>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         {/* Tab Content */}
         <div className="min-h-[600px]">
           {activeTab === "overview" && renderOverviewTab()}
@@ -1650,6 +2126,21 @@ function ClientDashboard() {
           </div>
         </div>
       )}
+>>>>>>> Stashed changes
+=======
+      {/* Main Content Area */}
+      <div className="flex-1 p-8 pt-8 overflow-y-auto mt-20">
+        <div className="max-w-7xl mx-auto">
+          {activeTab === "overview" && renderOverview()}
+          {activeTab === "recommendations" && renderRecommendations()}
+          {activeTab === "posts" && renderManagePosts()}
+          {activeTab === "applications" && renderApplications()}
+          {activeTab === "profile" && renderProfile()}
+        </div>
+      </div>
+      
+      {/* Edit Profile Modal */}
+      {renderEditProfileModal()}
 >>>>>>> Stashed changes
     </div>
   );
