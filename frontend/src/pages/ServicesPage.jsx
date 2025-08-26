@@ -135,8 +135,8 @@ function ServicesPage() {
                 description: item.description,
                 category: item.category,
                 price: item.price,
-                duration: item.duration || 'Custom',
-                skills: item.skills,
+                                 duration: item.deliveryTime ? `${item.deliveryTime} Days` : (item.duration || 'Custom'),
+                                 skills: Array.isArray(item.skills) ? item.skills.join(', ') : item.skills,
                 freelancer: {
                   name: item.freelancerId ? `${item.freelancerId.firstName} ${item.freelancerId.lastName}` : 'Unknown',
                   rating: item.rating || 0,
@@ -157,7 +157,7 @@ function ServicesPage() {
                 category: item.category,
                 price: item.price || item.budget,
                 duration: `${item.deliveryTime || 'Custom'} ${item.deliveryUnit || 'Days'}`,
-                skills: item.requiredSkills?.join(', ') || 'Not specified',
+                                 skills: Array.isArray(item.requiredSkills) ? item.requiredSkills.join(', ') : (item.requiredSkills || 'Not specified'),
                 freelancer: {
                   name: item.clientId ? `${item.clientId.firstName} ${item.clientId.lastName}` : 'Unknown',
                   rating: 0,
@@ -515,9 +515,31 @@ function ServicesPage() {
                     <span className="text-2xl font-bold text-green-600">${service.price}</span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                    {service.description}
-                  </p>
+                                     <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                     {service.description}
+                   </p>
+
+                   {/* Service Images */}
+                   {service.images && service.images.length > 0 && (
+                     <div className="mb-4">
+                       <div className="grid grid-cols-2 gap-2">
+                         {service.images.slice(0, 4).map((image, index) => (
+                           <div key={index} className="relative">
+                             <img
+                               src={image.url}
+                               alt={image.caption || `Service image ${index + 1}`}
+                               className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                             />
+                             {index === 3 && service.images.length > 4 && (
+                               <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                                 <span className="text-white text-xs font-medium">+{service.images.length - 4}</span>
+                               </div>
+                             )}
+                           </div>
+                         ))}
+                       </div>
+                     </div>
+                   )}
 
                   <div className="flex items-center mb-4">
                     <img

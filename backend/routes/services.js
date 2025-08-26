@@ -1,6 +1,7 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
 import serviceController from '../controllers/serviceController.js';
+import upload from '../middleware/imgbbUpload.js';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get('/:id', serviceController.getServiceById);
 
 // Protected routes
 router.post('/', protect, serviceController.createService);
+router.post('/upload-images', protect, upload.array('images', 5), serviceController.uploadGigImages);
 router.put('/:id', protect, serviceController.updateService);
 router.delete('/:id', protect, serviceController.deleteService);
 router.post('/:id/reviews', protect, serviceController.addReview);
