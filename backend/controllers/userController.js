@@ -36,38 +36,64 @@ const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-    if (user) {
-      user.firstName = req.body.firstName || user.firstName;
-      user.lastName = req.body.lastName || user.lastName;
-      user.email = req.body.email || user.email;
-      user.skills = req.body.skills || user.skills;
-      user.bio = req.body.bio || user.bio;
-      user.hourlyRate = req.body.hourlyRate !== undefined ? req.body.hourlyRate : user.hourlyRate;
-      user.professionalSummary = req.body.professionalSummary || user.professionalSummary;
-
-      const updatedUser = await user.save();
-
-      res.json({
-        success: true,
-        message: 'Profile updated successfully',
-        data: {
-          _id: updatedUser._id,
-          firstName: updatedUser.firstName,
-          lastName: updatedUser.lastName,
-          email: updatedUser.email,
-          userType: updatedUser.userType,
-          skills: updatedUser.skills,
-          bio: updatedUser.bio,
-          hourlyRate: updatedUser.hourlyRate,
-          professionalSummary: updatedUser.professionalSummary
-        }
-      });
-    } else {
-      res.status(404).json({ 
+    if (!user) {
+      return res.status(404).json({ 
         success: false, 
         message: 'User not found' 
       });
     }
+
+    // Update common fields
+    if (req.body.firstName !== undefined) user.firstName = req.body.firstName;
+    if (req.body.lastName !== undefined) user.lastName = req.body.lastName;
+    if (req.body.email !== undefined) user.email = req.body.email;
+    if (req.body.phoneNumber !== undefined) user.phoneNumber = req.body.phoneNumber;
+    if (req.body.address !== undefined) user.address = req.body.address;
+    if (req.body.dateOfBirth !== undefined) user.dateOfBirth = req.body.dateOfBirth;
+    if (req.body.skills !== undefined) user.skills = req.body.skills;
+    if (req.body.bio !== undefined) user.bio = req.body.bio;
+    if (req.body.hourlyRate !== undefined) user.hourlyRate = req.body.hourlyRate;
+    if (req.body.professionalSummary !== undefined) user.professionalSummary = req.body.professionalSummary;
+
+    // Update client-specific fields
+    if (user.userType === 'client') {
+      if (req.body.organization !== undefined) user.organization = req.body.organization;
+      if (req.body.jobTitle !== undefined) user.jobTitle = req.body.jobTitle;
+      if (req.body.contactPhone !== undefined) user.contactPhone = req.body.contactPhone;
+      if (req.body.projectCategories !== undefined) user.projectCategories = req.body.projectCategories;
+      if (req.body.companySize !== undefined) user.companySize = req.body.companySize;
+      if (req.body.industry !== undefined) user.industry = req.body.industry;
+      if (req.body.website !== undefined) user.website = req.body.website;
+      if (req.body.companyDescription !== undefined) user.companyDescription = req.body.companyDescription;
+    }
+
+    // Update freelancer-specific fields
+    if (user.userType === 'freelancer') {
+      if (req.body.degreeProgram !== undefined) user.degreeProgram = req.body.degreeProgram;
+      if (req.body.university !== undefined) user.university = req.body.university;
+      if (req.body.gpa !== undefined) user.gpa = req.body.gpa;
+      if (req.body.graduationYear !== undefined) user.graduationYear = req.body.graduationYear;
+      if (req.body.technicalSkills !== undefined) user.technicalSkills = req.body.technicalSkills;
+      if (req.body.experience !== undefined) user.experience = req.body.experience;
+    }
+
+    // Update university staff-specific fields
+    if (user.userType === 'universityStaff') {
+      if (req.body.staffRole !== undefined) user.staffRole = req.body.staffRole;
+      if (req.body.department !== undefined) user.department = req.body.department;
+      if (req.body.employeeId !== undefined) user.employeeId = req.body.employeeId;
+      if (req.body.experience !== undefined) user.experience = req.body.experience;
+      if (req.body.qualification !== undefined) user.qualification = req.body.qualification;
+      if (req.body.professionalSummary !== undefined) user.professionalSummary = req.body.professionalSummary;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: updatedUser
+    });
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ 
