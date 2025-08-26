@@ -17,10 +17,10 @@ function AdminDashboard() {
   console.log('🔍 logout import:', typeof logout);
 
   // Enhanced mock data for dashboard
-  const [stats] = useState({
-    totalUsers: 1247,
-    totalFreelancers: 892,
-    totalClients: 355,
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalFreelancers: 0,
+    totalClients: 0,
     totalProjects: 2341,
     totalRevenue: 45678,
     pendingApprovals: 23,
@@ -30,14 +30,28 @@ function AdminDashboard() {
     conversionRate: 8.3
   });
 
-  const [recentUsers] = useState([
-    { id: 1, name: "John Doe", email: "john@example.com", type: "Freelancer", status: "Active", date: "2024-01-15", avatar: "JD" },
-    { id: 2, name: "Jane Smith", email: "jane@example.com", type: "Client", status: "Active", date: "2024-01-14", avatar: "JS" },
-    { id: 3, name: "Mike Johnson", email: "mike@example.com", type: "Freelancer", status: "Pending", date: "2024-01-13", avatar: "MJ" },
-    { id: 4, name: "Sarah Wilson", email: "sarah@example.com", type: "Client", status: "Active", date: "2024-01-12", avatar: "SW" },
-    { id: 5, name: "Alex Chen", email: "alex@example.com", type: "Freelancer", status: "Active", date: "2024-01-11", avatar: "AC" },
-    { id: 6, name: "Emily Rodriguez", email: "emily@example.com", type: "Client", status: "Pending", date: "2024-01-10", avatar: "ER" }
-  ]);
+  const [users, setUsers] = useState([]);
+  const [userStats, setUserStats] = useState({
+    total: 0,
+    freelancers: 0,
+    clients: 0,
+    universityStaff: 0,
+    active: 0,
+    suspended: 0
+  });
+  const [userPagination, setUserPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
+  const [userFilters, setUserFilters] = useState({
+    userType: 'all',
+    status: 'all',
+    search: ''
+  });
+  const [userLoading, setUserLoading] = useState(false);
 
   const [recentProjects] = useState([
     { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
@@ -190,6 +204,95 @@ function AdminDashboard() {
     }
   };
 
+  // User management functions
+  const fetchUsers = async (page = 1, filters = userFilters) => {
+    try {
+      setUserLoading(true);
+      const adminToken = localStorage.getItem('adminToken');
+      
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20',
+        ...filters
+      });
+      
+      const response = await fetch(`http://localhost:5000/api/users/admin/all?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.data || []);
+        setUserStats(data.stats || {});
+        setUserPagination(data.pagination || {});
+        
+        // Update dashboard stats
+        setStats(prevStats => ({
+          ...prevStats,
+          totalUsers: data.stats?.total || 0,
+          totalFreelancers: data.stats?.freelancers || 0,
+          totalClients: data.stats?.clients || 0
+        }));
+      } else {
+        console.error('Error fetching users:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleUserFilterChange = (filterType, value) => {
+    const newFilters = { ...userFilters, [filterType]: value };
+    setUserFilters(newFilters);
+    fetchUsers(1, newFilters);
+  };
+
+  const handleUserSearch = (searchTerm) => {
+    const newFilters = { ...userFilters, search: searchTerm };
+    setUserFilters(newFilters);
+    fetchUsers(1, newFilters);
+  };
+
+  const handleUserPageChange = (page) => {
+    fetchUsers(page, userFilters);
+  };
+
+  const handleUserAction = async (userId, action) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      let method = 'PUT';
+      let url = `http://localhost:5000/api/users/admin/${userId}/${action}`;
+      
+      // Use DELETE method for delete action
+      if (action === 'delete') {
+        method = 'DELETE';
+        url = `http://localhost:5000/api/users/admin/${userId}`;
+      }
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Refresh user data
+        fetchUsers(userPagination.currentPage, userFilters);
+      } else {
+        console.error(`Error ${action} user:`, response.status);
+      }
+    } catch (error) {
+      console.error(`Error ${action} user:`, error);
+    }
+  };
+
   const handleAddSkill = async (e) => {
     e.preventDefault();
     try {
@@ -299,6 +402,7 @@ function AdminDashboard() {
     console.log('🔍 Admin is logged in, setting username and fetching skills');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
     fetchSkills(); // Fetch skills when component mounts
+    fetchUsers(); // Fetch users when component mounts
   }, [navigate]);
 
   const handleLogout = () => {
@@ -452,32 +556,56 @@ function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-900">Recent Users</h3>
-            <button className="text-yellow-600 hover:text-yellow-700 font-medium">View All</button>
+            <button 
+              onClick={() => setActiveTab('users')}
+              className="text-yellow-600 hover:text-yellow-700 font-medium"
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
-            {recentUsers.slice(0, 4).map(user => (
-              <div key={user.id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
+            {users.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                <p className="text-sm">No users found</p>
+              </div>
+            ) : (
+              users.slice(0, 4).map(user => (
+              <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
-                  <span className="text-black font-bold text-sm">{user.avatar}</span>
+                  <span className="text-black font-bold text-sm">
+                    {user.firstName ? user.firstName.charAt(0) : 'U'}
+                    {user.lastName ? user.lastName.charAt(0) : ''}
+                  </span>
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{user.name}</p>
+                  <p className="font-semibold text-gray-900">
+                    {user.firstName} {user.lastName}
+                  </p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      user.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
-                      {user.status}
+                      {user.isVerified ? 'Verified' : 'Unverified'}
                     </span>
                     <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">{user.type}</span>
+                    <span className="text-xs text-gray-500">
+                      {user.userType === 'freelancer' ? 'Freelancer' : 
+                       user.userType === 'client' ? 'Client' : 'University Staff'}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{user.date}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -533,44 +661,78 @@ function AdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {recentUsers.length} Total Users
+              {userStats.total} Total Users
             </span>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Add User
-            </button>
+          </div>
+        </div>
+
+        {/* User Statistics */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+            <div className="text-2xl font-bold text-blue-600">{userStats.freelancers}</div>
+            <div className="text-sm text-blue-800">Freelancers</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+            <div className="text-2xl font-bold text-green-600">{userStats.clients}</div>
+            <div className="text-sm text-green-800">Clients</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-xl border border-purple-200">
+            <div className="text-2xl font-bold text-purple-600">{userStats.universityStaff}</div>
+            <div className="text-sm text-purple-800">Staff</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+            <div className="text-2xl font-bold text-green-600">{userStats.active}</div>
+            <div className="text-sm text-green-800">Active</div>
+          </div>
+          <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+            <div className="text-2xl font-bold text-red-600">{userStats.suspended}</div>
+            <div className="text-sm text-red-800">Suspended</div>
+          </div>
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div className="text-2xl font-bold text-gray-600">{userPagination.totalUsers}</div>
+            <div className="text-sm text-gray-800">Total</div>
           </div>
         </div>
 
         {/* User Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Types</option>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <select 
+            value={userFilters.userType}
+            onChange={(e) => handleUserFilterChange('userType', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="all">All Types</option>
             <option value="freelancer">Freelancer</option>
             <option value="client">Client</option>
-            <option value="admin">Admin</option>
+            <option value="universityStaff">University Staff</option>
           </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Status</option>
+          <select 
+            value={userFilters.status}
+            onChange={(e) => handleUserFilterChange('status', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="all">All Status</option>
             <option value="active">Active</option>
-            <option value="pending">Pending</option>
             <option value="suspended">Suspended</option>
-            <option value="banned">Banned</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Universities</option>
-            <option value="mit">MIT</option>
-            <option value="stanford">Stanford</option>
-            <option value="harvard">Harvard</option>
           </select>
           <input
             type="text"
             placeholder="Search users..."
+            value={userFilters.search}
+            onChange={(e) => handleUserSearch(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
           />
         </div>
 
         {/* Enhanced User Table */}
         <div className="overflow-x-auto">
+          {userLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
+              <span className="ml-3 text-gray-600">Loading users...</span>
+            </div>
+          ) : (
+            <>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -583,92 +745,131 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentUsers.map(user => (
-                <tr key={user.id} className="hover:bg-gray-50">
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                        <div className="flex flex-col items-center">
+                          <svg className="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                          <p className="text-lg font-medium">No users found</p>
+                          <p className="text-sm">Try adjusting your filters or search terms</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map(user => (
+                    <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-black font-bold text-sm">{user.avatar}</span>
+                            <span className="text-black font-bold text-sm">
+                              {user.firstName ? user.firstName.charAt(0) : 'U'}
+                              {user.lastName ? user.lastName.charAt(0) : ''}
+                            </span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.firstName} {user.lastName}
+                            </div>
                         <div className="text-sm text-gray-500">{user.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.type === 'Freelancer' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                          user.userType === 'freelancer' ? 'bg-blue-100 text-blue-800' : 
+                          user.userType === 'client' ? 'bg-green-100 text-green-800' :
+                          'bg-purple-100 text-purple-800'
                     }`}>
-                      {user.type}
+                          {user.userType === 'freelancer' ? 'Freelancer' : 
+                           user.userType === 'client' ? 'Client' : 'University Staff'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 
-                      user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      user.status === 'Suspended' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'
+                          user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {user.status}
+                          {user.status === 'active' ? 'Active' : 'Suspended'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">MIT</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.date}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.university || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                      <button className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50">Edit</button>
-                      {user.status === 'Active' ? (
-                        <button className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50">Suspend</button>
-                      ) : user.status === 'Suspended' ? (
-                        <button className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50">Activate</button>
-                      ) : null}
-                      <button className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50">Ban</button>
+                          <button className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50">View</button>
+                          {user.status === 'active' ? (
+                            <button 
+                              onClick={() => handleUserAction(user._id, 'suspend')}
+                              className="text-orange-600 hover:text-orange-900 px-2 py-1 rounded hover:bg-orange-50"
+                            >
+                              Suspend
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleUserAction(user._id, 'activate')}
+                              className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50"
+                            >
+                              Activate
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleUserAction(user._id, 'delete')}
+                            className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
                     </div>
                   </td>
                 </tr>
-              ))}
+                  ))
+                )}
             </tbody>
           </table>
-        </div>
-      </div>
+              
+              {/* Pagination */}
+              {userPagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <div className="text-sm text-gray-700">
+                    Showing page {userPagination.currentPage} of {userPagination.totalPages} 
+                    ({userPagination.totalUsers} total users)
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleUserPageChange(userPagination.currentPage - 1)}
+                      disabled={!userPagination.hasPrevPage}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                        userPagination.hasPrevPage
+                          ? 'bg-yellow-500 text-black hover:bg-yellow-600'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Previous
+              </button>
+                    <button
+                      onClick={() => handleUserPageChange(userPagination.currentPage + 1)}
+                      disabled={!userPagination.hasNextPage}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                        userPagination.hasNextPage
+                          ? 'bg-yellow-500 text-black hover:bg-yellow-600'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Next
+              </button>
+            </div>
+          </div>
+              )}
+            </>
+          )}
+            </div>
+          </div>
 
-      {/* Account Management Tools */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Account Management Tools</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Bulk Actions</h4>
-            <div className="space-y-3">
-              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Suspend Selected Users
-              </button>
-              <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Ban Selected Users
-              </button>
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Activate Selected Users
-              </button>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Automated Rules</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-suspend after 3 violations</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-ban after 5 violations</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" />
-                <span className="text-sm text-gray-700">Require email verification</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 

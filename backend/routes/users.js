@@ -1,6 +1,6 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
-import { protect } from '../middleware/auth.js';
+import { protect, authenticateAdmin } from '../middleware/auth.js';
 import imgbbUpload from '../middleware/imgbbUpload.js';
 
 const router = express.Router();
@@ -29,5 +29,35 @@ router.post('/profile-image', protect, imgbbUpload.single('profileImage'), userC
 // @desc    Remove profile image
 // @access  Private
 router.delete('/profile-image', protect, userController.removeProfileImage);
+
+// @route   GET /api/users/admin/all
+// @desc    Get all users (admin only)
+// @access  Private (Admin only)
+router.get('/admin/all', authenticateAdmin, userController.getAllUsers);
+
+// @route   PUT /api/users/admin/:id/verify
+// @desc    Verify user (admin only)
+// @access  Private (Admin only)
+router.put('/admin/:id/verify', authenticateAdmin, userController.verifyUser);
+
+// @route   PUT /api/users/admin/:id/unverify
+// @desc    Unverify user (admin only)
+// @access  Private (Admin only)
+router.put('/admin/:id/unverify', authenticateAdmin, userController.unverifyUser);
+
+// @route   PUT /api/users/admin/:id/suspend
+// @desc    Suspend user (admin only)
+// @access  Private (Admin only)
+router.put('/admin/:id/suspend', authenticateAdmin, userController.suspendUser);
+
+// @route   PUT /api/users/admin/:id/activate
+// @desc    Activate user (admin only)
+// @access  Private (Admin only)
+router.put('/admin/:id/activate', authenticateAdmin, userController.activateUser);
+
+// @route   DELETE /api/users/admin/:id
+// @desc    Delete user (admin only)
+// @access  Private (Admin only)
+router.delete('/admin/:id', authenticateAdmin, userController.deleteUser);
 
 export default router;
