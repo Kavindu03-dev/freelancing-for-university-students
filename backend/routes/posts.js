@@ -18,17 +18,17 @@ const router = express.Router();
 
 // Public routes (no authentication required)
 router.get('/', getAllPosts);
-router.get('/:id', getPostById);
 
 // Protected routes (authentication required)
 router.use(protect);
 
-// Client-specific routes
+// Client-specific routes (must come before :id route to avoid conflicts)
 router.post('/', createPost);
 router.get('/client/:clientId', getPostsByClient);
 router.get('/client/:clientId/stats', getPostStats);
 
 // Post management routes
+router.get('/:id', getPostById);
 router.put('/:id', updatePost);
 router.delete('/:id', deletePost);
 

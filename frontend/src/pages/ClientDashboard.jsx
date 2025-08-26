@@ -476,37 +476,38 @@ function ClientDashboard() {
     navigate('/');
   };
 
-  const handleCreatePost = () => {
-    if (editingPost) {
-      // Update existing post
-      setJobPosts(prev => prev.map(post => 
-        post.id === editingPost.id ? { ...post, ...postForm } : post
-      ));
-      setEditingPost(null);
-    } else {
-      // Create new post
-      const newPost = {
-        id: Date.now(),
-        ...postForm,
-        status: "Active",
-        applications: 0,
-        createdDate: new Date().toISOString().split('T')[0]
-      };
-      setJobPosts(prev => [newPost, ...prev]);
+  const handleCreatePost = async () => {
+    try {
+      if (editingPost) {
+        // Update existing post
+        const updatedPost = await updatePostAPI(editingPost._id, postForm);
+        setJobPosts(prev => prev.map(post => 
+          post._id === editingPost._id ? updatedPost : post
+        ));
+        setEditingPost(null);
+      } else {
+        // Create new post
+        const newPost = await createPostAPI(postForm);
+        setJobPosts(prev => [newPost, ...prev]);
+      }
+      
+      setShowCreateForm(false);
+      setPostForm({
+        title: "",
+        type: "Project",
+        category: "",
+        budget: "",
+        deadline: "",
+        location: "Remote",
+        requiredSkills: "",
+        degreeField: "",
+        description: "",
+        attachments: []
+      });
+    } catch (error) {
+      // Error is already handled in the API functions
+      console.error('Error in handleCreatePost:', error);
     }
-    setShowCreateForm(false);
-    setPostForm({
-      title: "",
-      type: "Project",
-      category: "",
-      budget: "",
-      deadline: "",
-      location: "Remote",
-      requiredSkills: "",
-      degreeField: "",
-      description: "",
-      attachments: []
-    });
   };
 
   const handleEditPost = (post) => {
@@ -551,6 +552,23 @@ function ClientDashboard() {
       ...prev,
       attachments: [...prev.attachments, ...files.map(f => f.name)]
     }));
+  };
+
+  // Freelancer popup functions
+  const handleViewProfile = (freelancer) => {
+    setSelectedFreelancer(freelancer);
+    setShowFreelancerPopup(true);
+  };
+
+  const handleCloseFreelancerPopup = () => {
+    setShowFreelancerPopup(false);
+    setSelectedFreelancer(null);
+  };
+
+  const handleContactFreelancer = (freelancer) => {
+    // TODO: Implement contact functionality
+    console.log('Contacting freelancer:', freelancer);
+    // You can add logic here to open a contact form or redirect to messaging
   };
 
   const renderOverview = () => (
