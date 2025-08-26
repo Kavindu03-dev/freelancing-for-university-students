@@ -141,20 +141,15 @@ function HomePage() {
               )}
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+              <Link to="/services" className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 Hire a Freelancer
-              </button>
+              </Link>
               <Link to="/join" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-full font-semibold transition-all duration-300">
                 Join as Freelancer
               </Link>
             </div>
             
-            {/* Admin Access Link */}
-            <div className="mt-6 text-center">
-              <Link to="/admin/login" className="text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors duration-300">
-                Admin Access
-              </Link>
-            </div>
+
           </div>
         </div>
       </section>
@@ -591,12 +586,12 @@ function HomePage() {
           <h2 className="text-5xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-xl mb-12 text-gray-300 max-w-3xl mx-auto">Join thousands of clients and freelancers who trust FlexiHire</p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <button className="bg-yellow-400 hover:bg-yellow-300 text-black px-12 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <Link to="/services" className="bg-yellow-400 hover:bg-yellow-300 text-black px-12 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               Start Hiring
-            </button>
-            <button className="bg-white hover:bg-gray-100 text-black px-12 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            </Link>
+            <Link to="/join" className="bg-white hover:bg-gray-100 text-black px-12 py-5 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               Become a Freelancer
-            </button>
+            </Link>
           </div>
         </div>
       </section>

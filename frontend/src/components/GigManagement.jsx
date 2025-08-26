@@ -164,7 +164,7 @@ const GigManagement = ({ user }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Create success:', result);
-        setSuccess('Gig created successfully! It will be reviewed by admin.');
+        setSuccess('Gig created successfully!');
         setFormData({
           title: '',
           description: '',
