@@ -689,6 +689,52 @@ const removeProfileImage = async (req, res) => {
   }
 };
 
+// @desc    Get freelancer stats
+// @route   GET /api/freelancer/stats
+// @access  Private
+const getFreelancerStats = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.userType !== 'freelancer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Only freelancers can access this endpoint.'
+      });
+    }
+
+    // For now, return mock stats since we don't have a projects/earnings system yet
+    // In a real application, you would query the database for actual project data
+    const stats = {
+      completedProjects: 0,
+      activeProjects: 0,
+      totalEarnings: 0,
+      clientRating: 0, // Mock rating for now
+      reviewCount: 0, // Mock review count for now
+      responseTime: 'N/A'
+    };
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get freelancer stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
 export default {
   getFreelancerProfile,
   updateFreelancerProfile,
@@ -701,6 +747,7 @@ export default {
   deleteCV,
   deleteAccount,
   uploadProfileImage,
-  removeProfileImage
+  removeProfileImage,
+  getFreelancerStats
 };
 

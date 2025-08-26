@@ -42,12 +42,14 @@ function StudentDashboard() {
     };
   }, [showProfileImageMenu]);
 
-  // Mock data
-  const [stats] = useState({
-    completedProjects: 12,
-    activeProjects: 3,
-    totalEarnings: 2800,
-    skillsCount: 8
+  // Freelancer stats state
+  const [stats, setStats] = useState({
+    completedProjects: 0,
+    activeProjects: 0,
+    totalEarnings: 0,
+    clientRating: 0,
+    responseTime: 'N/A',
+    reviewCount: 0
   });
 
   const [activeProjects] = useState([
@@ -301,6 +303,7 @@ function StudentDashboard() {
       graduationYear: studentData?.graduationYear || '',
       dateOfBirth: studentData?.dateOfBirth || '',
       technicalSkills: studentData?.technicalSkills || [],
+      linkedinProfile: studentData?.linkedinProfile || '',
       currentPassword: '',
       newPassword: '',
       confirmPassword: ''
@@ -332,7 +335,8 @@ function StudentDashboard() {
         gpa: editFormData.gpa,
         graduationYear: editFormData.graduationYear,
         dateOfBirth: editFormData.dateOfBirth,
-        technicalSkills: editFormData.technicalSkills
+        technicalSkills: editFormData.technicalSkills,
+        linkedinProfile: editFormData.linkedinProfile
       };
 
       // Make API call to update profile
@@ -475,7 +479,8 @@ function StudentDashboard() {
     const fields = [
       studentData.firstName, studentData.lastName, studentData.email,
       studentData.degreeProgram, studentData.university, studentData.gpa,
-      studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth
+      studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth,
+      studentData.linkedinProfile
     ];
     
     const completedFields = fields.filter(field => {
@@ -764,6 +769,12 @@ function StudentDashboard() {
             delete cleanedData.cvFile;
           }
           
+          // Preserve existing LinkedIn profile if not returned from backend
+          const currentData = JSON.parse(localStorage.getItem('userData') || '{}');
+          if (!cleanedData.linkedinProfile && currentData.linkedinProfile) {
+            cleanedData.linkedinProfile = currentData.linkedinProfile;
+          }
+          
           // Update student data with complete profile including CV
           setStudentData(cleanedData);
           // Update localStorage with complete data
@@ -778,9 +789,35 @@ function StudentDashboard() {
     }
   };
 
+  // Function to fetch freelancer stats from database
+  const fetchFreelancerStats = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/freelancer/stats', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log('Fetched freelancer stats:', result.data);
+          setStats(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching freelancer stats:', error);
+    }
+  };
+
   // Function to refresh user data (can be called manually if needed)
   const refreshUserData = () => {
     fetchCompleteProfile();
+    fetchFreelancerStats();
   };
 
   // Helper function to check if CV data is valid
@@ -968,6 +1005,8 @@ function StudentDashboard() {
         setStudentData(cleanedData);
         // Fetch complete profile data from backend to ensure CV data is up to date
         fetchCompleteProfile();
+        // Fetch freelancer stats from database
+        fetchFreelancerStats();
       } else {
         navigate('/signin');
       }
@@ -986,6 +1025,7 @@ function StudentDashboard() {
           setStudentData(parsed);
           // Fetch fresh data from backend
           fetchCompleteProfile();
+          fetchFreelancerStats();
         }
       }
     };
@@ -2046,7 +2086,8 @@ function StudentDashboard() {
     </div>
   );
 
-  const renderCompleteProfile = () => (
+  const renderCompleteProfile = () => {
+    return (
     <div className="space-y-8">
       {/* Profile Completion Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white rounded-2xl shadow-xl p-8">
@@ -2213,6 +2254,24 @@ function StudentDashboard() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                LinkedIn Profile
+              </label>
+              <input
+                type="url"
+                name="linkedinProfile"
+                value={studentData?.linkedinProfile || ""}
+                onChange={(e) => {
+                  setStudentData(prev => ({
+                    ...prev,
+                    linkedinProfile: e.target.value
+                  }));
+                }}
+                placeholder="https://linkedin.com/in/your-profile"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 CV/Resume Upload
               </label>
               {isValidCVFile(studentData?.cvFile) ? (
@@ -2292,7 +2351,8 @@ function StudentDashboard() {
                     university: studentData.university,
                     gpa: studentData.gpa,
                     graduationYear: studentData.graduationYear,
-                    dateOfBirth: studentData.dateOfBirth
+                    dateOfBirth: studentData.dateOfBirth,
+                    linkedinProfile: studentData.linkedinProfile
                   };
 
                   // Make API call to update profile
@@ -2308,11 +2368,15 @@ function StudentDashboard() {
                   const result = await response.json();
 
                   if (result.success) {
-                    // Save to localStorage and update the profile
-                    localStorage.setItem('userData', JSON.stringify(studentData));
+                    // Update the student data with the response data
+                    const updatedData = { ...studentData, ...result.data };
+                    setStudentData(updatedData);
+                    
+                    // Save to localStorage with updated data
+                    localStorage.setItem('userData', JSON.stringify(updatedData));
                     
                     // Recalculate profile completeness
-                    const newCompleteness = calculateProfileCompleteness(studentData);
+                    const newCompleteness = calculateProfileCompleteness(updatedData);
                     setProfileCompleteness(newCompleteness);
                     
                     alert("Profile updated successfully!");
@@ -2334,7 +2398,8 @@ function StudentDashboard() {
         </form>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderProfile = () => (
     <div className="space-y-8">
@@ -2527,7 +2592,10 @@ function StudentDashboard() {
                 <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
-                <span>4.9 (12 reviews)</span>
+                <span>
+                  {stats.clientRating && stats.clientRating > 0 ? `${stats.clientRating.toFixed(1)}` : 'N/A'} 
+                  ({stats.reviewCount || 0} reviews)
+                </span>
               </div>
               
               <div className="flex items-center">
@@ -2570,9 +2638,7 @@ function StudentDashboard() {
             >
               {isEditingProfile ? 'Cancel Edit' : 'Edit Profile'}
             </button>
-            <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
-              View Portfolio
-            </button>
+
           </div>
         </div>
       </div>
@@ -2647,36 +2713,7 @@ function StudentDashboard() {
             </div>
           </div>
 
-          {/* Contact & Social Information Section */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">Contact & Social</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.phoneNumber ? 'Phone & Email' : 'Email Only'}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">Within 24 hours</span>
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.linkedinProfile || 'Not specified'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2962,19 +2999,27 @@ function StudentDashboard() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Completed Projects</span>
-                <span className="font-bold text-yellow-600">12</span>
+                <span className="font-bold text-yellow-600">{stats.completedProjects}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Active Projects</span>
+                <span className="font-bold text-blue-600">{stats.activeProjects}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Total Earnings</span>
-                <span className="font-bold text-green-600">$2,800</span>
+                <span className="font-bold text-green-600">${stats.totalEarnings.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Client Rating</span>
-                <span className="font-bold text-yellow-600">4.9/5</span>
+                <span className="font-bold text-yellow-600">{stats.clientRating > 0 ? `${stats.clientRating}/5` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Reviews</span>
+                <span className="font-bold text-yellow-600">{stats.reviewCount || 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Response Time</span>
-                <span className="font-bold text-yellow-600">2 hours</span>
+                <span className="font-bold text-yellow-600">{stats.responseTime}</span>
               </div>
             </div>
           </div>
@@ -3260,6 +3305,16 @@ function StudentDashboard() {
                     onChange={(e) => setEditFormData({...editFormData, address: e.target.value})}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                     placeholder="Enter your address"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile</label>
+                  <input
+                    type="url"
+                    value={editFormData.linkedinProfile || ''}
+                    onChange={(e) => setEditFormData({...editFormData, linkedinProfile: e.target.value})}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="https://linkedin.com/in/your-profile"
                   />
                 </div>
               </div>

@@ -44,6 +44,9 @@ router.route('/profile-image')
 // Account management
 router.delete('/account', freelancerController.deleteAccount);
 
+// Freelancer stats
+router.get('/stats', freelancerController.getFreelancerStats);
+
 // Public routes (no authentication required)
 router.get('/freelancers', freelancerController.getAllFreelancers);
 router.get('/freelancers/:id', freelancerController.getFreelancerProfile);

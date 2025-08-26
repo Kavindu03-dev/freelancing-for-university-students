@@ -702,8 +702,8 @@ function AdminDashboard() {
               ) : (
                 users.map(user => (
                   <tr key={user._id} className="hover:bg-gray-50">
-                                      <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
                         <div className="relative mr-3">
                           {user.profileImage && user.profileImage.url ? (
                             <img 
@@ -721,7 +721,7 @@ function AdminDashboard() {
                               {user.firstName ? user.firstName.charAt(0) : 'U'}
                             </span>
                           </div>
-                        </div>
+                      </div>
                       <div>
                           <div className="text-sm font-medium text-gray-900">
                             {user.firstName} {user.lastName}
