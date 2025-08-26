@@ -78,6 +78,63 @@ function Header() {
     setIsUserDropdownOpen(false);
   };
 
+  const handleDeleteAccount = async () => {
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      '⚠️ WARNING: This action cannot be undone!\n\n' +
+      'Are you absolutely sure you want to delete your account?\n\n' +
+      'This will permanently delete:\n' +
+      '• Your profile and all data\n' +
+      '• Your CV/resume files\n' +
+      '• All your project history\n' +
+      '• Your account credentials\n\n' +
+      'Type "DELETE" to confirm:'
+    );
+
+    if (!isConfirmed) return;
+
+    const userInput = prompt('Please type "DELETE" to confirm account deletion:');
+    if (userInput !== 'DELETE') {
+      alert('Account deletion cancelled. Your account is safe.');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      // Determine the correct endpoint based on user type
+      const endpoint = userData?.userType === 'freelancer' 
+        ? 'http://localhost:5000/api/freelancer/account'
+        : 'http://localhost:5000/api/users/account';
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Account deleted successfully. You will be redirected to the home page.');
+        // Clear all local data
+        localStorage.clear();
+        // Redirect to home page
+        navigate('/');
+      } else {
+        alert(`Failed to delete account: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert('Failed to delete account. Please try again.');
+    }
+  };
+
 
 
   const toggleMobileMenu = () => {
@@ -195,12 +252,29 @@ function Header() {
               <div className="relative">
                 <button
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800/50 transition-colors duration-200"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-black font-semibold text-sm">
-                    {userData?.firstName?.charAt(0) || 'U'}
-                  </div>
-                  <span className="hidden sm:block text-sm font-medium text-gray-700">
+                  {userData?.profileImage?.url ? (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 shadow-sm">
+                      <img 
+                        src={userData.profileImage.url} 
+                        alt={`${userData?.firstName || 'User'}'s profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-500 flex items-center justify-center text-black font-semibold text-sm" style={{display: 'none'}}>
+                        {userData?.firstName?.charAt(0) || 'U'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-black font-semibold text-sm">
+                      {userData?.firstName?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <span className="hidden sm:block text-sm font-medium text-white">
                     {userData?.firstName || 'User'}
                   </span>
                   <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +286,7 @@ function Header() {
                 {isUserDropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2">
                     {userData?.userType === 'admin' && (
-                      <Link to="/admin/dashboard" className="dropdown-item">
+                      <Link to="/admin/dashboard" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
@@ -220,23 +294,23 @@ function Header() {
                       </Link>
                     )}
                     {userData?.userType === 'client' && (
-                      <Link to="/client/dashboard" className="dropdown-item">
+                      <Link to="/client/dashboard" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                         Client Dashboard
                       </Link>
                     )}
-                    {userData?.userType === 'student' && (
-                      <Link to="/student/dashboard" className="dropdown-item">
+                    {userData?.userType === 'freelancer' && (
+                      <Link to="/freelancer/dashboard" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        Student Dashboard
+                        Freelancer Dashboard
                       </Link>
                     )}
                     {userData?.userType === 'admin' && (
-                      <Link to="/admin/dashboard?tab=profile" className="dropdown-item">
+                      <Link to="/admin/dashboard?tab=profile" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -244,15 +318,15 @@ function Header() {
                       </Link>
                     )}
                     {userData?.userType === 'client' && (
-                      <Link to="/client/dashboard?tab=profile" className="dropdown-item">
+                      <Link to="/client/dashboard?tab=profile" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         Profile
                       </Link>
                     )}
-                    {userData?.userType === 'student' && (
-                      <Link to="/student/dashboard?tab=profile" className="dropdown-item">
+                    {userData?.userType === 'freelancer' && (
+                      <Link to="/freelancer/dashboard?tab=profile" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
@@ -260,26 +334,26 @@ function Header() {
                       </Link>
                     )}
                     {userData?.userType === 'universityStaff' && (
-                      <Link to="/staff/dashboard?tab=profile" className="dropdown-item">
+                      <Link to="/staff/dashboard?tab=profile" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         Profile
                       </Link>
                     )}
-                    <Link to="/messages" className="dropdown-item">
+                    <Link to="/messages" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
                       Messages
                     </Link>
-                    <Link to="/orders" className="dropdown-item">
+                    <Link to="/orders" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       Orders
                     </Link>
-                    <Link to="/settings" className="dropdown-item">
+                    <Link to="/settings" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -287,6 +361,12 @@ function Header() {
                       Settings
                     </Link>
                     <hr className="my-2 border-gray-100" />
+                    <button onClick={handleDeleteAccount} className="dropdown-item text-red-600 hover:bg-red-50">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Account
+                    </button>
                     <button onClick={handleLogout} className="dropdown-item text-red-600 hover:bg-red-50">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

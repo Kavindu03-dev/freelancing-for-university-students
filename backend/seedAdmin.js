@@ -1,10 +1,12 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const Admin = require('./models/Admin');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import Admin from './models/Admin.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/flexihire', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

@@ -1,7 +1,7 @@
-const User = require('../models/User');
-const Admin = require('../models/Admin');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+import User from '../models/User.js';
+import Admin from '../models/Admin.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -27,14 +27,14 @@ const signup = async (req, res) => {
       address,
       agreeToMarketing,
       
-      // Student fields
+      // Freelancer fields
       degreeProgram,
       university,
       gpa,
       technicalSkills,
       graduationYear,
       
-      // Job Seeker fields
+      // Client fields
       organization,
       jobTitle,
       contactPhone,
@@ -76,7 +76,7 @@ const signup = async (req, res) => {
     }
 
     // Validate user type
-    if (!['student', 'jobSeeker', 'universityStaff'].includes(userType)) {
+    if (!['freelancer', 'client', 'universityStaff'].includes(userType)) {
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid user type' 
@@ -111,8 +111,8 @@ const signup = async (req, res) => {
       isVerified: false
     };
 
-    // Add student-specific fields
-    if (userType === 'student') {
+    // Add freelancer-specific fields
+    if (userType === 'freelancer') {
       // These fields are now optional and can be completed later in the profile
       userData.degreeProgram = degreeProgram || '';
       userData.university = university || '';
@@ -121,12 +121,12 @@ const signup = async (req, res) => {
       userData.graduationYear = graduationYear || '';
     }
 
-    // Add job seeker-specific fields
-    if (userType === 'jobSeeker') {
+    // Add client-specific fields
+    if (userType === 'client') {
       if (!organization) {
         return res.status(400).json({
           success: false,
-          message: 'Organization is required for job seekers'
+          message: 'Organization is required for clients'
         });
       }
       userData.organization = organization;
@@ -171,7 +171,7 @@ const signup = async (req, res) => {
           phoneNumber: user.phoneNumber,
           dateOfBirth: user.dateOfBirth,
           address: user.address,
-          // Include student fields for profile completion
+          // Include freelancer fields for profile completion
           degreeProgram: user.degreeProgram,
           university: user.university,
           gpa: user.gpa,
@@ -244,13 +244,13 @@ const login = async (req, res) => {
     };
 
     // Add user type specific fields
-    if (user.userType === 'student') {
+    if (user.userType === 'freelancer') {
       responseData.degreeProgram = user.degreeProgram;
       responseData.university = user.university;
       responseData.gpa = user.gpa;
       responseData.technicalSkills = user.technicalSkills;
       responseData.graduationYear = user.graduationYear;
-    } else if (user.userType === 'jobSeeker') {
+    } else if (user.userType === 'client') {
       responseData.organization = user.organization;
       responseData.jobTitle = user.jobTitle;
       responseData.contactPhone = user.contactPhone;
@@ -336,7 +336,7 @@ const adminLogin = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   signup,
   login,
   adminLogin

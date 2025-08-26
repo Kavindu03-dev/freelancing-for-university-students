@@ -18,7 +18,7 @@ function OrdersPage() {
   });
   
   const currentUser = getUserData();
-  const isFreelancer = currentUser?.userType === 'student' || currentUser?.userType === 'freelancer';
+  const isFreelancer = currentUser?.userType === 'freelancer';
 
   // Mock orders data
   const mockOrders = [

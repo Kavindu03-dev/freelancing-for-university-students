@@ -1,31 +1,22 @@
-const express = require('express');
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import serviceController from '../controllers/serviceController.js';
+
 const router = express.Router();
-const { protect } = require('../middleware/auth');
-const {
-  createService,
-  getServices,
-  getServiceById,
-  updateServiceStatus,
-  getServicesByFreelancer,
-  getPendingServices,
-  updateService,
-  deleteService,
-  addReview
-} = require('../controllers/serviceController');
 
 // Public routes
-router.get('/', getServices);
-router.get('/:id', getServiceById);
-router.get('/freelancer/:id', getServicesByFreelancer);
+router.get('/', serviceController.getServices);
+router.get('/:id', serviceController.getServiceById);
+router.get('/freelancer/:id', serviceController.getServicesByFreelancer);
 
 // Protected routes
-router.post('/', protect, createService);
-router.put('/:id', protect, updateService);
-router.delete('/:id', protect, deleteService);
-router.post('/:id/reviews', protect, addReview);
+router.post('/', protect, serviceController.createService);
+router.put('/:id', protect, serviceController.updateService);
+router.delete('/:id', protect, serviceController.deleteService);
+router.post('/:id/reviews', protect, serviceController.addReview);
 
 // Admin routes
-router.get('/admin/pending', protect, getPendingServices);
-router.put('/:id/status', protect, updateServiceStatus);
+router.get('/admin/pending', protect, serviceController.getPendingServices);
+router.put('/:id/status', protect, serviceController.updateServiceStatus);
 
-module.exports = router;
+export default router;

@@ -1,7 +1,9 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('./models/User');
-require('dotenv').config();
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import User from './models/User.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/flexihire', {
@@ -25,13 +27,13 @@ const seedUsers = async () => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash('password123', saltRounds);
 
-    // Create test student
-    const studentUser = new User({
+    // Create test freelancer
+    const freelancerUser = new User({
       firstName: 'John',
-      lastName: 'Student',
-      email: 'student@university.edu',
+      lastName: 'Freelancer',
+      email: 'freelancer@university.edu',
       password: hashedPassword,
-      userType: 'student',
+      userType: 'freelancer',
       phoneNumber: '+94-11-123-4567',
       dateOfBirth: '2000-05-15',
       address: 'Colombo, Sri Lanka',
@@ -45,13 +47,13 @@ const seedUsers = async () => {
       isVerified: false
     });
 
-    // Create test job seeker
-    const jobSeekerUser = new User({
+    // Create test client
+    const clientUser = new User({
       firstName: 'Jane',
       lastName: 'Client',
       email: 'client@company.com',
       password: hashedPassword,
-      userType: 'jobSeeker',
+      userType: 'client',
       phoneNumber: '+94-11-987-6543',
       dateOfBirth: '1985-08-22',
       address: 'Colombo, Sri Lanka',
@@ -91,21 +93,21 @@ const seedUsers = async () => {
 
     // Save all users
     await Promise.all([
-      studentUser.save(),
-      jobSeekerUser.save(),
+      freelancerUser.save(),
+      clientUser.save(),
       staffUser.save()
     ]);
     
     console.log('✅ Test users created successfully!');
-    console.log('\n📚 Student User:');
-    console.log('   Email: student@university.edu');
+    console.log('\n📚 Freelancer User:');
+    console.log('   Email: freelancer@university.edu');
     console.log('   Password: password123');
-    console.log('   Type: Student');
+    console.log('   Type: Freelancer');
     
-    console.log('\n💼 Job Seeker User:');
+    console.log('\n💼 Client User:');
     console.log('   Email: client@company.com');
     console.log('   Password: password123');
-    console.log('   Type: Job Seeker');
+    console.log('   Type: Client');
     
     console.log('\n👨‍🏫 University Staff User:');
     console.log('   Email: staff@university.edu');
