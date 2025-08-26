@@ -10,6 +10,7 @@ router.get('/:id', serviceController.getServiceById);
 router.get('/freelancer/:id', serviceController.getServicesByFreelancer);
 
 // Protected routes
+router.get('/test-auth', auth.protect, serviceController.testAuth);
 router.post('/', auth.protect, serviceController.createService);
 router.put('/:id', auth.protect, serviceController.updateService);
 router.delete('/:id', auth.protect, serviceController.deleteService);
