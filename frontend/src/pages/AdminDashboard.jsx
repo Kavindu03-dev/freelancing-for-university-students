@@ -52,6 +52,8 @@ function AdminDashboard() {
     search: ''
   });
   const [userLoading, setUserLoading] = useState(false);
+  const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const [recentProjects] = useState([
     { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
@@ -291,6 +293,11 @@ function AdminDashboard() {
     } catch (error) {
       console.error(`Error ${action} user:`, error);
     }
+  };
+
+  const handleViewUser = (user) => {
+    setSelectedUser(user);
+    setShowUserDetailsModal(true);
   };
 
   const handleAddSkill = async (e) => {
@@ -801,7 +808,12 @@ function AdminDashboard() {
                       </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50">View</button>
+                          <button 
+                            onClick={() => handleViewUser(user)}
+                            className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50"
+                          >
+                            View
+                          </button>
                           {user.status === 'active' ? (
                             <button 
                               onClick={() => handleUserAction(user._id, 'suspend')}
@@ -1902,6 +1914,170 @@ function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* User Details Modal */}
+      {showUserDetailsModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
+              <button
+                onClick={() => setShowUserDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* User Profile Section */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                    {selectedUser.firstName?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-bold text-gray-900">
+                      {selectedUser.firstName} {selectedUser.lastName}
+                    </h4>
+                    <p className="text-gray-600">@{selectedUser.username}</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedUser.status === 'active' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {selectedUser.status === 'active' ? 'Active' : 'Suspended'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.email}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {selectedUser.phone || 'Not provided'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">User Type</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg capitalize">
+                      {selectedUser.userType}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {selectedUser.university || 'Not specified'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Joined Date</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {new Date(selectedUser.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Updated</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {new Date(selectedUser.updatedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {selectedUser.profileImage ? 'Uploaded' : 'Not uploaded'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">CV File</label>
+                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                      {selectedUser.cvFile ? 'Uploaded' : 'Not uploaded'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Information */}
+              {selectedUser.bio && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">{selectedUser.bio}</p>
+                </div>
+              )}
+
+              {selectedUser.skills && selectedUser.skills.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedUser.skills.map((skill, index) => (
+                      <span key={index} className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setShowUserDetailsModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Close
+                </button>
+                {selectedUser.status === 'active' ? (
+                  <button
+                    onClick={() => {
+                      handleUserAction(selectedUser._id, 'suspend');
+                      setShowUserDetailsModal(false);
+                    }}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                  >
+                    Suspend User
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      handleUserAction(selectedUser._id, 'activate');
+                      setShowUserDetailsModal(false);
+                    }}
+                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                  >
+                    Activate User
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
