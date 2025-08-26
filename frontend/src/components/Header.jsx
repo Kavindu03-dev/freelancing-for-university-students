@@ -224,9 +224,9 @@ function Header() {
             </Link>
             
             <Link 
-              to="/contact-us" 
+              to="/contact" 
               className={`px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
-                isActiveLink('/contact-us') 
+                isActiveLink('/contact') 
                   ? 'text-yellow-400 bg-yellow-400/10 border-b-2 border-yellow-400 shadow-lg' 
                   : 'text-white hover:text-yellow-400'
               }`}
@@ -450,10 +450,10 @@ function Header() {
               Resources
             </Link>
             <Link 
-              to="/contact-us" 
+              to="/contact" 
               onClick={closeMobileMenu} 
               className={`block px-3 py-2 text-base font-medium rounded-md transition-all duration-200 ${
-                isActiveLink('/contact-us') 
+                isActiveLink('/contact') 
                   ? 'text-yellow-400 bg-yellow-500/20 border-l-4 border-yellow-400 shadow-lg' 
                   : 'text-white hover:text-yellow-400 hover:bg-yellow-500/20'
               }`}
