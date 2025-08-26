@@ -54,6 +54,26 @@
   }
 }
 
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0;
+  }
+  20%, 80% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out;
 }
@@ -72,6 +92,14 @@
 
 .animate-yellow-pulse {
   animation: yellowPulse 2s infinite;
+}
+
+.animate-fade-in-out {
+  animation: fadeInOut 3s infinite;
+}
+
+.animate-pulse-dot {
+  animation: pulse 3s infinite;
 }
 
 /* Smooth tab content transitions */
