@@ -60,7 +60,6 @@ function SkillsPage() {
     return [...acc, ...skills.map(skill => ({ ...skill, category }))];
   }, []);
 
-  // Update filtered skills whenever skillsData, selectedCategory, or searchQuery changes
   useEffect(() => {
     let filtered = allSkills;
 
@@ -78,7 +77,7 @@ function SkillsPage() {
     // Sort by popularity
     filtered.sort((a, b) => b.popularity - a.popularity);
     setFilteredSkills(filtered);
-  }, [skillsData, selectedCategory, searchQuery]); // Added skillsData to dependencies
+  }, [selectedCategory, searchQuery]);
 
   const getPopularityColor = (popularity) => {
     if (popularity >= 90) return 'text-green-500';
