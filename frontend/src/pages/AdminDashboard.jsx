@@ -309,40 +309,7 @@ function AdminDashboard() {
     'Data & Analytics'
   ]);
 
-  // Resources management state
-  const [resources, setResources] = useState([]);
-  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
-  const [newResource, setNewResource] = useState({
-    title: '',
-    description: '',
-    category: '',
-    type: '',
-    readTime: '',
-    difficulty: 'Beginner',
-    tags: '',
-    link: '',
-    featured: false
-  });
-  const [resourceCategories] = useState([
-    'Getting Started',
-    'Best Practices',
-    'Tools & Software',
-    'Business Tips',
-    'Marketing',
-    'Legal & Contracts',
-    'Pricing Strategies',
-    'Client Management'
-  ]);
-  const [resourceTypes] = useState([
-    'Guide',
-    'Tutorial',
-    'Resource List',
-    'Article',
-    'Legal Guide',
-    'Strategy Guide',
-    'Branding Guide',
-    'Business Guide'
-  ]);
+
 
   // Skills management functions
   const fetchSkills = async () => {
@@ -374,35 +341,7 @@ function AdminDashboard() {
     }
   };
 
-  // Resources management functions
-  const fetchResources = async () => {
-    try {
-      console.log('🔍 fetchResources called');
-      const adminToken = localStorage.getItem('adminToken');
-      console.log('🔍 adminToken:', adminToken ? 'exists' : 'missing');
-      
-      const response = await fetch('http://localhost:5000/api/resources/admin/all', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-      
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response ok:', response.ok);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Resources data received:', data);
-        setResources(data.data || []);
-        console.log('🔍 Resources state updated with:', data.data || []);
-      } else {
-        const errorData = await response.json();
-        console.error('🔍 Error response:', errorData);
-      }
-    } catch (error) {
-      console.error('🔍 Error fetching resources:', error);
-    }
-  };
+
 
   // User management functions
   const fetchUsers = async (page = 1, filters = userFilters) => {
@@ -528,43 +467,7 @@ function AdminDashboard() {
     }
   };
 
-  const handleAddResource = async (e) => {
-    e.preventDefault();
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/resources', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify(newResource)
-      });
 
-      if (response.ok) {
-        setShowAddResourceModal(false);
-        setNewResource({
-          title: '',
-          description: '',
-          category: '',
-          type: '',
-          readTime: '',
-          difficulty: 'Beginner',
-          tags: '',
-          link: '',
-          featured: false
-        });
-        fetchResources(); // Refresh the resources list
-        alert('Resource added successfully!');
-      } else {
-        const errorData = await response.json();
-        alert('Failed to add resource: ' + (errorData.message || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error adding resource:', error);
-      alert('Failed to add resource: ' + error.message);
-    }
-  };
 
   const handleDeleteSkill = async (skillId) => {
     try {
@@ -761,7 +664,7 @@ function AdminDashboard() {
     console.log('🔍 Admin is logged in, setting username and fetching skills');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
     fetchSkills(); // Fetch skills when component mounts
-    fetchResources(); // Fetch resources when component mounts
+    
     fetchUsers(); // Fetch users when component mounts
     fetchAnalytics(); // Fetch analytics when component mounts
   }, [navigate]);
@@ -942,7 +845,19 @@ function AdminDashboard() {
             ) : (
               users.slice(0, 4).map(user => (
               <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                {user.profileImage && user.profileImage.url ? (
+                  <img 
+                    src={user.profileImage.url} 
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-12 h-12 rounded-full object-cover shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow duration-200"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={`w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
                   <span className="text-black font-bold text-sm">
                     {user.firstName ? user.firstName.charAt(0) : 'U'}
                     {user.lastName ? user.lastName.charAt(0) : ''}
@@ -1246,7 +1161,19 @@ function AdminDashboard() {
                     <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+                      {user.profileImage && user.profileImage.url ? (
+                        <img 
+                          src={user.profileImage.url} 
+                          alt={`${user.firstName} ${user.lastName}`}
+                          className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3 ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
                             <span className="text-black font-bold text-sm">
                               {user.firstName ? user.firstName.charAt(0) : 'U'}
                               {user.lastName ? user.lastName.charAt(0) : ''}
@@ -1779,178 +1706,7 @@ function AdminDashboard() {
   );
   };
 
-  const renderResources = () => (
-    <div className="space-y-8">
-      {/* Resources Header */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Resources Management</h3>
-            <p className="text-gray-600 mt-1">Manage educational resources and guides for freelancers</p>
-          </div>
-          <button
-            onClick={() => setShowAddResourceModal(true)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Add Resource</span>
-          </button>
-        </div>
 
-        {/* Resources Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm font-medium">Total Resources</p>
-                <p className="text-3xl font-bold">{resources.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm font-medium">Featured</p>
-                <p className="text-3xl font-bold">{resources.filter(r => r.featured).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm font-medium">Categories</p>
-                <p className="text-3xl font-bold">{resourceCategories.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-100 text-sm font-medium">Types</p>
-                <p className="text-3xl font-bold">{resourceTypes.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Resources List */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <div className="flex items-center justify-between mb-6">
-          <h4 className="text-xl font-bold text-gray-900">All Resources</h4>
-          <div className="flex items-center space-x-4">
-            <input
-              type="text"
-              placeholder="Search resources..."
-              className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-            />
-            <select className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-              <option value="">All Categories</option>
-              {resourceCategories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Read Time</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Featured</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {resources.map((resource, index) => (
-                <tr key={resource.id || index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{resource.title}</div>
-                      <div className="text-sm text-gray-500">{resource.description}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {resource.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      resource.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                      resource.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {resource.difficulty}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.readTime}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {resource.featured ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        Featured
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">Edit</button>
-                      <button className="text-red-600 hover:text-red-900">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {resources.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No resources yet</h3>
-              <p className="text-gray-600 max-w-md mx-auto">Start by adding the first resource to help freelancers succeed.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 
   const renderAnalytics = () => (
     <div className="space-y-8">
@@ -2330,72 +2086,7 @@ function AdminDashboard() {
     </div>
   );
 
-  const renderSettings = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Admin Settings</h3>
-      
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Profile Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-              <input
-                type="text"
-                value={adminUsername}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <input
-                type="text"
-                value="Super Admin"
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50"
-              />
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Change Password</h4>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter current password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter new password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Confirm new password"
-              />
-            </div>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
-              Update Password
-            </button>
-          </div>
-        </div>
-
-
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-black relative overflow-x-hidden">
@@ -2435,10 +2126,9 @@ function AdminDashboard() {
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
                 { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
-                { id: "resources", name: "Resources", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-                { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
-                { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
+                { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -2483,10 +2173,9 @@ function AdminDashboard() {
             {activeTab === "projects" && renderProjects()}
             {activeTab === "services" && renderServices()}
             {activeTab === "skills" && renderSkills()}
-            {activeTab === "resources" && renderResources()}
+
             {activeTab === "posts" && renderPostsApproval()}
             {activeTab === "analytics" && renderAnalytics()}
-            {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>
@@ -2608,163 +2297,7 @@ function AdminDashboard() {
         </div>
       )}
 
-      {/* Resources Modal */}
-      {showAddResourceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Add New Resource</h3>
-              <button
-                onClick={() => setShowAddResourceModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
 
-            <form onSubmit={handleAddResource} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  value={newResource.title}
-                  onChange={(e) => setNewResource({...newResource, title: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="e.g., Complete Guide to Starting Your Freelance Career"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={newResource.description}
-                  onChange={(e) => setNewResource({...newResource, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="Describe the resource..."
-                  rows="3"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={newResource.category}
-                    onChange={(e) => setNewResource({...newResource, category: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    required
-                  >
-                    <option value="">Select a category</option>
-                    {resourceCategories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                  <select
-                    value={newResource.type}
-                    onChange={(e) => setNewResource({...newResource, type: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    required
-                  >
-                    <option value="">Select a type</option>
-                    {resourceTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Read Time</label>
-                  <input
-                    type="text"
-                    value={newResource.readTime}
-                    onChange={(e) => setNewResource({...newResource, readTime: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    placeholder="e.g., 15 min"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
-                  <select
-                    value={newResource.difficulty}
-                    onChange={(e) => setNewResource({...newResource, difficulty: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    required
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
-                  <input
-                    type="url"
-                    value={newResource.link}
-                    onChange={(e) => setNewResource({...newResource, link: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    placeholder="https://example.com/resource"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
-                <input
-                  type="text"
-                  value={newResource.tags}
-                  onChange={(e) => setNewResource({...newResource, tags: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="e.g., freelancing, career, beginners (comma separated)"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="featured"
-                  checked={newResource.featured}
-                  onChange={(e) => setNewResource({...newResource, featured: e.target.checked})}
-                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                />
-                <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
-                  Mark as featured resource
-                </label>
-              </div>
-
-              <div className="flex space-x-4 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                >
-                  Add Resource
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddResourceModal(false)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* User Details Modal */}
       {showUserDetailsModal && selectedUser && (
@@ -2786,7 +2319,18 @@ function AdminDashboard() {
               {/* User Profile Section */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {selectedUser.profileImage && selectedUser.profileImage.url ? (
+                    <img 
+                      src={selectedUser.profileImage.url} 
+                      alt={`${selectedUser.firstName} ${selectedUser.lastName}`}
+                      className="w-30 h-30 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-shadow duration-200"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center text-white text-3xl font-bold ${selectedUser.profileImage && selectedUser.profileImage.url ? 'hidden' : ''}`}>
                     {selectedUser.firstName?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
                   </div>
                   <div>
@@ -2924,12 +2468,7 @@ function AdminDashboard() {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
-                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                      {selectedUser.profileImage ? 'Uploaded' : 'Not uploaded'}
-                    </p>
-                  </div>
+
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">CV File</label>

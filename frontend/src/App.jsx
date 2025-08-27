@@ -16,6 +16,7 @@ import ResourcesPage from "./pages/ResourcesPage";
 import ContactPage from "./pages/ContactPage";
 
 import ServiceDetailsPage from "./pages/ServiceDetailsPage";
+import ResourceDetailPage from "./pages/ResourceDetailPage";
 import MessagesPage from "./pages/MessagesPage";
 import OrdersPage from "./pages/OrdersPage";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -53,6 +54,7 @@ function AppContent() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/service/:id" element={<ServiceDetailsPage />} />
+        <Route path="/resource/:id" element={<ResourceDetailPage />} />
         <Route path="/" element={<HomePage />} />
       </Routes>
       {shouldShowFooter && <Footer />}
