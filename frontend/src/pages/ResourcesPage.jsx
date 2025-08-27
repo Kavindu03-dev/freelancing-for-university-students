@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 function ResourcesPage() {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const resourceCategories = [
     'All',
@@ -17,128 +23,50 @@ function ResourcesPage() {
     'Client Management'
   ];
 
-  const resources = [
-    {
-      id: 1,
-      title: 'Complete Guide to Starting Your Freelance Career',
-      description: 'Everything you need to know to launch your freelancing journey successfully.',
-      category: 'Getting Started',
-      type: 'Guide',
-      readTime: '15 min',
-      difficulty: 'Beginner',
-      tags: ['freelancing', 'career', 'beginners'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 2,
-      title: 'How to Write Winning Proposals',
-      description: 'Master the art of proposal writing to win more clients and projects.',
-      category: 'Best Practices',
-      type: 'Tutorial',
-      readTime: '10 min',
-      difficulty: 'Intermediate',
-      tags: ['proposals', 'clients', 'writing'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 3,
-      title: 'Essential Tools Every Freelancer Needs',
-      description: 'Discover the must-have tools and software to boost your productivity.',
-      category: 'Tools & Software',
-      type: 'Resource List',
-      readTime: '8 min',
-      difficulty: 'Beginner',
-      tags: ['tools', 'productivity', 'software'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 4,
-      title: 'Setting Your Freelance Rates: A Comprehensive Guide',
-      description: 'Learn how to price your services competitively while ensuring profitability.',
-      category: 'Pricing Strategies',
-      type: 'Guide',
-      readTime: '12 min',
-      difficulty: 'Intermediate',
-      tags: ['pricing', 'rates', 'business'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 5,
-      title: 'Building Long-term Client Relationships',
-      description: 'Strategies for maintaining and growing your client base over time.',
-      category: 'Client Management',
-      type: 'Article',
-      readTime: '7 min',
-      difficulty: 'Intermediate',
-      tags: ['clients', 'relationships', 'retention'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 6,
-      title: 'Freelance Contracts: What You Need to Know',
-      description: 'Protect yourself and your business with proper legal documentation.',
-      category: 'Legal & Contracts',
-      type: 'Legal Guide',
-      readTime: '20 min',
-      difficulty: 'Advanced',
-      tags: ['contracts', 'legal', 'protection'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 7,
-      title: 'Marketing Your Freelance Services Online',
-      description: 'Effective strategies to promote your services and attract clients.',
-      category: 'Marketing',
-      type: 'Strategy Guide',
-      readTime: '14 min',
-      difficulty: 'Intermediate',
-      tags: ['marketing', 'promotion', 'online'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 8,
-      title: 'Time Management for Freelancers',
-      description: 'Master your schedule and increase productivity with proven techniques.',
-      category: 'Best Practices',
-      type: 'Tutorial',
-      readTime: '9 min',
-      difficulty: 'Beginner',
-      tags: ['time management', 'productivity', 'organization'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 9,
-      title: 'Building Your Personal Brand as a Freelancer',
-      description: 'Create a strong personal brand that attracts your ideal clients.',
-      category: 'Marketing',
-      type: 'Branding Guide',
-      readTime: '16 min',
-      difficulty: 'Intermediate',
-      tags: ['branding', 'marketing', 'personal brand'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 10,
-      title: 'Scaling Your Freelance Business',
-      description: 'Learn how to grow from solo freelancer to a successful agency.',
-      category: 'Business Tips',
-      type: 'Business Guide',
-      readTime: '18 min',
-      difficulty: 'Advanced',
-      tags: ['scaling', 'business growth', 'agency'],
-      featured: false,
-      link: '#'
-    }
+  const resourceDifficulties = [
+    'All',
+    'Beginner',
+    'Intermediate',
+    'Advanced'
   ];
+
+  const resourceTypes = [
+    'All',
+    'Guide',
+    'Tutorial',
+    'Article',
+    'Resource List',
+    'Legal Guide',
+    'Strategy Guide',
+    'Branding Guide',
+    'Business Guide'
+  ];
+
+  // Fetch resources from backend
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('http://localhost:5000/api/resources');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setResources(data.data || []);
+      } else {
+        setError('Failed to fetch resources');
+      }
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+      setError('Failed to fetch resources');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch resources on component mount
+  useEffect(() => {
+    fetchResources();
+  }, []);
 
   const tools = [
     {
@@ -191,15 +119,35 @@ function ResourcesPage() {
     }
   ];
 
-  const filteredResources = resources.filter(resource => {
-    const matchesCategory = selectedCategory === 'All' || resource.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      resource.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resource.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    return matchesCategory && matchesSearch;
-  });
+  const filteredResources = useMemo(() => {
+    return resources.filter(resource => {
+      // Category filter
+      const matchesCategory = selectedCategory === 'All' || resource.category === selectedCategory;
+      
+      // Difficulty filter
+      const matchesDifficulty = selectedDifficulty === 'All' || resource.difficulty === selectedDifficulty;
+      
+      // Type filter
+      const matchesType = selectedType === 'All' || resource.type === selectedType;
+      
+      // Search filter
+      const matchesSearch = searchQuery === '' || (() => {
+        const query = searchQuery.toLowerCase();
+        const titleMatch = resource.title && resource.title.toLowerCase().includes(query);
+        const descMatch = resource.description && resource.description.toLowerCase().includes(query);
+        const tagsMatch = resource.tags && Array.isArray(resource.tags) && 
+          resource.tags.some(tag => tag.toLowerCase().includes(query));
+        const categoryMatch = resource.category && resource.category.toLowerCase().includes(query);
+        const typeMatch = resource.type && resource.type.toLowerCase().includes(query);
+        const difficultyMatch = resource.difficulty && resource.difficulty.toLowerCase().includes(query);
+        const readTimeMatch = resource.readTime && resource.readTime.toLowerCase().includes(query);
+        
+        return titleMatch || descMatch || tagsMatch || categoryMatch || typeMatch || difficultyMatch || readTimeMatch;
+      })();
+      
+      return matchesCategory && matchesDifficulty && matchesType && matchesSearch;
+    });
+  }, [resources, selectedCategory, selectedDifficulty, selectedType, searchQuery]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -222,6 +170,13 @@ function ResourcesPage() {
       case 'Business Guide': return '💼';
       default: return '📄';
     }
+  };
+
+  const clearAllFilters = () => {
+    setSelectedCategory('All');
+    setSelectedDifficulty('All');
+    setSelectedType('All');
+    setSearchQuery('');
   };
 
   return (
@@ -252,30 +207,101 @@ function ResourcesPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-12 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Category Filter */}
+      {/* Filters Section */}
       <section className="py-8 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap justify-center gap-4">
-            {resourceCategories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
-                  selectedCategory === category
-                    ? 'bg-yellow-500 text-black shadow-lg'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+          {/* Category Filter */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">Categories</h3>
+            <div className="flex flex-wrap justify-center gap-4">
+              {resourceCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+                    selectedCategory === category
+                      ? 'bg-yellow-500 text-black shadow-lg'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
+
+          {/* Additional Filters */}
+          <div className="flex flex-col md:flex-row justify-center items-center gap-6">
+            {/* Difficulty Filter */}
+            <div className="flex flex-col items-center">
+              <label className="text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              >
+                {resourceDifficulties.map((difficulty) => (
+                  <option key={difficulty} value={difficulty}>{difficulty}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div className="flex flex-col items-center">
+              <label className="text-sm font-medium text-gray-700 mb-2">Type</label>
+              <select
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+              >
+                {resourceTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedType !== 'All' || searchQuery) && (
+              <div className="flex flex-col items-center">
+                <label className="text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-300"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Active Filters Display */}
+          {(selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedType !== 'All' || searchQuery) && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Showing {filteredResources.length} of {resources.length} resources
+                {searchQuery && ` matching "${searchQuery}"`}
+                {selectedCategory !== 'All' && ` in "${selectedCategory}" category`}
+                {selectedDifficulty !== 'All' && ` with "${selectedDifficulty}" difficulty`}
+                {selectedType !== 'All' && ` of "${selectedType}" type`}
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -313,12 +339,12 @@ function ResourcesPage() {
                     ))}
                   </div>
                   
-                  <a
-                    href={resource.link}
+                  <button
+                    onClick={() => navigate(`/resource/${resource._id}`)}
                     className="w-full bg-yellow-500 text-black py-3 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300 text-center block"
                   >
                     Read Now
-                  </a>
+                  </button>
                 </div>
               </div>
             ))}
@@ -331,61 +357,102 @@ function ResourcesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
-              {selectedCategory === 'All' ? 'All Resources' : selectedCategory}
+              {selectedCategory === 'All' && selectedDifficulty === 'All' && selectedType === 'All' && !searchQuery 
+                ? 'All Resources' 
+                : 'Filtered Resources'
+              }
             </h2>
-            <p className="text-gray-600">
-              {filteredResources.length} resources found
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((resource) => (
-              <div key={resource.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-2xl">{getTypeIcon(resource.type)}</div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {resource.type}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">{resource.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{resource.description}</p>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(resource.difficulty)}`}>
-                      {resource.difficulty}
-                    </span>
-                    <span className="text-xs text-gray-500">{resource.readTime}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {resource.tags.slice(0, 2).map((tag, index) => (
-                      <span key={index} className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  <a
-                    href={resource.link}
-                    className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-300 text-center block"
-                  >
-                    Read Article
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredResources.length === 0 && (
+          {loading && (
             <div className="text-center py-16">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-500 mb-2">No resources found</h3>
-              <p className="text-gray-400">Try adjusting your search or category filter</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">Loading resources...</h3>
+              <p className="text-gray-400">Please wait while we fetch the latest resources</p>
             </div>
+          )}
+
+          {error && (
+            <div className="text-center py-16">
+              <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">Error loading resources</h3>
+              <p className="text-gray-400 mb-4">{error}</p>
+              <button 
+                onClick={fetchResources}
+                className="bg-yellow-500 text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <>
+              {filteredResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredResources.map((resource) => (
+                  <div key={resource.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-2xl">{getTypeIcon(resource.type)}</div>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {resource.type}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">{resource.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">{resource.description}</p>
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(resource.difficulty)}`}>
+                          {resource.difficulty}
+                        </span>
+                        <span className="text-xs text-gray-500">{resource.readTime}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {resource.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      <button
+                        onClick={() => navigate(`/resource/${resource._id}`)}
+                        className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-300 text-center block"
+                      >
+                        Read Article
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+                  </svg>
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">No resources found</h3>
+                  <p className="text-gray-400 mb-4">
+                    {resources.length === 0 
+                      ? 'No resources are available at the moment.'
+                      : 'Try adjusting your search terms or filters.'
+                    }
+                  </p>
+                  {(selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedType !== 'All' || searchQuery) && (
+                    <button
+                      onClick={clearAllFilters}
+                      className="bg-yellow-500 text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

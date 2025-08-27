@@ -273,40 +273,7 @@ function AdminDashboard() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState(null);
 
-  // Mock data for reported content of the admin dashboard
-  const [reportedContent] = useState([
-    {
-      id: 1,
-      type: "Service",
-      title: "Suspicious Service Post",
-      reporter: "user123",
-      reason: "Spam/Inappropriate content",
-      status: "Pending Review",
-      reportedAt: "2024-01-16",
-      content: "This service post contains inappropriate language and spam links...",
-      severity: "High"
-    },
-    {
-      id: 2,
-      type: "Message",
-      reporter: "user456",
-      reason: "Harassment",
-      status: "Under Investigation",
-      reportedAt: "2024-01-15",
-      content: "User sent inappropriate messages with offensive content...",
-      severity: "Critical"
-    },
-    {
-      id: 3,
-      type: "Project",
-      reporter: "user789",
-      reason: "Fake project",
-      status: "Resolved",
-      reportedAt: "2024-01-14",
-      content: "Project description contains false information...",
-      severity: "Medium"
-    }
-  ]);
+
 
   // Analytics state
   const [universityStats, setUniversityStats] = useState([]);
@@ -342,6 +309,8 @@ function AdminDashboard() {
     'Data & Analytics'
   ]);
 
+
+
   // Skills management functions
   const fetchSkills = async () => {
     try {
@@ -371,6 +340,8 @@ function AdminDashboard() {
       console.error('🔍 Error fetching skills:', error);
     }
   };
+
+
 
   // User management functions
   const fetchUsers = async (page = 1, filters = userFilters) => {
@@ -495,6 +466,8 @@ function AdminDashboard() {
       console.error('Error adding skill:', error);
     }
   };
+
+
 
   const handleDeleteSkill = async (skillId) => {
     try {
@@ -691,6 +664,7 @@ function AdminDashboard() {
     console.log('🔍 Admin is logged in, setting username and fetching skills');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
     fetchSkills(); // Fetch skills when component mounts
+    
     fetchUsers(); // Fetch users when component mounts
     fetchAnalytics(); // Fetch analytics when component mounts
   }, [navigate]);
@@ -871,7 +845,19 @@ function AdminDashboard() {
             ) : (
               users.slice(0, 4).map(user => (
               <div key={user._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                {user.profileImage && user.profileImage.url ? (
+                  <img 
+                    src={user.profileImage.url} 
+                    alt={`${user.firstName} ${user.lastName}`}
+                    className="w-12 h-12 rounded-full object-cover shadow-lg border-2 border-gray-200 hover:shadow-xl transition-shadow duration-200"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div className={`w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center shadow-lg ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
                   <span className="text-black font-bold text-sm">
                     {user.firstName ? user.firstName.charAt(0) : 'U'}
                     {user.lastName ? user.lastName.charAt(0) : ''}
@@ -1175,7 +1161,19 @@ function AdminDashboard() {
                     <tr key={user._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+                      {user.profileImage && user.profileImage.url ? (
+                        <img 
+                          src={user.profileImage.url} 
+                          alt={`${user.firstName} ${user.lastName}`}
+                          className="w-10 h-10 rounded-full object-cover mr-3 border-2 border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-3 ${user.profileImage && user.profileImage.url ? 'hidden' : ''}`}>
                             <span className="text-black font-bold text-sm">
                               {user.firstName ? user.firstName.charAt(0) : 'U'}
                               {user.lastName ? user.lastName.charAt(0) : ''}
@@ -1708,183 +1706,7 @@ function AdminDashboard() {
   );
   };
 
-  const renderModeration = () => (
-    <div className="space-y-8">
-      {/* Content Moderation Header */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Content Moderation</h3>
-            <p className="text-gray-600 mt-1">Review and manage reported content, spam, and inappropriate posts</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="bg-gradient-to-r from-red-400 to-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {reportedContent.filter(item => item.status === "Pending Review").length} Pending
-            </span>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Bulk Actions
-            </button>
-          </div>
-        </div>
 
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Types</option>
-            <option value="service">Service</option>
-            <option value="message">Message</option>
-            <option value="project">Project</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Severity</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Status</option>
-            <option value="pending">Pending Review</option>
-            <option value="investigation">Under Investigation</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Search reported content..."
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          />
-        </div>
-
-        {/* Reported Content List */}
-        <div className="space-y-4">
-          {reportedContent.map(item => (
-            <div key={item.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                      item.severity === 'Critical' ? 'bg-red-500' :
-                      item.severity === 'High' ? 'bg-orange-500' :
-                      item.severity === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'
-                    }`}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900">{item.title}</h4>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full font-medium ${
-                          item.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                          item.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                          item.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {item.severity}
-                        </span>
-                        <span className="text-gray-600">Type: {item.type}</span>
-                        <span className="text-gray-600">By: {item.reporter}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 mb-4 leading-relaxed">{item.content}</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                      <span className="text-gray-600">Reason: <span className="font-medium">{item.reason}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-600">Reported: <span className="font-medium">{item.reportedAt}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-gray-600">Status: <span className="font-medium">{item.status}</span></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex space-x-4">
-                <button className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Approve</span>
-                </button>
-                <button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Remove</span>
-                </button>
-                <button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <span>Investigate</span>
-                </button>
-                <button className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Details</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Spam Detection Tools */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Spam Detection & Filtering</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Content Filters</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-detect spam keywords</span>
-              </label>
-              <label className="flex items-center space-x3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Filter suspicious links</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Detect duplicate content</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-500" />
-                <span className="text-sm text-gray-700">AI-powered content analysis</span>
-              </label>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Action Settings</h4>
-            <div className="space-y-3">
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-                <option value="auto">Auto-flag suspicious content</option>
-                <option value="manual">Manual review only</option>
-                <option value="hybrid">Hybrid approach</option>
-              </select>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-                <option value="warn">Warn user first</option>
-                <option value="suspend">Suspend account immediately</option>
-                <option value="ban">Ban account permanently</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderAnalytics = () => (
     <div className="space-y-8">
@@ -2264,72 +2086,7 @@ function AdminDashboard() {
     </div>
   );
 
-  const renderSettings = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-yellow-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Admin Settings</h3>
-      
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Profile Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
-              <input
-                type="text"
-                value={adminUsername}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <input
-                type="text"
-                value="Super Admin"
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-gray-50"
-              />
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Change Password</h4>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter current password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter new password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-              <input
-                type="password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Confirm new password"
-              />
-            </div>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium">
-              Update Password
-            </button>
-          </div>
-        </div>
-
-
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-black relative overflow-x-hidden">
@@ -2369,10 +2126,9 @@ function AdminDashboard() {
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
                 { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
+
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-                { id: "moderation", name: "Moderation", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" },
-                { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
-                { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
+                { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -2415,12 +2171,11 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-                    {activeTab === "services" && renderServices()}
-        {activeTab === "skills" && renderSkills()}
+            {activeTab === "services" && renderServices()}
+            {activeTab === "skills" && renderSkills()}
+
             {activeTab === "posts" && renderPostsApproval()}
-        {activeTab === "moderation" && renderModeration()}
-        {activeTab === "analytics" && renderAnalytics()}
-        {activeTab === "settings" && renderSettings()}
+            {activeTab === "analytics" && renderAnalytics()}
           </div>
         </div>
       </div>
@@ -2542,6 +2297,8 @@ function AdminDashboard() {
         </div>
       )}
 
+
+
       {/* User Details Modal */}
       {showUserDetailsModal && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2562,7 +2319,18 @@ function AdminDashboard() {
               {/* User Profile Section */}
               <div className="bg-gray-50 rounded-xl p-6">
                 <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {selectedUser.profileImage && selectedUser.profileImage.url ? (
+                    <img 
+                      src={selectedUser.profileImage.url} 
+                      alt={`${selectedUser.firstName} ${selectedUser.lastName}`}
+                      className="w-30 h-30 rounded-full object-cover border-4 border-white shadow-lg hover:shadow-xl transition-shadow duration-200"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center text-white text-3xl font-bold ${selectedUser.profileImage && selectedUser.profileImage.url ? 'hidden' : ''}`}>
                     {selectedUser.firstName?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
                   </div>
                   <div>
@@ -2700,12 +2468,7 @@ function AdminDashboard() {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image</label>
-                    <p className="text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                      {selectedUser.profileImage ? 'Uploaded' : 'Not uploaded'}
-                    </p>
-                  </div>
+
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">CV File</label>

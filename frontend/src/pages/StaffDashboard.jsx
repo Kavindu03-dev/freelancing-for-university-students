@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 function StaffDashboard() {
@@ -53,6 +53,48 @@ function StaffDashboard() {
   const [verificationRequests, setVerificationRequests] = useState([]);
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
 
+  // Resources management state
+  const [resources, setResources] = useState([]);
+  const [filteredResources, setFilteredResources] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [showMyResourcesOnly, setShowMyResourcesOnly] = useState(false);
+  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
+  const [showEditResourceModal, setShowEditResourceModal] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [newResource, setNewResource] = useState({
+    title: '',
+    description: '',
+    category: '',
+    type: '',
+    readTime: '',
+    difficulty: 'Beginner',
+    tags: '',
+    link: '',
+    featured: false
+  });
+  const [resourceCategories] = useState([
+    'Getting Started',
+    'Best Practices',
+    'Tools & Software',
+    'Business Tips',
+    'Marketing',
+    'Legal & Contracts',
+    'Pricing Strategies',
+    'Client Management'
+  ]);
+  const [resourceTypes] = useState([
+    'Guide',
+    'Tutorial',
+    'Resource List',
+    'Article',
+    'Legal Guide',
+    'Strategy Guide',
+    'Branding Guide',
+    'Business Guide'
+  ]);
+
   useEffect(() => {
     // Check if staff is logged in
     const userData = localStorage.getItem('userData');
@@ -91,8 +133,187 @@ function StaffDashboard() {
   useEffect(() => {
     if (staffData) {
       fetchVerificationRequests();
+      fetchResources();
     }
   }, [staffData]);
+
+  // Resources management functions
+  const fetchResources = async () => {
+    try {
+      const userToken = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/resources/staff/all', {
+        headers: {
+          'Authorization': `Bearer ${userToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setResources(data.data || []);
+        setFilteredResources(data.data || []);
+      } else {
+        console.error('Failed to fetch resources');
+      }
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    }
+  };
+
+  // Filter and search resources
+  const filterResources = useCallback(() => {
+    let filtered = [...resources];
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      
+      filtered = filtered.filter(resource => {
+        const titleMatch = resource.title && resource.title.toLowerCase().includes(term);
+        const descMatch = resource.description && resource.description.toLowerCase().includes(term);
+        const tagsMatch = resource.tags && Array.isArray(resource.tags) && resource.tags.some(tag => tag.toLowerCase().includes(term));
+        const categoryMatch = resource.category && resource.category.toLowerCase().includes(term);
+        const typeMatch = resource.type && resource.type.toLowerCase().includes(term);
+        const difficultyMatch = resource.difficulty && resource.difficulty.toLowerCase().includes(term);
+        const readTimeMatch = resource.readTime && resource.readTime.toLowerCase().includes(term);
+        const creatorName = resource.createdBy && (resource.createdBy.name || 
+          (resource.createdBy.firstName && resource.createdBy.lastName ? 
+           `${resource.createdBy.firstName} ${resource.createdBy.lastName}` : ''));
+        const creatorMatch = creatorName && creatorName.toLowerCase().includes(term);
+        
+        return titleMatch || descMatch || tagsMatch || categoryMatch || typeMatch || difficultyMatch || readTimeMatch || creatorMatch;
+      });
+    }
+
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter(resource => resource.category === selectedCategory);
+    }
+
+    // Filter by difficulty
+    if (selectedDifficulty) {
+      filtered = filtered.filter(resource => resource.difficulty === selectedDifficulty);
+    }
+
+    // Filter by my resources only
+    if (showMyResourcesOnly) {
+      filtered = filtered.filter(resource => 
+        staffData && resource.createdBy && resource.createdBy._id === staffData._id
+      );
+    }
+
+    setFilteredResources(filtered);
+  }, [searchTerm, selectedCategory, selectedDifficulty, showMyResourcesOnly, resources, staffData]);
+
+  // Update filtered resources when any filter changes
+  useEffect(() => {
+    filterResources();
+  }, [filterResources]);
+
+  const handleEditResource = (resource) => {
+    setSelectedResource(resource);
+    setShowEditResourceModal(true);
+  };
+
+  const handleDeleteResource = async (resourceId) => {
+    if (window.confirm('Are you sure you want to permanently delete this resource? This action cannot be undone.')) {
+      try {
+        const userToken = localStorage.getItem('userToken');
+        const response = await fetch(`http://localhost:5000/api/resources/staff/${resourceId}/permanent`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${userToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          setResources(prev => prev.filter(resource => resource._id !== resourceId));
+          alert('Resource permanently deleted successfully!');
+        } else {
+          const errorData = await response.json();
+          alert('Failed to delete resource: ' + (errorData.message || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error deleting resource:', error);
+        alert('Failed to delete resource: ' + error.message);
+      }
+    }
+  };
+
+  const handleUpdateResource = async (e) => {
+    e.preventDefault();
+    try {
+      const userToken = localStorage.getItem('userToken');
+      
+      const resourceData = { ...selectedResource };
+      if (resourceData.tags && typeof resourceData.tags === 'string') {
+        resourceData.tags = resourceData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/resources/staff/${selectedResource._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${userToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(resourceData)
+      });
+      
+      if (response.ok) {
+        const updatedResource = await response.json();
+        setResources(prev => prev.map(resource => 
+          resource._id === selectedResource._id ? updatedResource.data : resource
+        ));
+        setShowEditResourceModal(false);
+        setSelectedResource(null);
+        alert('Resource updated successfully!');
+      } else {
+        const errorData = await response.json();
+        alert('Failed to update resource: ' + (errorData.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating resource:', error);
+      alert('Failed to update resource: ' + error.message);
+    }
+  };
+
+  const handleAddResource = async (e) => {
+    e.preventDefault();
+    try {
+      const userToken = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/resources/staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${userToken}`
+        },
+        body: JSON.stringify(newResource)
+      });
+
+      if (response.ok) {
+        setShowAddResourceModal(false);
+        setNewResource({
+          title: '',
+          description: '',
+          category: '',
+          type: '',
+          readTime: '',
+          difficulty: 'Beginner',
+          tags: '',
+          link: '',
+          featured: false
+        });
+        fetchResources();
+        alert('Resource added successfully!');
+      } else {
+        const errorData = await response.json();
+        alert('Failed to add resource: ' + (errorData.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error adding resource:', error);
+      alert('Failed to add resource: ' + error.message);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('userData');
@@ -397,6 +618,302 @@ function StaffDashboard() {
               </svg>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderResources = () => (
+    <div className="space-y-8">
+      {/* Resources Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Resources Management</h3>
+            <p className="text-gray-600 mt-1">Manage educational resources and guides for freelancers</p>
+          </div>
+          <button
+            onClick={() => setShowAddResourceModal(true)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add Resource</span>
+          </button>
+        </div>
+
+        {/* Resources Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Resources</p>
+                <p className="text-3xl font-bold">{resources.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Featured</p>
+                <p className="text-3xl font-bold">{resources.filter(r => r.featured).length}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.784.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Categories</p>
+                <p className="text-3xl font-bold">{resourceCategories.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Types</p>
+                <p className="text-3xl font-bold">{resourceTypes.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Resources List */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h4 className="text-xl font-bold text-gray-900">All Resources</h4>
+            {(searchTerm || selectedCategory || selectedDifficulty || showMyResourcesOnly) && (
+              <p className="text-sm text-gray-600 mt-1">
+                Showing {filteredResources.length} of {resources.length} resources
+                {searchTerm && ` matching "${searchTerm}"`}
+                {selectedCategory && ` in "${selectedCategory}" category`}
+                {selectedDifficulty && ` with "${selectedDifficulty}" difficulty`}
+                {showMyResourcesOnly && ` (my resources only)`}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center space-y-4 lg:space-y-0 lg:space-x-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 min-w-[200px]"
+              />
+              <select 
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+              >
+                <option value="">All Categories</option>
+                {resourceCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              <select 
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+              >
+                <option value="">All Difficulties</option>
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
+            <div className="flex items-center space-x-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={showMyResourcesOnly}
+                  onChange={(e) => setShowMyResourcesOnly(e.target.checked)}
+                  className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                />
+                <span className={`text-sm ${showMyResourcesOnly ? 'text-yellow-600 font-medium' : 'text-gray-700'}`}>
+                  My Resources
+                </span>
+                {showMyResourcesOnly && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Active
+                  </span>
+                )}
+              </label>
+
+              {(searchTerm || selectedCategory || selectedDifficulty || showMyResourcesOnly) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('');
+                    setSelectedDifficulty('');
+                    setShowMyResourcesOnly(false);
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors duration-200"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Read Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Featured</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created By</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredResources.map((resource, index) => (
+                <tr key={resource.id || index} className={`hover:bg-gray-50 ${
+                  staffData && resource.createdBy && resource.createdBy._id === staffData._id 
+                    ? 'bg-blue-50 border-l-4 border-blue-400' 
+                    : ''
+                }`}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{resource.title}</div>
+                      <div className="text-sm text-gray-500">{resource.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {resource.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      resource.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
+                      resource.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {resource.difficulty}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.readTime}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {resource.featured ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Featured
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {resource.createdBy ? (
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white font-bold text-xs">
+                            {(() => {
+                              const fullName = resource.createdBy.name || 
+                                (resource.createdBy.firstName && resource.createdBy.lastName ? 
+                                 `${resource.createdBy.firstName} ${resource.createdBy.lastName}` : '');
+                              return fullName ? fullName.split(' ').map(n => n[0]).join('') : 'U';
+                            })()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {resource.createdBy.name || 
+                             (resource.createdBy.firstName && resource.createdBy.lastName ? 
+                              `${resource.createdBy.firstName} ${resource.createdBy.lastName}` : 
+                              'Unknown')}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {resource.createdBy.userType === 'universityStaff' ? 'Staff Member' : 
+                             resource.createdBy.userType === 'admin' ? 'Administrator' : 
+                             resource.createdBy.userType || 'User'}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">Unknown</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      {/* Show edit/delete buttons only if staff member owns the resource */}
+                      {staffData && resource.createdBy && resource.createdBy._id === staffData._id ? (
+                        <>
+                          <button 
+                            onClick={() => handleEditResource(resource)}
+                            className="text-blue-600 hover:text-blue-900 font-medium transition-colors duration-200"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteResource(resource._id)}
+                            className="text-red-600 hover:text-red-900 font-medium transition-colors duration-200"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-sm">View Only</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {filteredResources.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {resources.length === 0 ? 'No resources yet' : 'No resources found'}
+              </h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                {resources.length === 0 
+                  ? 'Start by adding the first resource to help freelancers succeed.'
+                  : showMyResourcesOnly 
+                    ? 'You haven\'t created any resources yet. Try creating your first resource!'
+                    : 'Try adjusting your search terms or filters.'
+                }
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -835,6 +1352,7 @@ function StaffDashboard() {
                 { id: "overview", name: "Overview", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" },
                 { id: "analytics", name: "Student Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
                 { id: "verification", name: "Verification", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+                { id: "resources", name: "Resources", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
                 { id: "profile", name: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" }
               ].map(tab => (
                 <button
@@ -864,6 +1382,7 @@ function StaffDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "analytics" && renderStudentAnalytics()}
             {activeTab === "verification" && renderVerification()}
+            {activeTab === "resources" && renderResources()}
             {activeTab === "profile" && renderProfile()}
           </div>
         </div>
@@ -1075,6 +1594,328 @@ function StaffDashboard() {
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Resource Modal */}
+      {showAddResourceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Resource</h3>
+              <button
+                onClick={() => setShowAddResourceModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddResource} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={newResource.title}
+                  onChange={(e) => setNewResource({...newResource, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., Complete Guide to Starting Your Freelance Career"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newResource.description}
+                  onChange={(e) => setNewResource({...newResource, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the resource..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={newResource.category}
+                    onChange={(e) => setNewResource({...newResource, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {resourceCategories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <select
+                    value={newResource.type}
+                    onChange={(e) => setNewResource({...newResource, type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a type</option>
+                    {resourceTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Read Time</label>
+                  <input
+                    type="text"
+                    value={newResource.readTime}
+                    onChange={(e) => setNewResource({...newResource, readTime: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="e.g., 15 min"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                  <select
+                    value={newResource.difficulty}
+                    onChange={(e) => setNewResource({...newResource, difficulty: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+                  <input
+                    type="url"
+                    value={newResource.link}
+                    onChange={(e) => setNewResource({...newResource, link: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="https://example.com/resource"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <input
+                  type="text"
+                  value={newResource.tags}
+                  onChange={(e) => setNewResource({...newResource, tags: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., freelancing, career, beginners (comma separated)"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={newResource.featured}
+                  onChange={(e) => setNewResource({...newResource, featured: e.target.checked})}
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                />
+                <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
+                  Mark as featured resource
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Add Resource
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddResourceModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Resource Modal */}
+      {showEditResourceModal && selectedResource && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Edit Resource</h3>
+              <button
+                onClick={() => {
+                  setShowEditResourceModal(false);
+                  setSelectedResource(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateResource} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={selectedResource.title}
+                  onChange={(e) => setSelectedResource({...selectedResource, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., Complete Guide to Starting Your Freelance Career"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={selectedResource.description}
+                  onChange={(e) => setSelectedResource({...selectedResource, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the resource..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={selectedResource.category}
+                    onChange={(e) => setSelectedResource({...selectedResource, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {resourceCategories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <select
+                    value={selectedResource.type}
+                    onChange={(e) => setSelectedResource({...selectedResource, type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a type</option>
+                    {resourceTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Read Time</label>
+                  <input
+                    type="text"
+                    value={selectedResource.readTime}
+                    onChange={(e) => setSelectedResource({...selectedResource, readTime: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="e.g., 15 min"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                  <select
+                    value={selectedResource.difficulty}
+                    onChange={(e) => setSelectedResource({...selectedResource, difficulty: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+                  <input
+                    type="url"
+                    value={selectedResource.link}
+                    onChange={(e) => setSelectedResource({...selectedResource, link: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="https://example.com/resource"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <input
+                  type="text"
+                  value={selectedResource.tags ? (Array.isArray(selectedResource.tags) ? selectedResource.tags.join(', ') : selectedResource.tags) : ''}
+                  onChange={(e) => setSelectedResource({...selectedResource, tags: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., freelancing, career, beginners (comma separated)"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="edit-featured"
+                  checked={selectedResource.featured}
+                  onChange={(e) => setSelectedResource({...selectedResource, featured: e.target.checked})}
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                />
+                <label htmlFor="edit-featured" className="ml-2 block text-sm text-gray-900">
+                  Mark as featured resource
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Update Resource
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditResourceModal(false);
+                    setSelectedResource(null);
+                  }}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
