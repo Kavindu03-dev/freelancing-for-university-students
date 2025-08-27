@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 function ResourcesPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const resourceCategories = [
     'All',
@@ -17,128 +20,31 @@ function ResourcesPage() {
     'Client Management'
   ];
 
-  const resources = [
-    {
-      id: 1,
-      title: 'Complete Guide to Starting Your Freelance Career',
-      description: 'Everything you need to know to launch your freelancing journey successfully.',
-      category: 'Getting Started',
-      type: 'Guide',
-      readTime: '15 min',
-      difficulty: 'Beginner',
-      tags: ['freelancing', 'career', 'beginners'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 2,
-      title: 'How to Write Winning Proposals',
-      description: 'Master the art of proposal writing to win more clients and projects.',
-      category: 'Best Practices',
-      type: 'Tutorial',
-      readTime: '10 min',
-      difficulty: 'Intermediate',
-      tags: ['proposals', 'clients', 'writing'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 3,
-      title: 'Essential Tools Every Freelancer Needs',
-      description: 'Discover the must-have tools and software to boost your productivity.',
-      category: 'Tools & Software',
-      type: 'Resource List',
-      readTime: '8 min',
-      difficulty: 'Beginner',
-      tags: ['tools', 'productivity', 'software'],
-      featured: true,
-      link: '#'
-    },
-    {
-      id: 4,
-      title: 'Setting Your Freelance Rates: A Comprehensive Guide',
-      description: 'Learn how to price your services competitively while ensuring profitability.',
-      category: 'Pricing Strategies',
-      type: 'Guide',
-      readTime: '12 min',
-      difficulty: 'Intermediate',
-      tags: ['pricing', 'rates', 'business'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 5,
-      title: 'Building Long-term Client Relationships',
-      description: 'Strategies for maintaining and growing your client base over time.',
-      category: 'Client Management',
-      type: 'Article',
-      readTime: '7 min',
-      difficulty: 'Intermediate',
-      tags: ['clients', 'relationships', 'retention'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 6,
-      title: 'Freelance Contracts: What You Need to Know',
-      description: 'Protect yourself and your business with proper legal documentation.',
-      category: 'Legal & Contracts',
-      type: 'Legal Guide',
-      readTime: '20 min',
-      difficulty: 'Advanced',
-      tags: ['contracts', 'legal', 'protection'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 7,
-      title: 'Marketing Your Freelance Services Online',
-      description: 'Effective strategies to promote your services and attract clients.',
-      category: 'Marketing',
-      type: 'Strategy Guide',
-      readTime: '14 min',
-      difficulty: 'Intermediate',
-      tags: ['marketing', 'promotion', 'online'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 8,
-      title: 'Time Management for Freelancers',
-      description: 'Master your schedule and increase productivity with proven techniques.',
-      category: 'Best Practices',
-      type: 'Tutorial',
-      readTime: '9 min',
-      difficulty: 'Beginner',
-      tags: ['time management', 'productivity', 'organization'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 9,
-      title: 'Building Your Personal Brand as a Freelancer',
-      description: 'Create a strong personal brand that attracts your ideal clients.',
-      category: 'Marketing',
-      type: 'Branding Guide',
-      readTime: '16 min',
-      difficulty: 'Intermediate',
-      tags: ['branding', 'marketing', 'personal brand'],
-      featured: false,
-      link: '#'
-    },
-    {
-      id: 10,
-      title: 'Scaling Your Freelance Business',
-      description: 'Learn how to grow from solo freelancer to a successful agency.',
-      category: 'Business Tips',
-      type: 'Business Guide',
-      readTime: '18 min',
-      difficulty: 'Advanced',
-      tags: ['scaling', 'business growth', 'agency'],
-      featured: false,
-      link: '#'
+  // Fetch resources from backend
+  const fetchResources = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('http://localhost:5000/api/resources');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setResources(data.data || []);
+      } else {
+        setError('Failed to fetch resources');
+      }
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+      setError('Failed to fetch resources');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  // Fetch resources on component mount
+  useEffect(() => {
+    fetchResources();
+  }, []);
 
   const tools = [
     {
@@ -338,54 +244,82 @@ function ResourcesPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredResources.map((resource) => (
-              <div key={resource.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-2xl">{getTypeIcon(resource.type)}</div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {resource.type}
-                    </span>
-                  </div>
-                  
-                  <h3 className="text-lg font-bold text-gray-800 mb-2">{resource.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{resource.description}</p>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(resource.difficulty)}`}>
-                      {resource.difficulty}
-                    </span>
-                    <span className="text-xs text-gray-500">{resource.readTime}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {resource.tags.slice(0, 2).map((tag, index) => (
-                      <span key={index} className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  <a
-                    href={resource.link}
-                    className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-300 text-center block"
-                  >
-                    Read Article
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredResources.length === 0 && (
+          {loading && (
             <div className="text-center py-16">
-              <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-500 mb-2">No resources found</h3>
-              <p className="text-gray-400">Try adjusting your search or category filter</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">Loading resources...</h3>
+              <p className="text-gray-400">Please wait while we fetch the latest resources</p>
             </div>
+          )}
+
+          {error && (
+            <div className="text-center py-16">
+              <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-xl font-semibold text-gray-500 mb-2">Error loading resources</h3>
+              <p className="text-gray-400 mb-4">{error}</p>
+              <button 
+                onClick={fetchResources}
+                className="bg-yellow-500 text-black px-6 py-2 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && (
+            <>
+              {filteredResources.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredResources.map((resource) => (
+                  <div key={resource.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-2xl">{getTypeIcon(resource.type)}</div>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          {resource.type}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">{resource.title}</h3>
+                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">{resource.description}</p>
+                      
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(resource.difficulty)}`}>
+                          {resource.difficulty}
+                        </span>
+                        <span className="text-xs text-gray-500">{resource.readTime}</span>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {resource.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      <a
+                        href={resource.link}
+                        className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-300 text-center block"
+                      >
+                        Read Article
+                      </a>
+                    </div>
+                  </div>
+                ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.47-.881-6.08-2.33" />
+                  </svg>
+                  <h3 className="text-xl font-semibold text-gray-500 mb-2">No resources found</h3>
+                  <p className="text-gray-400">Try adjusting your search or category filter</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
