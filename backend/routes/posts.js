@@ -9,7 +9,8 @@ import {
   getPostStats,
   getPendingPosts,
   approvePost,
-  rejectPost
+  rejectPost,
+  adminDeletePost
 } from '../controllers/postController.js';
 import { protect } from '../middleware/auth.js';
 import { protect as adminProtect } from '../middleware/adminAuth.js';
@@ -36,5 +37,6 @@ router.delete('/:id', deletePost);
 router.get('/admin/pending', adminProtect, getPendingPosts);
 router.put('/admin/:postId/approve', adminProtect, approvePost);
 router.put('/admin/:postId/reject', adminProtect, rejectPost);
+router.delete('/admin/:postId', adminProtect, adminDeletePost);
 
 export default router;
