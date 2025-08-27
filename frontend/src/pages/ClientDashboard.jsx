@@ -20,7 +20,10 @@ function ClientDashboard() {
     postedProjects: 0,
     activeProjects: 0,
     completedProjects: 0,
-    totalSpent: 0
+    totalSpent: 0,
+    totalOrders: 0,
+    activeOrders: 0,
+    completedOrders: 0
   });
 
   // Projects derived from posts
@@ -84,6 +87,11 @@ function ClientDashboard() {
   const [recommendedFreelancers, setRecommendedFreelancers] = useState([]);
   const [loadingFreelancers, setLoadingFreelancers] = useState(true);
   const [freelancersError, setFreelancersError] = useState(null);
+  
+  // State for orders
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
   
   // State for freelancer profile popup
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
@@ -176,6 +184,35 @@ function ClientDashboard() {
       console.error('Error fetching posts:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    if (!clientData?._id) return;
+    
+    try {
+      setLoadingOrders(true);
+      setOrdersError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/orders/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      
+      const data = await response.json();
+      setOrders(data.orders || []);
+    } catch (err) {
+      setOrdersError(err.message);
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoadingOrders(false);
     }
   };
 
@@ -284,18 +321,25 @@ function ClientDashboard() {
     }
   }, [navigate]);
 
-  // Calculate stats from posts
-  const calculateStats = (posts) => {
+  // Calculate stats from posts and orders
+  const calculateStats = (posts, ordersList = []) => {
     const totalPosts = posts.length;
     const activePosts = posts.filter(post => post.status === 'Active').length;
     const completedPosts = posts.filter(post => post.status === 'Completed').length;
     const totalSpent = posts.reduce((sum, post) => sum + (post.budget || 0), 0);
     
+    const totalOrders = ordersList.length;
+    const activeOrders = ordersList.filter(order => order.status === 'In Progress').length;
+    const completedOrders = ordersList.filter(order => order.status === 'Completed').length;
+    
     setStats({
       postedProjects: totalPosts,
       activeProjects: activePosts,
       completedProjects: completedPosts,
-      totalSpent
+      totalSpent,
+      totalOrders,
+      activeOrders,
+      completedOrders
     });
   };
 
@@ -303,6 +347,7 @@ function ClientDashboard() {
   useEffect(() => {
     if (clientData?._id) {
       fetchPosts();
+      fetchOrders();
     }
   }, [clientData]);
 
@@ -315,7 +360,7 @@ function ClientDashboard() {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'recommendations', 'posts', 'applications', 'profile'].includes(tabParam)) {
+    if (tabParam && ['overview', 'recommendations', 'posts', 'applications', 'orders', 'profile'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [location.search]);
@@ -1530,6 +1575,143 @@ function ClientDashboard() {
     </div>
   );
 
+  const renderOrders = () => (
+    <div className="space-y-8">
+      {/* Orders Header */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-bold text-gray-900">My Orders</h2>
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-600">Total Orders: {orders.length}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Orders List */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200">
+        {loadingOrders ? (
+          // Loading skeleton
+          <div className="p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="border border-gray-200 rounded-xl p-4 animate-pulse">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                    <div className="h-4 bg-gray-300 rounded w-20"></div>
+                  </div>
+                  <div className="h-3 bg-gray-300 rounded mb-2 w-1/2"></div>
+                  <div className="h-3 bg-gray-300 rounded mb-2 w-2/3"></div>
+                  <div className="flex justify-between items-center">
+                    <div className="h-3 bg-gray-300 rounded w-16"></div>
+                    <div className="h-3 bg-gray-300 rounded w-24"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : ordersError ? (
+          // Error state
+          <div className="p-6 text-center">
+            <div className="text-red-500 mb-2 text-4xl">⚠️</div>
+            <p className="text-gray-600 mb-4">Failed to load orders</p>
+            <button 
+              onClick={fetchOrders} 
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : orders.length === 0 ? (
+          // Empty state
+          <div className="p-6 text-center">
+            <div className="text-gray-400 mb-2 text-4xl">📦</div>
+            <p className="text-gray-600 mb-4">No orders yet</p>
+            <p className="text-gray-500 text-sm">Start by ordering services from our talented freelancers</p>
+            <button 
+              onClick={() => setActiveTab("recommendations")} 
+              className="mt-4 px-6 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 font-medium"
+            >
+              Browse Services
+            </button>
+          </div>
+        ) : (
+          // Orders list
+          <div className="divide-y divide-gray-200">
+            {orders.map((order) => (
+              <div key={order._id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {order.serviceId?.title || 'Service Order'}
+                      </h3>
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                        order.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                        order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                        order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        order.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
+                      <div>
+                        <span className="font-medium">Package:</span> {order.selectedPackage}
+                      </div>
+                      <div>
+                        <span className="font-medium">Amount:</span> ${order.totalAmount}
+                      </div>
+                      <div>
+                        <span className="font-medium">Payment:</span> 
+                        <span className={`ml-1 ${
+                          order.paymentStatus === 'Paid' ? 'text-green-600' :
+                          order.paymentStatus === 'Pending' ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`}>
+                          {order.paymentStatus}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium">Created:</span> {new Date(order.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    {order.requirements && (
+                      <div className="mt-3">
+                        <span className="font-medium text-gray-700">Requirements:</span>
+                        <p className="text-gray-600 mt-1">{order.requirements}</p>
+                      </div>
+                    )}
+                    
+                    {order.deadline && (
+                      <div className="mt-2">
+                        <span className="font-medium text-gray-700">Deadline:</span>
+                        <p className="text-gray-600 mt-1">{new Date(order.deadline).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2 lg:items-end">
+                    <button className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium text-sm border border-blue-200 rounded-lg hover:bg-blue-50">
+                      View Details
+                    </button>
+                    {order.status === 'In Progress' && (
+                      <button className="px-4 py-2 text-green-600 hover:text-green-800 font-medium text-sm border border-green-200 rounded-lg hover:bg-green-50">
+                        Track Progress
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   if (!clientData) return <div>Loading...</div>;
 
   return (
@@ -1557,6 +1739,7 @@ function ClientDashboard() {
               { id: "recommendations", name: "Find Freelancers", icon: "🔍" },
               { id: "posts", name: "Manage Posts", icon: "📝" },
               { id: "applications", name: "Applications", icon: "📋" },
+              { id: "orders", name: "My Orders", icon: "📦" },
               { id: "profile", name: "Profile", icon: "👤" }
             ].map(tab => (
               <button
@@ -1583,6 +1766,7 @@ function ClientDashboard() {
             {activeTab === "recommendations" && renderRecommendations()}
             {activeTab === "posts" && renderManagePosts()}
             {activeTab === "applications" && renderApplications()}
+            {activeTab === "orders" && renderOrders()}
             {activeTab === "profile" && renderProfile()}
           </div>
         </div>

@@ -4,10 +4,15 @@ import User from '../models/User.js';
 const protect = async (req, res, next) => {
   let token;
 
+  // Debug logging
+  console.log('Auth Middleware - Headers:', req.headers);
+  console.log('Auth Middleware - JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not set');
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
+      console.log('Auth Middleware - Token received:', token ? 'Yes' : 'No');
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');

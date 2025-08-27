@@ -10,6 +10,7 @@ import resourceRoutes from './routes/resources.js';
 import postRoutes from './routes/posts.js';
 import verificationRoutes from './routes/verification.js';
 import analyticsRoutes from './routes/analytics.js';
+import orderRoutes from './routes/orders.js';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,7 @@ app.use('/api/resources', resourceRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

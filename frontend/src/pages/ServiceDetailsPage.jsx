@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { isAuthenticated, getUserData } from '../utils/auth';
+import PaymentModal from '../components/PaymentModal';
 
 function ServiceDetailsPage() {
   const { id } = useParams();
@@ -69,6 +70,10 @@ function ServiceDetailsPage() {
     console.log('Order confirmed for package:', selectedPackage);
     setShowOrderModal(false);
     // In real app, redirect to payment or order management
+  };
+
+  const closeOrderModal = () => {
+    setShowOrderModal(false);
   };
 
   if (loading) {
@@ -667,67 +672,13 @@ function ServiceDetailsPage() {
         </div>
       )}
 
-      {/* Order Confirmation Modal */}
-      {showOrderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">
-              {service.type === 'gig' ? 'Confirm Your Order' : 'Confirm Your Application'}
-            </h2>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-gray-800 mb-2">
-                {service.type === 'gig' 
-                  ? (hasPackages ? packages[selectedPackage].name : 'Service') + ' Package'
-                  : 'Job Post'
-                }
-              </h3>
-              <p className="text-gray-600 text-sm mb-3">
-                {service.type === 'gig' 
-                  ? (hasPackages ? packages[selectedPackage].description : service.description)
-                  : service.description
-                }
-              </p>
-              
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600">
-                  {service.type === 'gig' ? 'Price:' : 'Budget:'}
-                </span>
-                <span className="font-bold text-gray-800">
-                  ${hasPackages ? packages[selectedPackage].price : service.price}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">
-                  {service.type === 'gig' ? 'Delivery:' : 'Timeline:'}
-                </span>
-                <span className="font-medium text-gray-800">
-                  {service.type === 'gig' 
-                    ? `${hasPackages ? packages[selectedPackage].deliveryTime : service.deliveryTime} ${service.deliveryUnit || 'Days'}`
-                    : `${service.deliveryTime || 'Custom'} ${service.deliveryUnit || 'Days'}`
-                  }
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-                              <button
-                  onClick={confirmOrder}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black py-3 px-6 rounded-lg font-semibold transition-colors"
-                >
-                  {service.type === 'gig' ? 'Confirm Order' : 'Confirm Application'}
-                </button>
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 px-6 rounded-lg font-semibold transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showOrderModal}
+        onClose={closeOrderModal}
+        service={service}
+        selectedPackage={selectedPackage}
+      />
 
     </div>
   );
