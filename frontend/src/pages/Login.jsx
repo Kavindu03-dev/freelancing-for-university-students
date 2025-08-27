@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { setAuthData } from "../utils/auth";
 
@@ -10,23 +10,57 @@ function Login() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockoutTime, setLockoutTime] = useState(0);
   const navigate = useNavigate();
 
-  // Validation functions
+  // Enhanced validation functions
   const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) return "Email is required";
+    if (!email.trim()) return "Email is required";
+    
+    // More comprehensive email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) return "Please enter a valid email address";
+    
+    // Check for common email issues
+    if (email.length > 254) return "Email address is too long";
+    if (email.includes('..') || email.includes('--')) return "Email address contains invalid characters";
+    
     return "";
   };
 
   const validatePassword = (password) => {
     if (!password) return "Password is required";
+    
+    // Enhanced password validation
     if (password.length < 6) return "Password must be at least 6 characters long";
+    if (password.length > 128) return "Password is too long";
+    
+    // Check for common weak password patterns
+    if (/^[a-zA-Z]+$/.test(password)) return "Password should contain at least one number or special character";
+    if (/^\d+$/.test(password)) return "Password should contain at least one letter";
+    
     return "";
   };
+
+  // Real-time validation
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (touched.email) {
+      newErrors.email = validateEmail(formData.email);
+    }
+    
+    if (touched.password) {
+      newErrors.password = validatePassword(formData.password);
+    }
+    
+    setErrors(newErrors);
+  }, [formData, touched]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -35,6 +69,8 @@ function Login() {
     newErrors.password = validatePassword(formData.password);
     
     setErrors(newErrors);
+    setTouched({ email: true, password: true });
+    
     return !Object.values(newErrors).some(error => error !== "");
   };
 
@@ -44,14 +80,14 @@ function Login() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ""
-      }));
-    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
   };
 
   const triggerShake = () => {
@@ -59,20 +95,75 @@ function Login() {
     setTimeout(() => setIsShaking(false), 500);
   };
 
+  // Rate limiting function
+  const handleFailedLogin = () => {
+    const newAttempts = loginAttempts + 1;
+    setLoginAttempts(newAttempts);
+    
+    if (newAttempts >= 5) {
+      setIsLocked(true);
+      setLockoutTime(Date.now() + 15 * 60 * 1000); // 15 minutes lockout
+      
+      // Store lockout in localStorage
+      localStorage.setItem('loginLockout', JSON.stringify({
+        isLocked: true,
+        lockoutTime: Date.now() + 15 * 60 * 1000
+      }));
+    }
+  };
 
+  // Check for existing lockout on component mount
+  useEffect(() => {
+    const storedLockout = localStorage.getItem('loginLockout');
+    if (storedLockout) {
+      const lockout = JSON.parse(storedLockout);
+      if (lockout.isLocked && lockout.lockoutTime > Date.now()) {
+        setIsLocked(true);
+        setLockoutTime(lockout.lockoutTime);
+      } else if (lockout.lockoutTime <= Date.now()) {
+        // Clear expired lockout
+        localStorage.removeItem('loginLockout');
+        setIsLocked(false);
+        setLoginAttempts(0);
+      }
+    }
+  }, []);
+
+  // Timer for lockout countdown
+  useEffect(() => {
+    if (isLocked && lockoutTime > Date.now()) {
+      const timer = setInterval(() => {
+        if (Date.now() >= lockoutTime) {
+          setIsLocked(false);
+          setLoginAttempts(0);
+          localStorage.removeItem('loginLockout');
+        }
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [isLocked, lockoutTime]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Check if account is locked
+    if (isLocked) {
+      const remainingTime = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
+      setErrors({ general: `Account temporarily locked. Please try again in ${remainingTime} minutes.` });
+      triggerShake();
+      return;
+    }
+    
     // Validate form before submission
     if (!validateForm()) {
+      triggerShake();
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-
       // Make API call to backend for login
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
@@ -80,7 +171,7 @@ function Login() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password
         })
       });
@@ -88,6 +179,10 @@ function Login() {
       const result = await response.json();
 
       if (result.success) {
+        // Clear login attempts on successful login
+        setLoginAttempts(0);
+        localStorage.removeItem('loginLockout');
+        
         // Store initial user data and token
         setAuthData(result.data.token, result.data);
         
@@ -131,19 +226,38 @@ function Login() {
           navigate('/');
         }
       } else {
-        // Handle login errors
-        setErrors({ general: result.message || 'Invalid credentials. Please try again.' });
+        // Handle login errors with more specific messages
+        let errorMessage = 'Invalid credentials. Please try again.';
+        
+        if (result.message) {
+          if (result.message.includes('email')) {
+            errorMessage = 'Email address not found. Please check your email or sign up.';
+          } else if (result.message.includes('password')) {
+            errorMessage = 'Incorrect password. Please try again.';
+          } else if (result.message.includes('account')) {
+            errorMessage = 'Account not found. Please check your credentials.';
+          } else {
+            errorMessage = result.message;
+          }
+        }
+        
+        setErrors({ general: errorMessage });
+        handleFailedLogin();
         triggerShake();
       }
 
-
-
-
-
-
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ general: 'Network error. Please check your connection and try again.' });
+      let errorMessage = 'Network error. Please check your connection and try again.';
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      } else if (error.name === 'AbortError') {
+        errorMessage = 'Request timed out. Please try again.';
+      }
+      
+      setErrors({ general: errorMessage });
+      handleFailedLogin();
       triggerShake();
     } finally {
       setIsSubmitting(false);
@@ -258,23 +372,40 @@ function Login() {
               <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
-                  errors.email 
-                    ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
-                    : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
-                }`}
-                placeholder="Enter your email"
-              />
+                             <input
+                 id="email"
+                 name="email"
+                 type="email"
+                 autoComplete="off"
+                 required
+                 value={formData.email}
+                 onChange={handleChange}
+                 onBlur={handleBlur}
+                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
+                   errors.email 
+                     ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                     : touched.email && !errors.email
+                     ? 'border-green-500 focus:ring-green-200 focus:border-green-500'
+                     : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
+                 }`}
+                 placeholder="Enter your email"
+                 maxLength={254}
+               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.email}
+                </p>
+              )}
+              {touched.email && !errors.email && formData.email && (
+                <p className="mt-1 text-sm text-green-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Valid email format
+                </p>
               )}
             </div>
 
@@ -291,12 +422,16 @@ function Login() {
                   required
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300 ${
                     errors.password 
                       ? 'border-red-500 focus:ring-red-200 focus:border-red-500' 
+                      : touched.password && !errors.password
+                      ? 'border-green-500 focus:ring-green-200 focus:border-green-500'
                       : 'border-gray-300 focus:ring-gray-200 focus:border-gray-500'
                   }`}
                   placeholder="Enter your password"
+                  maxLength={128}
                 />
                 <button
                   type="button"
@@ -316,7 +451,20 @@ function Login() {
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.password}
+                </p>
+              )}
+              {touched.password && !errors.password && formData.password && (
+                <p className="mt-1 text-sm text-green-600 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Password looks good
+                </p>
               )}
             </div>
 
@@ -345,15 +493,29 @@ function Login() {
             <div>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLocked || !formData.email.trim() || !formData.password}
                 className={`w-full py-3 px-4 rounded-xl font-semibold shadow-lg transition-all duration-300 transform ${
-                  isSubmitting 
+                  isSubmitting || isLocked || !formData.email.trim() || !formData.password
                     ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                     : 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black hover:shadow-xl hover:-translate-y-0.5'
                 }`}
               >
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
+                {isSubmitting ? 'Signing in...' : isLocked ? 'Account Locked' : 'Sign in'}
               </button>
+              
+              {/* Login attempts warning */}
+              {loginAttempts > 0 && loginAttempts < 5 && (
+                <p className="mt-2 text-sm text-orange-600 text-center">
+                  Failed login attempts: {loginAttempts}/5
+                </p>
+              )}
+              
+              {/* Lockout countdown */}
+              {isLocked && (
+                <p className="mt-2 text-sm text-red-600 text-center">
+                  Account locked. Try again in {Math.ceil((lockoutTime - Date.now()) / 1000 / 60)} minutes.
+                </p>
+              )}
               
               {/* Admin Login Button */}
               <button

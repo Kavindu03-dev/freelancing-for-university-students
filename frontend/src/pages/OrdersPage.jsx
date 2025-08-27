@@ -16,6 +16,92 @@ function OrdersPage() {
     rating: 5,
     comment: ''
   });
+
+  const [deliveryErrors, setDeliveryErrors] = useState({});
+  const [reviewErrors, setReviewErrors] = useState({});
+  const [deliveryTouched, setDeliveryTouched] = useState({});
+  const [reviewTouched, setReviewTouched] = useState({});
+
+  // Validation functions
+  const validateDeliveryMessage = (message) => {
+    if (!message.trim()) return "Delivery message is required";
+    if (message.length < 10) return "Delivery message must be at least 10 characters long";
+    if (message.length > 1000) return "Delivery message must be less than 1000 characters";
+    return "";
+  };
+
+  const validateReviewComment = (comment) => {
+    if (!comment.trim()) return "Review comment is required";
+    if (comment.length < 10) return "Review comment must be at least 10 characters long";
+    if (comment.length > 500) return "Review comment must be less than 500 characters";
+    return "";
+  };
+
+  // Real-time validation for delivery form
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (deliveryTouched.message) {
+      newErrors.message = validateDeliveryMessage(deliveryData.message);
+    }
+    
+    setDeliveryErrors(newErrors);
+  }, [deliveryData, deliveryTouched]);
+
+  // Real-time validation for review form
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (reviewTouched.comment) {
+      newErrors.comment = validateReviewComment(reviewData.comment);
+    }
+    
+    setReviewErrors(newErrors);
+  }, [reviewData, reviewTouched]);
+
+  const validateDeliveryForm = () => {
+    const newErrors = {};
+    newErrors.message = validateDeliveryMessage(deliveryData.message);
+    
+    setDeliveryErrors(newErrors);
+    setDeliveryTouched({ message: true });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
+
+  const validateReviewForm = () => {
+    const newErrors = {};
+    newErrors.comment = validateReviewComment(reviewData.comment);
+    
+    setReviewErrors(newErrors);
+    setReviewTouched({ comment: true });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
+
+  const handleDeliveryInputChange = (field, value) => {
+    setDeliveryData(prev => ({ ...prev, [field]: value }));
+    
+    if (deliveryErrors[field]) {
+      setDeliveryErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleReviewInputChange = (field, value) => {
+    setReviewData(prev => ({ ...prev, [field]: value }));
+    
+    if (reviewErrors[field]) {
+      setReviewErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleDeliveryBlur = (field) => {
+    setDeliveryTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleReviewBlur = (field) => {
+    setReviewTouched(prev => ({ ...prev, [field]: true }));
+  };
   
   const currentUser = getUserData();
   const isFreelancer = currentUser?.userType === 'freelancer';
@@ -395,16 +481,19 @@ function OrdersPage() {
 
   const handleSubmitDelivery = (e) => {
     e.preventDefault();
-    // Handle delivery submission
-    setOrders(prev => 
-      prev.map(order => 
-        order.id === selectedOrder.id 
-          ? { ...order, status: 'delivered', deliveredAt: new Date().toISOString() }
-          : order
-      )
-    );
-    setShowDeliveryModal(false);
-    setDeliveryData({ message: '', files: [] });
+    if (validateDeliveryForm()) {
+      // Handle delivery submission
+      setOrders(prev => 
+        prev.map(order => 
+          order.id === selectedOrder.id 
+            ? { ...order, status: 'delivered', deliveredAt: new Date().toISOString() }
+            : order
+        )
+      );
+      setShowDeliveryModal(false);
+      setDeliveryData({ message: '', files: [] });
+      setDeliveryTouched({}); // Reset touched fields
+    }
   };
 
   const handleReview = (order) => {
@@ -414,25 +503,28 @@ function OrdersPage() {
 
   const handleSubmitReview = (e) => {
     e.preventDefault();
-    // Handle review submission
-    setOrders(prev => 
-      prev.map(order => 
-        order.id === selectedOrder.id 
-          ? { 
-              ...order, 
-              status: 'completed', 
-              completedAt: new Date().toISOString(),
-              review: {
-                rating: reviewData.rating,
-                comment: reviewData.comment,
-                createdAt: new Date().toISOString()
+    if (validateReviewForm()) {
+      // Handle review submission
+      setOrders(prev => 
+        prev.map(order => 
+          order.id === selectedOrder.id 
+            ? { 
+                ...order, 
+                status: 'completed', 
+                completedAt: new Date().toISOString(),
+                review: {
+                  rating: reviewData.rating,
+                  comment: reviewData.comment,
+                  createdAt: new Date().toISOString()
+                }
               }
-            }
-          : order
-      )
-    );
-    setShowReviewModal(false);
-    setReviewData({ rating: 5, comment: '' });
+            : order
+        )
+      );
+      setShowReviewModal(false);
+      setReviewData({ rating: 5, comment: '' });
+      setReviewTouched({}); // Reset touched fields
+    }
   };
 
   const tabs = [
@@ -753,10 +845,17 @@ function OrdersPage() {
                   required
                   rows={4}
                   value={deliveryData.message}
-                  onChange={(e) => setDeliveryData(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  onChange={(e) => handleDeliveryInputChange('message', e.target.value)}
+                  onBlur={() => handleDeliveryBlur('message')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                    deliveryErrors.message ? 'border-red-500' : deliveryTouched.message && !deliveryErrors.message ? 'border-green-500' : 'border-gray-300'
+                  }`}
                   placeholder="Describe what you've delivered and any important notes..."
+                  maxLength={1000}
                 />
+                {deliveryTouched.message && deliveryErrors.message && (
+                  <p className="text-red-500 text-xs mt-1">{deliveryErrors.message}</p>
+                )}
               </div>
 
               <div>
@@ -838,10 +937,17 @@ function OrdersPage() {
                   required
                   rows={4}
                   value={reviewData.comment}
-                  onChange={(e) => setReviewData(prev => ({ ...prev, comment: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  onChange={(e) => handleReviewInputChange('comment', e.target.value)}
+                  onBlur={() => handleReviewBlur('comment')}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                    reviewErrors.comment ? 'border-red-500' : reviewTouched.comment && !reviewErrors.comment ? 'border-green-500' : 'border-gray-300'
+                  }`}
                   placeholder="Share your experience working with this freelancer..."
+                  maxLength={500}
                 />
+                {reviewTouched.comment && reviewErrors.comment && (
+                  <p className="text-red-500 text-xs mt-1">{reviewErrors.comment}</p>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">

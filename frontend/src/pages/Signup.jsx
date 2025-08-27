@@ -1907,6 +1907,7 @@ function Signup() {
                     <input
                       type="text"
                   name="firstName"
+                  autoComplete="off"
                   value={formData.firstName}
                     onChange={handleChange}
                     onFocus={preventSuggestions}
@@ -1927,6 +1928,7 @@ function Signup() {
                     <input
                   type="text"
                   name="lastName"
+                  autoComplete="off"
                   value={formData.lastName}
                       onChange={handleChange}
                       onFocus={preventSuggestions}
@@ -1948,6 +1950,7 @@ function Signup() {
                     <input
                 type="email"
                 name="email"
+                autoComplete="off"
                 value={formData.email}
                       onChange={handleChange}
                       onFocus={preventSuggestions}
@@ -1970,6 +1973,7 @@ function Signup() {
                     <input
                       type={showPassword ? "text" : "password"}
                     name="password"
+                    autoComplete="off"
                       value={formData.password}
                       onChange={handleChange}
                       onFocus={preventSuggestions}
@@ -2032,6 +2036,7 @@ function Signup() {
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                     name="confirmPassword"
+                    autoComplete="off"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       onFocus={preventSuggestions}

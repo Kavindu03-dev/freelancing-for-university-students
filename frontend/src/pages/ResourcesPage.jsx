@@ -443,6 +443,7 @@ function ResourcesPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="email"
+                autoComplete="off"
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:border-yellow-500"
               />

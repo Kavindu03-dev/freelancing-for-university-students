@@ -16,6 +16,77 @@ function ServiceDetailsPage() {
     deadline: ''
   });
 
+  const [contactErrors, setContactErrors] = useState({});
+  const [contactTouched, setContactTouched] = useState({});
+
+  // Validation functions
+  const validateMessage = (message) => {
+    if (!message.trim()) return "Message is required";
+    if (message.length < 10) return "Message must be at least 10 characters long";
+    if (message.length > 1000) return "Message must be less than 1000 characters";
+    return "";
+  };
+
+  const validateBudget = (budget) => {
+    if (budget && budget <= 0) return "Budget must be greater than 0";
+    if (budget && budget > 10000) return "Budget must be less than $10,000";
+    return "";
+  };
+
+  const validateDeadline = (deadline) => {
+    if (deadline) {
+      const selectedDate = new Date(deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) return "Deadline cannot be in the past";
+    }
+    return "";
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (contactTouched.message) {
+      newErrors.message = validateMessage(contactForm.message);
+    }
+    
+    if (contactTouched.budget) {
+      newErrors.budget = validateBudget(contactForm.budget);
+    }
+    
+    if (contactTouched.deadline) {
+      newErrors.deadline = validateDeadline(contactForm.deadline);
+    }
+    
+    setContactErrors(newErrors);
+  }, [contactForm, contactTouched]);
+
+  const validateContactForm = () => {
+    const newErrors = {};
+    
+    newErrors.message = validateMessage(contactForm.message);
+    newErrors.budget = validateBudget(contactForm.budget);
+    newErrors.deadline = validateDeadline(contactForm.deadline);
+    
+    setContactErrors(newErrors);
+    setContactTouched({ message: true, budget: true, deadline: true });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
+
+  const handleContactInputChange = (field, value) => {
+    setContactForm(prev => ({ ...prev, [field]: value }));
+    
+    if (contactErrors[field]) {
+      setContactErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleContactBlur = (field) => {
+    setContactTouched(prev => ({ ...prev, [field]: true }));
+  };
+
   // Mock service data (in real app, fetch from API)
   useEffect(() => {
     const fetchService = async () => {
@@ -200,10 +271,14 @@ function ServiceDetailsPage() {
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
+    if (!validateContactForm()) return;
+    
     // Handle contact form submission
     console.log('Contact form submitted:', contactForm);
     setShowContactModal(false);
     setContactForm({ message: '', budget: '', deadline: '' });
+    setContactErrors({});
+    setContactTouched({});
   };
 
   const handleOrderNow = () => {
@@ -623,10 +698,17 @@ function ServiceDetailsPage() {
                   required
                   rows={4}
                   value={contactForm.message}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  onChange={(e) => handleContactInputChange('message', e.target.value)}
+                  onBlur={() => handleContactBlur('message')}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                    contactErrors.message ? 'border-red-500' : contactTouched.message && !contactErrors.message ? 'border-green-500' : 'border-gray-300'
+                  }`}
                   placeholder="Describe your project requirements..."
+                  maxLength={1000}
                 />
+                {contactTouched.message && contactErrors.message && (
+                  <p className="text-red-500 text-xs mt-1">{contactErrors.message}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -635,10 +717,18 @@ function ServiceDetailsPage() {
                   <input
                     type="number"
                     value={contactForm.budget}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, budget: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    onChange={(e) => handleContactInputChange('budget', e.target.value)}
+                    onBlur={() => handleContactBlur('budget')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                      contactErrors.budget ? 'border-red-500' : contactTouched.budget && !contactErrors.budget ? 'border-green-500' : 'border-gray-300'
+                    }`}
                     placeholder="$500"
+                    min="1"
+                    max="10000"
                   />
+                  {contactTouched.budget && contactErrors.budget && (
+                    <p className="text-red-500 text-xs mt-1">{contactErrors.budget}</p>
+                  )}
                 </div>
 
                 <div>
@@ -646,9 +736,15 @@ function ServiceDetailsPage() {
                   <input
                     type="date"
                     value={contactForm.deadline}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    onChange={(e) => handleContactInputChange('deadline', e.target.value)}
+                    onBlur={() => handleContactBlur('deadline')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 ${
+                      contactErrors.deadline ? 'border-red-500' : contactTouched.deadline && !contactErrors.deadline ? 'border-green-500' : 'border-gray-300'
+                    }`}
                   />
+                  {contactTouched.deadline && contactErrors.deadline && (
+                    <p className="text-red-500 text-xs mt-1">{contactErrors.deadline}</p>
+                  )}
                 </div>
               </div>
 

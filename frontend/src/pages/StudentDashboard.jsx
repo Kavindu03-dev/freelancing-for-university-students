@@ -812,6 +812,133 @@ function StudentDashboard() {
     expectedGraduation: ""
   });
 
+  const [applicationErrors, setApplicationErrors] = useState({});
+  const [applicationTouched, setApplicationTouched] = useState({});
+
+  // Validation functions for application form
+  const validateCoverLetter = (coverLetter) => {
+    if (!coverLetter.trim()) return "Cover letter is required";
+    if (coverLetter.length < 50) return "Cover letter must be at least 50 characters long";
+    if (coverLetter.length > 2000) return "Cover letter must be less than 2000 characters";
+    return "";
+  };
+
+  const validateProposedTimeline = (timeline) => {
+    if (!timeline.trim()) return "Proposed timeline is required";
+    if (timeline.length < 5) return "Timeline must be at least 5 characters";
+    if (timeline.length > 100) return "Timeline must be less than 100 characters";
+    return "";
+  };
+
+  const validateRelevantExperience = (experience) => {
+    if (!experience.trim()) return "Relevant experience is required";
+    if (experience.length < 20) return "Experience must be at least 20 characters long";
+    if (experience.length > 1000) return "Experience must be less than 1000 characters";
+    return "";
+  };
+
+  const validatePortfolioLink = (link) => {
+    if (link && link.trim()) {
+      const urlRegex = /^https?:\/\/.+/;
+      if (!urlRegex.test(link)) return "Portfolio link must start with http:// or https://";
+    }
+    return "";
+  };
+
+  const validateAcademicQualifications = (qualifications) => {
+    if (!qualifications.trim()) return "Academic qualifications are required";
+    if (qualifications.length < 20) return "Qualifications must be at least 20 characters long";
+    if (qualifications.length > 500) return "Qualifications must be less than 500 characters";
+    return "";
+  };
+
+  const validateAvailability = (availability) => {
+    if (!availability.trim()) return "Availability is required";
+    if (availability.length < 5) return "Availability must be at least 5 characters";
+    if (availability.length > 200) return "Availability must be less than 200 characters";
+    return "";
+  };
+
+  const validateCVFile = (file) => {
+    if (!file) return "CV/Resume file is required";
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) return "File must be PDF, DOC, or DOCX";
+    if (file.size > 5 * 1024 * 1024) return "File size must be less than 5MB";
+    return "";
+  };
+
+  // Real-time validation for application form
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (applicationTouched.coverLetter) {
+      newErrors.coverLetter = validateCoverLetter(applicationForm.coverLetter);
+    }
+    
+    if (applicationTouched.proposedTimeline) {
+      newErrors.proposedTimeline = validateProposedTimeline(applicationForm.proposedTimeline);
+    }
+    
+    if (applicationTouched.relevantExperience) {
+      newErrors.relevantExperience = validateRelevantExperience(applicationForm.relevantExperience);
+    }
+    
+    if (applicationTouched.portfolioLink) {
+      newErrors.portfolioLink = validatePortfolioLink(applicationForm.portfolioLink);
+    }
+    
+    if (applicationTouched.academicQualifications) {
+      newErrors.academicQualifications = validateAcademicQualifications(applicationForm.academicQualifications);
+    }
+    
+    if (applicationTouched.availability) {
+      newErrors.availability = validateAvailability(applicationForm.availability);
+    }
+    
+    if (applicationTouched.cvFile) {
+      newErrors.cvFile = validateCVFile(applicationForm.cvFile);
+    }
+    
+    setApplicationErrors(newErrors);
+  }, [applicationForm, applicationTouched]);
+
+  const validateApplicationForm = () => {
+    const newErrors = {};
+    
+    newErrors.coverLetter = validateCoverLetter(applicationForm.coverLetter);
+    newErrors.proposedTimeline = validateProposedTimeline(applicationForm.proposedTimeline);
+    newErrors.relevantExperience = validateRelevantExperience(applicationForm.relevantExperience);
+    newErrors.portfolioLink = validatePortfolioLink(applicationForm.portfolioLink);
+    newErrors.academicQualifications = validateAcademicQualifications(applicationForm.academicQualifications);
+    newErrors.availability = validateAvailability(applicationForm.availability);
+    newErrors.cvFile = validateCVFile(applicationForm.cvFile);
+    
+    setApplicationErrors(newErrors);
+    setApplicationTouched({ 
+      coverLetter: true, 
+      proposedTimeline: true, 
+      relevantExperience: true, 
+      portfolioLink: true, 
+      academicQualifications: true, 
+      availability: true, 
+      cvFile: true 
+    });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
+
+  const handleApplicationInputChange = (field, value) => {
+    setApplicationForm(prev => ({ ...prev, [field]: value }));
+    
+    if (applicationErrors[field]) {
+      setApplicationErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleApplicationBlur = (field) => {
+    setApplicationTouched(prev => ({ ...prev, [field]: true }));
+  };
+
   // Function to fetch complete profile data from backend
   const fetchCompleteProfile = async () => {
     try {
@@ -1135,6 +1262,8 @@ function StudentDashboard() {
   const handleSubmitApplication = () => {
     if (!selectedPost) return;
     
+    if (!validateApplicationForm()) return;
+    
     const newApplication = {
       id: Date.now(),
       postId: selectedPost.id,
@@ -1159,6 +1288,8 @@ function StudentDashboard() {
       availability: "",
       expectedGraduation: ""
     });
+    setApplicationErrors({});
+    setApplicationTouched({});
     
     // Show success message
     alert("Application submitted successfully!");
@@ -1596,22 +1727,37 @@ function StudentDashboard() {
                 required
                 rows={4}
                 value={applicationForm.coverLetter}
-                onChange={(e) => setApplicationForm(prev => ({ ...prev, coverLetter: e.target.value }))}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                onChange={(e) => handleApplicationInputChange('coverLetter', e.target.value)}
+                onBlur={() => handleApplicationBlur('coverLetter')}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                  applicationErrors.coverLetter ? 'border-red-500' : applicationTouched.coverLetter && !applicationErrors.coverLetter ? 'border-green-500' : 'border-gray-300'
+                }`}
                 placeholder="Explain why you're the best fit for this opportunity..."
+                maxLength={2000}
               />
+              {applicationTouched.coverLetter && applicationErrors.coverLetter && (
+                <p className="text-red-500 text-sm mt-1">{applicationErrors.coverLetter}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Proposed Timeline *</label>
               <input
                 type="text"
+                autoComplete="off"
                 required
                 value={applicationForm.proposedTimeline}
-                onChange={(e) => setApplicationForm(prev => ({ ...prev, proposedTimeline: e.target.value }))}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                onChange={(e) => handleApplicationInputChange('proposedTimeline', e.target.value)}
+                onBlur={() => handleApplicationBlur('proposedTimeline')}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                  applicationErrors.proposedTimeline ? 'border-red-500' : applicationTouched.proposedTimeline && !applicationErrors.proposedTimeline ? 'border-green-500' : 'border-gray-300'
+                }`}
                 placeholder="e.g., 2 weeks, 1 month"
+                maxLength={100}
               />
+              {applicationTouched.proposedTimeline && applicationErrors.proposedTimeline && (
+                <p className="text-red-500 text-sm mt-1">{applicationErrors.proposedTimeline}</p>
+              )}
             </div>
 
             <div>
@@ -1620,10 +1766,17 @@ function StudentDashboard() {
                 required
                 rows={3}
                 value={applicationForm.relevantExperience}
-                onChange={(e) => setApplicationForm(prev => ({ ...prev, relevantExperience: e.target.value }))}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                onChange={(e) => handleApplicationInputChange('relevantExperience', e.target.value)}
+                onBlur={() => handleApplicationBlur('relevantExperience')}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                  applicationErrors.relevantExperience ? 'border-red-500' : applicationTouched.relevantExperience && !applicationErrors.relevantExperience ? 'border-green-500' : 'border-gray-300'
+                }`}
                 placeholder="Describe your relevant experience and projects..."
+                maxLength={1000}
               />
+              {applicationTouched.relevantExperience && applicationErrors.relevantExperience && (
+                <p className="text-red-500 text-sm mt-1">{applicationErrors.relevantExperience}</p>
+              )}
             </div>
 
             <div>

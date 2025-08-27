@@ -111,6 +111,7 @@ function AdminLogin() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="off"
                 required
                 value={credentials.email}
                 onChange={handleChange}

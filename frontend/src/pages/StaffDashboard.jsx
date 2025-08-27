@@ -928,6 +928,7 @@ function StaffDashboard() {
                     </label>
                     <input
                       type="email"
+                      autoComplete="off"
                       value={editFormData.email}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
                       className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${

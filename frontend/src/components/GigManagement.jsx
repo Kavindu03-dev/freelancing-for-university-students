@@ -128,12 +128,61 @@ const GigManagement = ({ user }) => {
   const validateForm = () => {
     const errors = {};
     
-    if (!formData.title.trim()) errors.title = 'Title is required';
-    if (!formData.description.trim()) errors.description = 'Description is required';
-    if (!formData.category) errors.category = 'Category is required';
-    if (!formData.price || formData.price <= 0) errors.price = 'Valid price is required';
-    if (!formData.duration.trim()) errors.duration = 'Duration is required';
-    if (!formData.skills.trim()) errors.skills = 'Skills are required';
+    // Title validation
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+    } else if (formData.title.length < 5) {
+      errors.title = 'Title must be at least 5 characters long';
+    } else if (formData.title.length > 100) {
+      errors.title = 'Title must be less than 100 characters';
+    }
+    
+    // Description validation
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.length < 20) {
+      errors.description = 'Description must be at least 20 characters long';
+    } else if (formData.description.length > 2000) {
+      errors.description = 'Description must be less than 2000 characters';
+    }
+    
+    // Category validation
+    if (!formData.category) {
+      errors.category = 'Category is required';
+    }
+    
+    // Price validation
+    if (!formData.price || formData.price <= 0) {
+      errors.price = 'Valid price is required';
+    } else if (formData.price > 10000) {
+      errors.price = 'Price must be less than $10,000';
+    }
+    
+    // Duration validation
+    if (!formData.duration.trim()) {
+      errors.duration = 'Duration is required';
+    } else if (formData.duration.length < 3) {
+      errors.duration = 'Duration must be at least 3 characters';
+    } else if (formData.duration.length > 50) {
+      errors.duration = 'Duration must be less than 50 characters';
+    }
+    
+    // Skills validation
+    if (!formData.skills.trim()) {
+      errors.skills = 'Skills are required';
+    } else if (formData.skills.length < 3) {
+      errors.skills = 'Skills must be at least 3 characters';
+    } else if (formData.skills.length > 200) {
+      errors.skills = 'Skills must be less than 200 characters';
+    }
+    
+    // Portfolio URL validation (optional)
+    if (formData.portfolio && formData.portfolio.trim()) {
+      const urlRegex = /^https?:\/\/.+/;
+      if (!urlRegex.test(formData.portfolio)) {
+        errors.portfolio = 'Portfolio URL must start with http:// or https://';
+      }
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -358,12 +407,14 @@ const GigManagement = ({ user }) => {
               <input
                 type="text"
                 name="title"
+                autoComplete="off"
                 value={formData.title}
                 onChange={handleInputChange}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                   formErrors.title ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., Professional Website Development"
+                maxLength={100}
               />
               {formErrors.title && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
@@ -422,12 +473,14 @@ const GigManagement = ({ user }) => {
               <input
                 type="text"
                 name="duration"
+                autoComplete="off"
                 value={formData.duration}
                 onChange={handleInputChange}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                   formErrors.duration ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., 3-5 days"
+                maxLength={50}
               />
               {formErrors.duration && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.duration}</p>
@@ -442,12 +495,14 @@ const GigManagement = ({ user }) => {
               <input
                 type="text"
                 name="skills"
+                autoComplete="off"
                 value={formData.skills}
                 onChange={handleInputChange}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                   formErrors.skills ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="e.g., React, Node.js, MongoDB"
+                maxLength={200}
               />
               {formErrors.skills && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.skills}</p>
@@ -468,6 +523,7 @@ const GigManagement = ({ user }) => {
                   formErrors.description ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Describe your service in detail..."
+                maxLength={2000}
               />
               {formErrors.description && (
                 <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
@@ -484,9 +540,14 @@ const GigManagement = ({ user }) => {
                 name="portfolio"
                 value={formData.portfolio}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                  formErrors.portfolio ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="https://your-portfolio.com"
               />
+              {formErrors.portfolio && (
+                <p className="text-red-500 text-sm mt-1">{formErrors.portfolio}</p>
+              )}
             </div>
           </div>
 

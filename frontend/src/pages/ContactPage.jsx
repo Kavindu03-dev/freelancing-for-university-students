@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function ContactPage() {
   const [formData, setFormData] = useState({
@@ -10,8 +10,89 @@ function ContactPage() {
     priority: 'normal'
   });
   
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+
+  // Validation functions
+  const validateName = (name) => {
+    if (!name.trim()) return "Name is required";
+    if (name.length < 2) return "Name must be at least 2 characters long";
+    if (name.length > 50) return "Name must be less than 50 characters";
+    if (!/^[a-zA-Z\s]+$/.test(name)) return "Name can only contain letters and spaces";
+    return "";
+  };
+
+  const validateEmail = (email) => {
+    if (!email.trim()) return "Email is required";
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    if (email.length > 254) return "Email address is too long";
+    if (email.includes('..') || email.includes('--')) return "Email address contains invalid characters";
+    return "";
+  };
+
+  const validateSubject = (subject) => {
+    if (!subject.trim()) return "Subject is required";
+    if (subject.length < 5) return "Subject must be at least 5 characters long";
+    if (subject.length > 100) return "Subject must be less than 100 characters";
+    return "";
+  };
+
+  const validateCategory = (category) => {
+    if (!category) return "Please select a category";
+    return "";
+  };
+
+  const validateMessage = (message) => {
+    if (!message.trim()) return "Message is required";
+    if (message.length < 10) return "Message must be at least 10 characters long";
+    if (message.length > 2000) return "Message must be less than 2000 characters";
+    return "";
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (touched.name) {
+      newErrors.name = validateName(formData.name);
+    }
+    
+    if (touched.email) {
+      newErrors.email = validateEmail(formData.email);
+    }
+    
+    if (touched.subject) {
+      newErrors.subject = validateSubject(formData.subject);
+    }
+    
+    if (touched.category) {
+      newErrors.category = validateCategory(formData.category);
+    }
+    
+    if (touched.message) {
+      newErrors.message = validateMessage(formData.message);
+    }
+    
+    setErrors(newErrors);
+  }, [formData, touched]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    newErrors.name = validateName(formData.name);
+    newErrors.email = validateEmail(formData.email);
+    newErrors.subject = validateSubject(formData.subject);
+    newErrors.category = validateCategory(formData.category);
+    newErrors.message = validateMessage(formData.message);
+    
+    setErrors(newErrors);
+    setTouched({ name: true, email: true, subject: true, category: true, message: true });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
 
   const categories = [
     'General Inquiry',
@@ -34,8 +115,19 @@ function ContactPage() {
     }));
   };
 
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setIsSubmitting(true);
     
     try {
@@ -50,6 +142,8 @@ function ContactPage() {
         message: '',
         priority: 'normal'
       });
+      setTouched({});
+      setErrors({});
     } catch (error) {
       setSubmitStatus('error');
     } finally {
@@ -188,12 +282,20 @@ function ContactPage() {
                       type="text"
                       id="name"
                       name="name"
+                      autoComplete="off"
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      onBlur={handleBlur}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        errors.name ? 'border-red-500' : touched.name && !errors.name ? 'border-green-500' : 'border-gray-300'
+                      }`}
                       placeholder="Your full name"
+                      maxLength={50}
                     />
+                    {touched.name && errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -204,12 +306,20 @@ function ContactPage() {
                       type="email"
                       id="email"
                       name="email"
+                      autoComplete="off"
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      onBlur={handleBlur}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        errors.email ? 'border-red-500' : touched.email && !errors.email ? 'border-green-500' : 'border-gray-300'
+                      }`}
                       placeholder="your@email.com"
+                      maxLength={254}
                     />
+                    {touched.email && errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    )}
                   </div>
                 </div>
 
@@ -224,13 +334,19 @@ function ContactPage() {
                       required
                       value={formData.category}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      onBlur={handleBlur}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        errors.category ? 'border-red-500' : touched.category && !errors.category ? 'border-green-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="">Select a category</option>
                       {categories.map((category) => (
                         <option key={category} value={category}>{category}</option>
                       ))}
                     </select>
+                    {touched.category && errors.category && (
+                      <p className="text-red-500 text-xs mt-1">{errors.category}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -260,12 +376,20 @@ function ContactPage() {
                     type="text"
                     id="subject"
                     name="subject"
+                    autoComplete="off"
                     required
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                      errors.subject ? 'border-red-500' : touched.subject && !errors.subject ? 'border-green-500' : 'border-gray-300'
+                    }`}
                     placeholder="Brief description of your inquiry"
+                    maxLength={100}
                   />
+                  {touched.subject && errors.subject && (
+                    <p className="text-red-500 text-xs mt-1">{errors.subject}</p>
+                  )}
                 </div>
 
                 <div>
@@ -279,16 +403,23 @@ function ContactPage() {
                     rows={6}
                     value={formData.message}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                    onBlur={handleBlur}
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none ${
+                      errors.message ? 'border-red-500' : touched.message && !errors.message ? 'border-green-500' : 'border-gray-300'
+                    }`}
                     placeholder="Please provide detailed information about your inquiry..."
+                    maxLength={2000}
                   />
+                  {touched.message && errors.message && (
+                    <p className="text-red-500 text-xs mt-1">{errors.message}</p>
+                  )}
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.category || !formData.message.trim()}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 ${
-                    isSubmitting
+                    isSubmitting || !formData.name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.category || !formData.message.trim()
                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                       : 'bg-yellow-500 hover:bg-yellow-400 text-black hover:shadow-lg transform hover:-translate-y-0.5'
                   }`}

@@ -67,13 +67,150 @@ const OnboardingWizard = ({ isOpen, onClose, onComplete, currentProfileData, pro
       }
     });
 
-    // Special validations
-    if (step === 2 && formData.gpa && (formData.gpa < 0 || formData.gpa > 4)) {
-      newErrors.gpa = 'GPA must be between 0 and 4';
+    // Step 1: Basic Information validations
+    if (step === 1) {
+      // First Name validation
+      if (formData.firstName && formData.firstName.trim()) {
+        if (formData.firstName.length < 2) {
+          newErrors.firstName = 'First name must be at least 2 characters long';
+        } else if (formData.firstName.length > 50) {
+          newErrors.firstName = 'First name must be less than 50 characters';
+        } else if (!/^[a-zA-Z\s]+$/.test(formData.firstName)) {
+          newErrors.firstName = 'First name can only contain letters and spaces';
+        }
+      }
+
+      // Last Name validation
+      if (formData.lastName && formData.lastName.trim()) {
+        if (formData.lastName.length < 2) {
+          newErrors.lastName = 'Last name must be at least 2 characters long';
+        } else if (formData.lastName.length > 50) {
+          newErrors.lastName = 'Last name must be less than 50 characters';
+        } else if (!/^[a-zA-Z\s]+$/.test(formData.lastName)) {
+          newErrors.lastName = 'Last name can only contain letters and spaces';
+        }
+      }
+
+      // Email validation
+      if (formData.email && formData.email.trim()) {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.email)) {
+          newErrors.email = 'Please enter a valid email address';
+        } else if (formData.email.length > 254) {
+          newErrors.email = 'Email address is too long';
+        }
+      }
+
+      // Phone Number validation
+      if (formData.phoneNumber && formData.phoneNumber.trim()) {
+        const phoneRegex = /^\+94\d{9}$/;
+        if (!phoneRegex.test(formData.phoneNumber)) {
+          newErrors.phoneNumber = 'Phone number must be in format +94XXXXXXXXX';
+        }
+      }
+
+      // Date of Birth validation
+      if (formData.dateOfBirth) {
+        const today = new Date();
+        const birthDate = new Date(formData.dateOfBirth);
+        const age = today.getFullYear() - birthDate.getFullYear();
+        if (age < 16 || age > 100) {
+          newErrors.dateOfBirth = 'Age must be between 16 and 100 years';
+        }
+      }
     }
 
-    if (step === 4 && formData.hourlyRate && formData.hourlyRate < 0) {
-      newErrors.hourlyRate = 'Hourly rate must be positive';
+    // Step 2: Academic Details validations
+    if (step === 2) {
+      // GPA validation
+      if (formData.gpa && (formData.gpa < 0 || formData.gpa > 4)) {
+        newErrors.gpa = 'GPA must be between 0 and 4';
+      }
+
+      // Graduation Year validation
+      if (formData.graduationYear) {
+        const currentYear = new Date().getFullYear();
+        const gradYear = parseInt(formData.graduationYear);
+        if (gradYear < currentYear - 10 || gradYear > currentYear + 10) {
+          newErrors.graduationYear = 'Graduation year must be within reasonable range';
+        }
+      }
+
+      // Degree Program validation
+      if (formData.degreeProgram && formData.degreeProgram.trim()) {
+        if (formData.degreeProgram.length < 3) {
+          newErrors.degreeProgram = 'Degree program must be at least 3 characters';
+        } else if (formData.degreeProgram.length > 100) {
+          newErrors.degreeProgram = 'Degree program must be less than 100 characters';
+        }
+      }
+
+      // University validation
+      if (formData.university && formData.university.trim()) {
+        if (formData.university.length < 3) {
+          newErrors.university = 'University name must be at least 3 characters';
+        } else if (formData.university.length > 100) {
+          newErrors.university = 'University name must be less than 100 characters';
+        }
+      }
+    }
+
+    // Step 3: Skills & Portfolio validations
+    if (step === 3) {
+      // Technical Skills validation
+      if (formData.technicalSkills && formData.technicalSkills.trim()) {
+        if (formData.technicalSkills.length < 5) {
+          newErrors.technicalSkills = 'Technical skills must be at least 5 characters';
+        } else if (formData.technicalSkills.length > 500) {
+          newErrors.technicalSkills = 'Technical skills must be less than 500 characters';
+        }
+      }
+
+      // Soft Skills validation
+      if (formData.softSkills && formData.softSkills.trim()) {
+        if (formData.softSkills.length < 5) {
+          newErrors.softSkills = 'Soft skills must be at least 5 characters';
+        } else if (formData.softSkills.length > 500) {
+          newErrors.softSkills = 'Soft skills must be less than 500 characters';
+        }
+      }
+
+      // Portfolio Projects validation
+      if (formData.portfolioProjects && formData.portfolioProjects.trim()) {
+        if (formData.portfolioProjects.length < 10) {
+          newErrors.portfolioProjects = 'Portfolio projects must be at least 10 characters';
+        } else if (formData.portfolioProjects.length > 1000) {
+          newErrors.portfolioProjects = 'Portfolio projects must be less than 1000 characters';
+        }
+      }
+    }
+
+    // Step 4: Preferences & Goals validations
+    if (step === 4) {
+      // Hourly Rate validation
+      if (formData.hourlyRate && formData.hourlyRate < 0) {
+        newErrors.hourlyRate = 'Hourly rate must be positive';
+      } else if (formData.hourlyRate && formData.hourlyRate > 1000) {
+        newErrors.hourlyRate = 'Hourly rate must be less than $1000';
+      }
+
+      // Career Goals validation
+      if (formData.careerGoals && formData.careerGoals.trim()) {
+        if (formData.careerGoals.length < 10) {
+          newErrors.careerGoals = 'Career goals must be at least 10 characters';
+        } else if (formData.careerGoals.length > 500) {
+          newErrors.careerGoals = 'Career goals must be less than 500 characters';
+        }
+      }
+
+      // Availability validation
+      if (formData.availability && formData.availability.trim()) {
+        if (formData.availability.length < 5) {
+          newErrors.availability = 'Availability must be at least 5 characters';
+        } else if (formData.availability.length > 200) {
+          newErrors.availability = 'Availability must be less than 200 characters';
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -112,12 +249,14 @@ const OnboardingWizard = ({ isOpen, onClose, onComplete, currentProfileData, pro
                 <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
                 <input
                   type="text"
+                  autoComplete="off"
                   value={formData.firstName || ''}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                     errors.firstName ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your first name"
+                  maxLength={50}
                 />
                 {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
               </div>
@@ -126,12 +265,14 @@ const OnboardingWizard = ({ isOpen, onClose, onComplete, currentProfileData, pro
                 <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
                 <input
                   type="text"
+                  autoComplete="off"
                   value={formData.lastName || ''}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                     errors.lastName ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="Enter your last name"
+                  maxLength={50}
                 />
                 {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
               </div>
@@ -141,12 +282,14 @@ const OnboardingWizard = ({ isOpen, onClose, onComplete, currentProfileData, pro
               <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
               <input
                 type="email"
+                autoComplete="off"
                 value={formData.email || ''}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter your email address"
+                maxLength={254}
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>

@@ -99,6 +99,121 @@ function ClientDashboard() {
     attachments: []
   });
 
+  const [formErrors, setFormErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // Validation functions
+  const validateTitle = (title) => {
+    if (!title.trim()) return "Title is required";
+    if (title.length < 5) return "Title must be at least 5 characters long";
+    if (title.length > 100) return "Title must be less than 100 characters";
+    return "";
+  };
+
+  const validateCategory = (category) => {
+    if (!category) return "Category is required";
+    return "";
+  };
+
+  const validateBudget = (budget) => {
+    if (!budget || budget <= 0) return "Valid budget is required";
+    if (budget > 10000) return "Budget must be less than $10,000";
+    return "";
+  };
+
+  const validateDeadline = (deadline) => {
+    if (!deadline) return "Deadline is required";
+    const selectedDate = new Date(deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) return "Deadline cannot be in the past";
+    return "";
+  };
+
+  const validateRequiredSkills = (skills) => {
+    if (!skills.trim()) return "Required skills are required";
+    if (skills.length < 3) return "Skills must be at least 3 characters";
+    if (skills.length > 200) return "Skills must be less than 200 characters";
+    return "";
+  };
+
+  const validateDegreeField = (degreeField) => {
+    if (!degreeField) return "Degree field is required";
+    return "";
+  };
+
+  const validateDescription = (description) => {
+    if (!description.trim()) return "Description is required";
+    if (description.length < 20) return "Description must be at least 20 characters long";
+    if (description.length > 2000) return "Description must be less than 2000 characters";
+    return "";
+  };
+
+  // Real-time validation
+  useEffect(() => {
+    const newErrors = {};
+    
+    if (touched.title) {
+      newErrors.title = validateTitle(postForm.title);
+    }
+    
+    if (touched.category) {
+      newErrors.category = validateCategory(postForm.category);
+    }
+    
+    if (touched.budget) {
+      newErrors.budget = validateBudget(postForm.budget);
+    }
+    
+    if (touched.deadline) {
+      newErrors.deadline = validateDeadline(postForm.deadline);
+    }
+    
+    if (touched.requiredSkills) {
+      newErrors.requiredSkills = validateRequiredSkills(postForm.requiredSkills);
+    }
+    
+    if (touched.degreeField) {
+      newErrors.degreeField = validateDegreeField(postForm.degreeField);
+    }
+    
+    if (touched.description) {
+      newErrors.description = validateDescription(postForm.description);
+    }
+    
+    setFormErrors(newErrors);
+  }, [postForm, touched]);
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    newErrors.title = validateTitle(postForm.title);
+    newErrors.category = validateCategory(postForm.category);
+    newErrors.budget = validateBudget(postForm.budget);
+    newErrors.deadline = validateDeadline(postForm.deadline);
+    newErrors.requiredSkills = validateRequiredSkills(postForm.requiredSkills);
+    newErrors.degreeField = validateDegreeField(postForm.degreeField);
+    newErrors.description = validateDescription(postForm.description);
+    
+    setFormErrors(newErrors);
+    setTouched({ title: true, category: true, budget: true, deadline: true, requiredSkills: true, degreeField: true, description: true });
+    
+    return !Object.values(newErrors).some(error => error !== "");
+  };
+
+  const handleInputChange = (field, value) => {
+    setPostForm(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error when user starts typing
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
   // Mock data for form options
   const postTypes = ["Job", "Project", "Internship", "Freelance"];
   const categories = ["Web Development", "Mobile Development", "Graphic Design", "Content Writing", "Data Analysis", "AI/ML"];
@@ -370,6 +485,8 @@ function ClientDashboard() {
   };
 
   const handleCreatePost = () => {
+    if (!validateForm()) return;
+    
     if (editingPost) {
       // Update existing post
       setJobPosts(prev => prev.map(post => 
@@ -400,6 +517,8 @@ function ClientDashboard() {
       description: "",
       attachments: []
     });
+    setFormErrors({});
+    setTouched({});
   };
 
   const handleEditPost = (post) => {
@@ -603,12 +722,20 @@ function ClientDashboard() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Post Title *</label>
             <input
               type="text"
+              autoComplete="off"
               required
               value={postForm.title}
-              onChange={(e) => setPostForm(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('title', e.target.value)}
+              onBlur={() => handleBlur('title')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.title ? 'border-red-500' : touched.title && !formErrors.title ? 'border-green-500' : 'border-gray-300'
+              }`}
               placeholder="Enter post title"
+              maxLength={100}
             />
+            {touched.title && formErrors.title && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+            )}
           </div>
 
           <div>
@@ -630,8 +757,11 @@ function ClientDashboard() {
             <select
               required
               value={postForm.category}
-              onChange={(e) => setPostForm(prev => ({ ...prev, category: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('category', e.target.value)}
+              onBlur={() => handleBlur('category')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.category ? 'border-red-500' : touched.category && !formErrors.category ? 'border-green-500' : 'border-gray-300'
+              }`}
             >
               <option value="">Select category</option>
               {categories.map(cat => (
@@ -646,10 +776,18 @@ function ClientDashboard() {
               type="number"
               required
               value={postForm.budget}
-              onChange={(e) => setPostForm(prev => ({ ...prev, budget: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('budget', e.target.value)}
+              onBlur={() => handleBlur('budget')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.budget ? 'border-red-500' : touched.budget && !formErrors.budget ? 'border-green-500' : 'border-gray-300'
+              }`}
               placeholder="Enter budget amount"
+              min="1"
+              max="10000"
             />
+            {touched.budget && formErrors.budget && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.budget}</p>
+            )}
           </div>
 
           <div>
@@ -658,9 +796,15 @@ function ClientDashboard() {
               type="date"
               required
               value={postForm.deadline}
-              onChange={(e) => setPostForm(prev => ({ ...prev, deadline: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('deadline', e.target.value)}
+              onBlur={() => handleBlur('deadline')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.deadline ? 'border-red-500' : touched.deadline && !formErrors.deadline ? 'border-green-500' : 'border-gray-300'
+              }`}
             />
+            {touched.deadline && formErrors.deadline && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.deadline}</p>
+            )}
           </div>
 
           <div>
@@ -681,12 +825,20 @@ function ClientDashboard() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Required Skills *</label>
             <input
               type="text"
+              autoComplete="off"
               required
               value={postForm.requiredSkills}
-              onChange={(e) => setPostForm(prev => ({ ...prev, requiredSkills: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('requiredSkills', e.target.value)}
+              onBlur={() => handleBlur('requiredSkills')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.requiredSkills ? 'border-red-500' : touched.requiredSkills && !formErrors.requiredSkills ? 'border-green-500' : 'border-gray-300'
+              }`}
               placeholder="e.g., React, Node.js, MongoDB"
+              maxLength={200}
             />
+            {touched.requiredSkills && formErrors.requiredSkills && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.requiredSkills}</p>
+            )}
           </div>
 
           <div>
@@ -694,8 +846,11 @@ function ClientDashboard() {
             <select
               required
               value={postForm.degreeField}
-              onChange={(e) => setPostForm(prev => ({ ...prev, degreeField: e.target.value }))}
-              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              onChange={(e) => handleInputChange('degreeField', e.target.value)}
+              onBlur={() => handleBlur('degreeField')}
+              className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                formErrors.degreeField ? 'border-red-500' : touched.degreeField && !formErrors.degreeField ? 'border-green-500' : 'border-gray-300'
+              }`}
             >
               <option value="">Select degree field</option>
               {degreeFields.map(field => (
@@ -711,10 +866,17 @@ function ClientDashboard() {
             required
             rows={4}
             value={postForm.description}
-            onChange={(e) => setPostForm(prev => ({ ...prev, description: e.target.value }))}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            onBlur={() => handleBlur('description')}
+            className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+              formErrors.description ? 'border-red-500' : touched.description && !formErrors.description ? 'border-green-500' : 'border-gray-300'
+            }`}
             placeholder="Describe the job/project requirements, responsibilities, and expectations"
+            maxLength={2000}
           />
+          {touched.description && formErrors.description && (
+            <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+          )}
         </div>
 
         <div>
