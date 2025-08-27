@@ -422,3 +422,33 @@ export const rejectPost = async (req, res) => {
     });
   }
 };
+
+// Delete a post permanently (admin only)
+export const adminDeletePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    
+    // Get admin info from the request (set by adminAuth middleware)
+    const adminId = req.admin._id;
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Perform hard delete
+    await Post.findByIdAndDelete(postId);
+
+    res.json({
+      success: true,
+      message: 'Post deleted permanently'
+    });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting post',
+      error: error.message
+    });
+  }
+};

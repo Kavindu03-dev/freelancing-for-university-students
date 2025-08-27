@@ -2,6 +2,262 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../utils/auth";
 
+// PDF Export functionality
+const exportToPDF = (analyticsData, filters) => {
+  // Create a new window for PDF generation
+  const printWindow = window.open('', '_blank');
+  
+  // Get current date and time
+  const now = new Date();
+  const dateString = now.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  const timeString = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  // Create the HTML content for the PDF
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Analytics Report - ${dateString}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          border-bottom: 2px solid #f59e0b;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+        }
+        .header h1 {
+          color: #1f2937;
+          margin: 0;
+          font-size: 28px;
+        }
+        .header p {
+          color: #6b7280;
+          margin: 5px 0;
+        }
+        .filters {
+          background: #f9fafb;
+          padding: 15px;
+          border-radius: 8px;
+          margin-bottom: 30px;
+        }
+        .filters h3 {
+          margin: 0 0 10px 0;
+          color: #374151;
+        }
+        .filter-item {
+          display: inline-block;
+          margin-right: 20px;
+          font-size: 14px;
+        }
+        .filter-label {
+          font-weight: bold;
+          color: #6b7280;
+        }
+        .summary-cards {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 20px;
+          margin-bottom: 30px;
+        }
+        .summary-card {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+          padding: 20px;
+          border-radius: 12px;
+          text-align: center;
+        }
+        .summary-card h3 {
+          margin: 0 0 10px 0;
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        .summary-card .number {
+          font-size: 32px;
+          font-weight: bold;
+          margin: 0;
+        }
+        .section {
+          margin-bottom: 40px;
+        }
+        .section h2 {
+          color: #1f2937;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+        }
+        .data-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 15px;
+        }
+        .data-table th,
+        .data-table td {
+          border: 1px solid #e5e7eb;
+          padding: 12px;
+          text-align: left;
+        }
+        .data-table th {
+          background: #f9fafb;
+          font-weight: bold;
+          color: #374151;
+        }
+        .data-table tr:nth-child(even) {
+          background: #f9fafb;
+        }
+        .footer {
+          margin-top: 40px;
+          text-align: center;
+          color: #6b7280;
+          font-size: 12px;
+          border-top: 1px solid #e5e7eb;
+          padding-top: 20px;
+        }
+        @media print {
+          body { margin: 0; }
+          .header { page-break-after: avoid; }
+          .section { page-break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Freelancing Platform Analytics Report</h1>
+        <p>Generated on ${dateString} at ${timeString}</p>
+        <p>Comprehensive insights and performance metrics</p>
+      </div>
+
+      <div class="filters">
+        <h3>Report Filters Applied:</h3>
+        <div class="filter-item">
+          <span class="filter-label">Date Range:</span> ${filters.dateRange} days
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">University:</span> ${filters.university === 'all' ? 'All Universities' : filters.university}
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">Faculty:</span> ${filters.faculty === 'all' ? 'All Faculties' : filters.faculty}
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">Category:</span> ${filters.category === 'all' ? 'All Categories' : filters.category}
+        </div>
+      </div>
+
+      <div class="summary-cards">
+        <div class="summary-card">
+          <h3>Total Universities</h3>
+          <p class="number">${analyticsData.universityStats.length}</p>
+        </div>
+        <div class="summary-card">
+          <h3>Total Faculties</h3>
+          <p class="number">${analyticsData.facultyStats.length}</p>
+        </div>
+        <div class="summary-card">
+          <h3>Total Categories</h3>
+          <p class="number">${analyticsData.categoryStats.length}</p>
+        </div>
+        <div class="summary-card">
+          <h3>Total Students</h3>
+          <p class="number">${analyticsData.universityStats.reduce((sum, uni) => sum + uni.studentCount, 0)}</p>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>University Statistics</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>University</th>
+              <th>Student Count</th>
+              <th>Success Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analyticsData.universityStats.map(uni => `
+              <tr>
+                <td>${uni.name}</td>
+                <td>${uni.studentCount}</td>
+                <td>${uni.successRate || 'N/A'}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Faculty Statistics</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Faculty</th>
+              <th>Student Count</th>
+              <th>Average Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analyticsData.facultyStats.map(faculty => `
+              <tr>
+                <td>${faculty.name}</td>
+                <td>${faculty.studentCount}</td>
+                <td>${faculty.averageRating || 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Category Statistics</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Average Budget</th>
+              <th>Completion Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${analyticsData.categoryStats.map(cat => `
+              <tr>
+                <td>${cat.name}</td>
+                <td>$${cat.averageBudget || 0}</td>
+                <td>${cat.completionRate || 'N/A'}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        <p>This report was automatically generated by the Freelancing Platform Analytics System.</p>
+        <p>For questions or support, please contact the platform administrators.</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Write the HTML content to the new window
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+
+  // Wait for content to load, then print
+  printWindow.onload = function() {
+    printWindow.print();
+    printWindow.close();
+  };
+};
+
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [adminUsername, setAdminUsername] = useState("");
@@ -10,6 +266,16 @@ function AdminDashboard() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
   const navigate = useNavigate();
+
+  // View service details function
+  const viewServiceDetails = (service) => {
+    if (service.type === 'gig') {
+      navigate(`/service/${service._id}`);
+    } else {
+      // For posts, we might need a different route or handle differently
+      navigate(`/service/${service._id}`);
+    }
+  };
 
   // Debug imports and functions
   console.log('🔍 AdminDashboard component initialized');
@@ -124,40 +390,177 @@ function AdminDashboard() {
     }
   };
 
-  // Approve a client post
+  // Approve a service (gig or post)
   const approveService = async (service) => {
     try {
-      // All services are client posts now
-      await approvePost(service._id);
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
       
-      // Remove from pending services list
-      setPendingServices(prev => prev.filter(s => s._id !== service._id));
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+
+      let response;
+      if (service.type === 'gig') {
+        // Approve gig
+        response = await fetch(`/api/services/${service._id}/status`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'approved' })
+        });
+      } else {
+        // Approve post
+        response = await fetch(`/api/posts/admin/${service._id}/approve`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+      
+      if (!response.ok) {
+        throw new Error('Failed to approve service');
+      }
+      
+      // Update the service status in the list
+      setPendingServices(prev => prev.map(s => 
+        s._id === service._id 
+          ? { ...s, status: 'approved' }
+          : s
+      ));
       
       // Show success message
-      alert('Post approved successfully!');
+      alert(`${service.type === 'gig' ? 'Gig' : 'Post'} approved successfully!`);
     } catch (err) {
-      console.error('Error approving post:', err);
-      alert('Failed to approve post: ' + err.message);
+      console.error('Error approving service:', err);
+      alert('Failed to approve service: ' + err.message);
     }
   };
 
-  // Reject a client post
+  // Reject a service (gig or post)
   const rejectService = async (service) => {
     try {
-      // All services are client posts now
-      const reason = prompt('Please provide a reason for rejection:');
-      if (reason) {
-        await rejectPost(service._id, reason);
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+
+      let response;
+      if (service.type === 'gig') {
+        response = await fetch(`/api/services/${service._id}/status`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'rejected' })
+        });
+      } else {
+        response = await fetch(`/api/posts/admin/${service._id}/reject`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ rejectionReason: 'Rejected by admin' })
+        });
       }
       
-      // Remove from pending services list
-      setPendingServices(prev => prev.filter(s => s._id !== service._id));
+      if (!response.ok) {
+        throw new Error('Failed to reject service');
+      }
+      
+      // Update the service status in the list
+      setPendingServices(prev => prev.map(s => 
+        s._id === service._id 
+          ? { ...s, status: 'rejected' }
+          : s
+      ));
+      
+      alert('Service rejected successfully!');
+    } catch (err) {
+      console.error('Error rejecting service:', err);
+      alert('Failed to reject service: ' + err.message);
+    }
+  };
+
+  // Delete a gig permanently
+  const deleteGig = async (gig) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+
+      // Confirm deletion
+      const confirmed = window.confirm(`Are you sure you want to permanently delete the gig "${gig.title}"? This action cannot be undone.`);
+      if (!confirmed) {
+        return; // User cancelled
+      }
+
+      const response = await fetch(`/api/services/${gig._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete gig');
+      }
+      
+      // Remove the gig from the list
+      setPendingServices(prev => prev.filter(s => s._id !== gig._id));
       
       // Show success message
-      alert('Post rejected successfully!');
+      alert('Gig deleted successfully!');
     } catch (err) {
-      console.error('Error rejecting post:', err);
-      alert('Failed to reject post: ' + err.message);
+      console.error('Error deleting gig:', err);
+      alert('Failed to delete gig: ' + err.message);
+    }
+  };
+
+  // Delete a post permanently
+  const deletePost = async (post) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+
+      // Confirm deletion
+      const confirmed = window.confirm(`Are you sure you want to permanently delete the post "${post.title}"? This action cannot be undone.`);
+      if (!confirmed) {
+        return; // User cancelled
+      }
+
+      const response = await fetch(`/api/posts/admin/${post._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete post');
+      }
+      
+      // Remove the post from the list
+      setPendingServices(prev => prev.filter(s => s._id !== post._id));
+      
+      // Show success message
+      alert('Post deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      alert('Failed to delete post: ' + err.message);
     }
   };
 
@@ -166,11 +569,10 @@ function AdminDashboard() {
     totalUsers: 0,
     totalFreelancers: 0,
     totalClients: 0,
-    totalProjects: 2341,
+    totalGigs: 0,
+    totalPosts: 0,
     totalRevenue: 45678,
     pendingApprovals: 23,
-    activeProjects: 156,
-    completedProjects: 2185,
     monthlyGrowth: 12.5,
     conversionRate: 8.3
   });
@@ -200,22 +602,16 @@ function AdminDashboard() {
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  const [recentProjects] = useState([
-    { id: 1, title: "Website Development", client: "Tech Corp", freelancer: "John Doe", status: "In Progress", budget: "$2500", progress: 75, category: "Web Development" },
-    { id: 2, title: "Logo Design", client: "Startup Inc", freelancer: "Jane Smith", status: "Completed", budget: "$500", progress: 100, category: "Design" },
-    { id: 3, title: "Content Writing", client: "Blog Media", freelancer: "Mike Johnson", status: "Pending", budget: "$300", progress: 0, category: "Writing" },
-    { id: 4, title: "Mobile App Development", client: "Innovate Labs", freelancer: "Alex Chen", status: "In Progress", budget: "$5000", progress: 45, category: "Mobile Development" },
-    { id: 5, title: "Digital Marketing Campaign", client: "Growth Co", freelancer: "Emily Rodriguez", status: "Completed", budget: "$1200", progress: 100, category: "Marketing" }
-  ]);
+
 
   // Fetch pending services and posts when component mounts
   useEffect(() => {
     fetchPendingPosts();
-    fetchPendingServices();
+    fetchAllServices();
   }, []);
 
-  // Fetch pending client posts only
-  const fetchPendingServices = async () => {
+  // Fetch all services (gigs and posts)
+  const fetchAllServices = async () => {
     try {
       setServicesLoading(true);
       setServicesError(null);
@@ -226,8 +622,8 @@ function AdminDashboard() {
         throw new Error('No authentication token found');
       }
       
-      // Fetch only pending client posts
-      const response = await fetch('/api/posts/admin/pending', {
+      // Fetch all services (gigs and posts)
+      const response = await fetch('/api/services', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
@@ -235,29 +631,39 @@ function AdminDashboard() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch pending posts');
+        throw new Error('Failed to fetch services');
       }
       
-      const postsData = await response.json();
-      const pendingPosts = postsData.posts || [];
+      const servicesData = await response.json();
+      const allServices = servicesData.data || [];
       
-      // Format posts for display
-      const formattedPosts = pendingPosts.map(post => ({
-        ...post,
-        type: 'job',
-        source: 'client',
-        price: post.budget,
-        freelancer: post.clientName,
-        category: post.category
+      // Format services for display
+      const formattedServices = allServices.map(service => ({
+        ...service,
+        price: service.price || service.budget,
+        freelancer: service.freelancerName || service.clientName,
+        category: service.category,
+        status: service.status || service.approvalStatus || 'active'
       }));
       
       // Sort by creation date
-      formattedPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setPendingServices(formattedPosts);
+      formattedServices.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setPendingServices(formattedServices);
+      
+      // Calculate gig and post counts
+      const gigs = formattedServices.filter(service => service.type === 'gig');
+      const posts = formattedServices.filter(service => service.type === 'post');
+      
+      // Update stats with gig and post counts
+      setStats(prevStats => ({
+        ...prevStats,
+        totalGigs: gigs.length,
+        totalPosts: posts.length
+      }));
       
     } catch (err) {
       setServicesError(err.message);
-      console.error('Error fetching pending posts:', err);
+      console.error('Error fetching services:', err);
     } finally {
       setServicesLoading(false);
     }
@@ -287,59 +693,12 @@ function AdminDashboard() {
   const [filteredFacultyStats, setFilteredFacultyStats] = useState([]);
   const [filteredCategoryStats, setFilteredCategoryStats] = useState([]);
 
-  // Skills management state
-  const [skills, setSkills] = useState([]);
-  const [showAddSkillModal, setShowAddSkillModal] = useState(false);
-  const [newSkill, setNewSkill] = useState({
-    name: '',
-    description: '',
-    category: '',
-    icon: '⚡',
-    avgPrice: 0,
-    popularity: 0
-  });
-  const [skillCategories] = useState([
-    'Programming & Tech',
-    'Design & Creative',
-    'Digital Marketing',
-    'Writing & Translation',
-    'Video & Animation',
-    'Music & Audio',
-    'Business & Consulting',
-    'Data & Analytics'
-  ]);
 
 
 
-  // Skills management functions
-  const fetchSkills = async () => {
-    try {
-      console.log('🔍 fetchSkills called');
-      const adminToken = localStorage.getItem('adminToken');
-      console.log('🔍 adminToken:', adminToken ? 'exists' : 'missing');
-      
-      const response = await fetch('http://localhost:5000/api/skills/admin/all', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-      
-      console.log('🔍 Response status:', response.status);
-      console.log('🔍 Response ok:', response.ok);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔍 Skills data received:', data);
-        setSkills(data.data || []);
-        console.log('🔍 Skills state updated with:', data.data || []);
-      } else {
-        const errorData = await response.json();
-        console.error('🔍 Error response:', errorData);
-      }
-    } catch (error) {
-      console.error('🔍 Error fetching skills:', error);
-    }
-  };
+
+
+
 
 
 
@@ -437,98 +796,7 @@ function AdminDashboard() {
     setShowUserDetailsModal(true);
   };
 
-  const handleAddSkill = async (e) => {
-    e.preventDefault();
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/skills', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
-        body: JSON.stringify(newSkill)
-      });
 
-      if (response.ok) {
-        setShowAddSkillModal(false);
-        setNewSkill({
-          name: '',
-          description: '',
-          category: '',
-          icon: '⚡',
-          avgPrice: 0,
-          popularity: 0
-        });
-        fetchSkills();
-      }
-    } catch (error) {
-      console.error('Error adding skill:', error);
-    }
-  };
-
-
-
-  const handleDeleteSkill = async (skillId) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/skills/${skillId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (response.ok) {
-        // Update local state to mark skill as inactive
-        setSkills(skills.map(skill => 
-          skill._id === skillId ? { ...skill, isActive: false } : skill
-        ));
-      }
-    } catch (error) {
-      console.error('Error deleting skill:', error);
-    }
-  };
-
-  const handleRestoreSkill = async (skillId) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/restore`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (response.ok) {
-        // Update local state to mark skill as active
-        setSkills(skills.map(skill => 
-          skill._id === skillId ? { ...skill, isActive: true } : skill
-        ));
-      }
-    } catch (error) {
-      console.error('Error restoring skill:', error);
-    }
-    };
-
-  const handlePermanentlyDeleteSkill = async (skillId) => {
-    try {
-      const adminToken = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/skills/${skillId}/permanent`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
-      });
-
-      if (response.ok) {
-        // Remove the skill completely from the local state
-        setSkills(skills.filter(skill => skill._id !== skillId));
-      }
-    } catch (error) {
-      console.error('Error permanently deleting skill:', error);
-    }
-    };
 
   // Analytics functions
   const fetchAnalytics = async () => {
@@ -646,6 +914,40 @@ function AdminDashboard() {
     }
   };
 
+  // Handle export report
+  const handleExportReport = () => {
+    try {
+      // Prepare analytics data for export
+      const analyticsData = {
+        universityStats: filteredUniversityStats.length > 0 ? filteredUniversityStats : universityStats,
+        facultyStats: filteredFacultyStats.length > 0 ? filteredFacultyStats : facultyStats,
+        categoryStats: filteredCategoryStats.length > 0 ? filteredCategoryStats : categoryStats
+      };
+
+      // Prepare filters data
+      const filters = {
+        dateRange: dateRange,
+        university: selectedUniversity,
+        faculty: selectedFaculty,
+        category: selectedCategory
+      };
+
+      // Check if we have data to export
+      if (analyticsData.universityStats.length === 0 && 
+          analyticsData.facultyStats.length === 0 && 
+          analyticsData.categoryStats.length === 0) {
+        alert('No data available to export. Please wait for analytics to load or adjust your filters.');
+        return;
+      }
+
+      // Export the report
+      exportToPDF(analyticsData, filters);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      alert('Failed to export report. Please try again.');
+    }
+  };
+
   useEffect(() => {
     console.log('🔍 useEffect triggered');
     // Check if admin is logged in of the admin dashboard
@@ -661,9 +963,8 @@ function AdminDashboard() {
       return;
     }
     
-    console.log('🔍 Admin is logged in, setting username and fetching skills');
+    console.log('🔍 Admin is logged in, setting username');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
-    fetchSkills(); // Fetch skills when component mounts
     
     fetchUsers(); // Fetch users when component mounts
     fetchAnalytics(); // Fetch analytics when component mounts
@@ -731,20 +1032,7 @@ function AdminDashboard() {
           <p className="text-gray-600">Total Users</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <div className="text-right">
-              <span className="text-blue-500 text-sm font-medium">{stats.activeProjects}</span>
-            </div>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.totalProjects.toLocaleString()}</h3>
-          <p className="text-gray-600">Total Projects</p>
-        </div>
+
 
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
           <div className="flex items-center justify-between mb-4">
@@ -778,7 +1066,7 @@ function AdminDashboard() {
       </div>
 
       {/* Additional Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
@@ -810,16 +1098,32 @@ function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Completed</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.completedProjects}</p>
+              <p className="text-sm font-medium text-gray-600">Total Gigs</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalGigs}</p>
             </div>
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
               </svg>
             </div>
           </div>
         </div>
+
+        <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Posts</p>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalPosts}</p>
+            </div>
+            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+
       </div>
 
       {/* Enhanced Recent Activity */}
@@ -892,43 +1196,82 @@ function AdminDashboard() {
           </div>
         </div>
 
+        {/* Recent Posts and Gigs Section */}
         <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Recent Projects</h3>
-            <button className="text-yellow-600 hover:text-yellow-700 font-medium">View All</button>
+            <h3 className="text-xl font-bold text-gray-900">Recent Posts and Gigs</h3>
+            <button 
+              onClick={() => setActiveTab('services')}
+              className="text-yellow-600 hover:text-yellow-700 font-medium"
+            >
+              View All
+            </button>
           </div>
           <div className="space-y-4">
-            {recentProjects.slice(0, 4).map(project => (
-              <div key={project.id} className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold text-gray-900">{project.title}</h4>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                    project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {project.status}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 mb-3">{project.client} → {project.freelancer}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium text-gray-900">{project.budget}</span>
-                    <span className="text-xs text-gray-500">•</span>
-                    <span className="text-xs text-gray-500">{project.category}</span>
-                  </div>
-                  {project.status === 'In Progress' && (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${project.progress}%` }}></div>
-                      </div>
-                      <span className="text-xs text-gray-500">{project.progress}%</span>
-                    </div>
-                  )}
-                </div>
+            {pendingServices.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                </svg>
+                <p className="text-sm">No posts or gigs found</p>
               </div>
-            ))}
+            ) : (
+              pendingServices.slice(0, 4).map(service => (
+                <div key={service._id} className="flex items-center space-x-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-100 hover:border-yellow-200 transition-all duration-200">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
+                    service.type === 'gig' 
+                      ? 'bg-gradient-to-br from-blue-400 to-blue-500' 
+                      : 'bg-gradient-to-br from-green-400 to-green-500'
+                  }`}>
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {service.type === 'gig' ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      )}
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 line-clamp-1">
+                      {service.title}
+                    </p>
+                    <p className="text-sm text-gray-600 line-clamp-1">{service.description}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        service.type === 'gig' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {service.type === 'gig' ? 'Gig' : 'Post'}
+                      </span>
+                      <span className="text-xs text-gray-500">•</span>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        service.status === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-800' 
+                          : service.status === 'approved' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {service.status === 'pending' ? 'Pending' : 
+                         service.status === 'approved' ? 'Approved' : 'Rejected'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">
+                      {new Date(service.createdAt).toLocaleDateString()}
+                    </p>
+                    <p className="text-sm font-medium text-gray-900">
+                      ${service.price || service.budget}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
+
+
       </div>
     </div>
   );
@@ -1296,172 +1639,36 @@ function AdminDashboard() {
     </div>
   );
 
-  const renderProjects = () => (
-    <div className="space-y-6">
-      {/* Project Management Header */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Project Management</h3>
-            <p className="text-gray-600 mt-1">Monitor all projects, track progress, and manage disputes</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {recentProjects.filter(p => p.status === 'In Progress').length} Active
-            </span>
-            <span className="bg-gradient-to-r from-green-400 to-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {recentProjects.filter(p => p.status === 'Completed').length} Completed
-            </span>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Add Project
-            </button>
-          </div>
-        </div>
 
-        {/* Project Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="disputed">Disputed</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Categories</option>
-            <option value="web-development">Web Development</option>
-            <option value="design">Design</option>
-            <option value="writing">Writing</option>
-            <option value="marketing">Marketing</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Budgets</option>
-            <option value="0-500">$0 - $500</option>
-            <option value="500-1000">$500 - $1000</option>
-            <option value="1000+">$1000+</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Search projects..."
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          />
-        </div>
 
-        {/* Enhanced Project Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Freelancer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {recentProjects.map(project => (
-                <tr key={project.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{project.title}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{project.client}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{project.freelancer}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{project.budget}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{project.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                      project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {project.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {project.status === 'In Progress' ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${project.progress}%` }}></div>
-                        </div>
-                        <span className="text-xs text-gray-500">{project.progress}%</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-500">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className="text-yellow-600 hover:text-yellow-900 px-2 py-1 rounded hover:bg-yellow-50">View</button>
-                      <button className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50">Edit</button>
-                      <button className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  const renderServices = () => {
+    // Separate gigs and posts
+    const gigs = pendingServices.filter(service => service.type === 'gig');
+    const posts = pendingServices.filter(service => service.type === 'job');
 
-      {/* Project Monitoring Tools */}
-      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Project Monitoring & Dispute Resolution</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Monitoring Tools</h4>
-            <div className="space-y-3">
-              <button className="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Monitor All Active Projects
-              </button>
-              <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Review Disputed Projects
-              </button>
-              <button className="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300">
-                Generate Progress Reports
-              </button>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Automated Alerts</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Alert on project delays</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Notify on disputes</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" />
-                <span className="text-sm text-gray-700">Track milestone completions</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderServices = () => (
+    return (
+      <div className="space-y-8">
+        {/* Header */}
     <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-      <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Client Post Approvals</h3>
-          <p className="text-gray-600 mt-1">Review and approve new client job post submissions</p>
+              <h3 className="text-2xl font-bold text-gray-900">Services Management</h3>
+              <p className="text-gray-600 mt-1">Manage freelancer gigs and client job posts</p>
         </div>
         <div className="flex items-center space-x-4">
+              <div className="flex space-x-2">
+                <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
+                  {gigs.length} Gigs
+                </span>
           <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-            {pendingServices.length} Pending
+                  {posts.length} Posts
           </span>
+              </div>
           <button 
-            onClick={fetchPendingServices}
+                onClick={fetchAllServices}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
           >
-            Refresh Posts
+                Refresh All
           </button>
         </div>
       </div>
@@ -1470,7 +1677,7 @@ function AdminDashboard() {
       {servicesLoading && (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading pending client posts...</p>
+              <p className="text-gray-600">Loading all services...</p>
         </div>
       )}
 
@@ -1479,232 +1686,186 @@ function AdminDashboard() {
           <p className="text-red-800">Error: {servicesError}</p>
         </div>
       )}
-      
-      <div className="space-y-6">
-        {!servicesLoading && !servicesError && pendingServices.map(service => (
-          <div key={service._id || service.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+        </div>
+
+        {/* Freelancer Gigs Section */}
+        <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-blue-200 hover:border-blue-400">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
                     </svg>
                   </div>
                   <div>
-                    <h4 className="text-xl font-bold text-gray-900">{service.title}</h4>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-yellow-600 font-medium">${service.price || service.budget}</p>
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        Client Job
-                      </span>
+                <h4 className="text-xl font-bold text-gray-900">Freelancer Gigs</h4>
+                <p className="text-gray-600 text-sm">Services offered by freelancers</p>
                     </div>
                   </div>
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              {gigs.filter(gig => gig.status === 'pending').length} Pending
+            </span>
                 </div>
-                <p className="text-gray-600 mb-4 leading-relaxed">{service.description}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="text-gray-600">By: <span className="font-medium">{service.freelancer || service.clientName}</span></span>
+
+          <div className="space-y-4">
+            {!servicesLoading && !servicesError && gigs.length > 0 ? (
+              gigs.map(gig => (
+                <div key={gig._id} className="bg-gradient-to-r from-blue-50 to-white rounded-xl p-4 border border-blue-200 hover:border-blue-300 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h5 className="text-lg font-semibold text-gray-900">{gig.title}</h5>
+                        <span className="text-blue-600 font-medium">${gig.price}</span>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          gig.status === 'pending' 
+                            ? 'bg-orange-100 text-orange-800' 
+                            : gig.status === 'approved' || gig.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {gig.status === 'pending' ? 'Pending' : 
+                           gig.status === 'approved' || gig.status === 'active' ? 'Active' : 
+                           gig.status === 'rejected' ? 'Rejected' : gig.status}
+                        </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    <span className="text-gray-600">Category: <span className="font-medium">{service.category}</span></span>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">{gig.description}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>By: {gig.freelancer}</span>
+                        <span>Category: {gig.category}</span>
+                        <span>Posted: {new Date(gig.createdAt).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                    </svg>
-                    <span className="text-gray-600">Price: <span className="font-medium">${service.price || service.budget}</span></span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-gray-600">Posted: <span className="font-medium">{new Date(service.createdAt).toLocaleDateString()}</span></span>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex space-x-4">
+                  <div className="flex space-x-2">
+                    {gig.status === 'pending' && (
               <button 
-                onClick={() => approveService(service)}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                        onClick={() => deleteGig(gig)}
+                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>Approve</span>
+                        Delete
               </button>
+                    )}
               <button 
-                onClick={() => rejectService(service)}
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span>Reject</span>
-              </button>
-              <button className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <span>View Details</span>
+                      onClick={() => viewServiceDetails(gig)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                    >
+                      View Details
               </button>
             </div>
           </div>
-        ))}
-        
-        {!servicesLoading && !servicesError && pendingServices.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              ))
+            ) : !servicesLoading && !servicesError && gigs.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">All caught up!</h3>
-            <p className="text-gray-600 max-w-md mx-auto">No pending client posts to review. All submissions have been processed.</p>
+                <h5 className="text-lg font-semibold text-gray-900 mb-2">No gigs available</h5>
+                <p className="text-gray-600 text-sm">No freelancer gigs have been created yet.</p>
           </div>
-        )}
+            ) : null}
       </div>
     </div>
-  );
 
-  const renderSkills = () => {
-    console.log('🔍 renderSkills called with skills:', skills);
-    return (
-    <div className="space-y-8">
-      {/* Skills Management Header */}
+        {/* Client Posts Section */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Skills Management</h3>
-            <p className="text-gray-600 mt-1">Manage platform skills and categories</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {skills.filter(s => s.isActive).length} Active / {skills.length} Total
-            </span>
-            <button 
-              onClick={() => setShowAddSkillModal(true)}
-              className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
               </svg>
-              <span>Add Skill</span>
-            </button>
           </div>
-        </div>
-
-        {/* Skills Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Skill</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Category</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Popularity</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Avg Price</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {skills.map(skill => (
-                <tr key={skill._id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
-                  !skill.isActive ? 'bg-gray-100 opacity-75' : ''
-                }`}>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{skill.icon}</span>
                       <div>
-                        <div className="font-medium text-gray-900">{skill.name}</div>
-                        <div className="text-sm text-gray-500">{skill.description}</div>
+                <h4 className="text-xl font-bold text-gray-900">Client Job Posts</h4>
+                <p className="text-gray-600 text-sm">Job opportunities posted by clients</p>
                       </div>
                     </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {skill.category}
+            <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+              {posts.filter(post => post.status === 'pending').length} Pending
                     </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-yellow-500 h-2 rounded-full" 
-                          style={{ width: `${Math.min(skill.popularity, 100)}%` }}
-                        ></div>
                       </div>
-                      <span className="text-sm text-gray-600">{skill.popularity}%</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="font-medium text-gray-900">${skill.avgPrice}</span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      skill.isActive 
+
+          <div className="space-y-4">
+            {!servicesLoading && !servicesError && posts.length > 0 ? (
+              posts.map(post => (
+                <div key={post._id} className="bg-gradient-to-r from-yellow-50 to-white rounded-xl p-4 border border-yellow-200 hover:border-yellow-300 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h5 className="text-lg font-semibold text-gray-900">{post.title}</h5>
+                        <span className="text-yellow-600 font-medium">${post.budget}</span>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          post.status === 'pending' 
+                            ? 'bg-orange-100 text-orange-800' 
+                            : post.status === 'approved' || post.status === 'active'
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {skill.isActive ? 'Active' : 'Inactive'}
+                          {post.status === 'pending' ? 'Pending' : 
+                           post.status === 'approved' || post.status === 'active' ? 'Active' : 
+                           post.status === 'rejected' ? 'Rejected' : post.status}
                     </span>
-                  </td>
-                  <td className="py-4 px-4">
+                      </div>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">{post.description}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <span>By: {post.clientName}</span>
+                        <span>Category: {post.category}</span>
+                        <span>Posted: {new Date(post.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
                     <div className="flex space-x-2">
-                      {skill.isActive ? (
-                        <button
-                          onClick={() => handleDeleteSkill(skill._id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          Delete
-                        </button>
-                      ) : (
+                    {post.status === 'pending' && (
                         <>
                           <button
-                            onClick={() => handleRestoreSkill(skill._id)}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          onClick={() => approveService(post)}
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
                           >
-                            Restore
+                          Approve
                           </button>
                           <button
-                            onClick={() => handlePermanentlyDeleteSkill(skill._id)}
-                            className="text-red-800 hover:text-red-900 text-sm font-medium"
+                          onClick={() => rejectService(post)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
                           >
-                            Permanent Delete
+                          Reject
                           </button>
                         </>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {skills.length === 0 && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      <button
+                        onClick={() => deletePost(post)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                      >
+                        Delete
+                      </button>
+          <button
+                      onClick={() => viewServiceDetails(post)}
+                      className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+          >
+                      View Details
+          </button>
+        </div>
+              </div>
+              ))
+            ) : !servicesLoading && !servicesError && posts.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No skills yet</h3>
-              <p className="text-gray-600 max-w-md mx-auto">Start by adding the first skill to your platform.</p>
+                <h5 className="text-lg font-semibold text-gray-900 mb-2">No job posts available</h5>
+                <p className="text-gray-600 text-sm">No client job posts have been created yet.</p>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+            ) : null}
+          </div>
+              </div>
+              </div>
+    );
   };
+
+
 
 
 
@@ -1728,8 +1889,14 @@ function AdminDashboard() {
               <option value="90">Last 90 days</option>
               <option value="365">Last year</option>
             </select>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Export Report
+            <button 
+              onClick={() => handleExportReport()}
+              className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Export Report</span>
             </button>
           </div>
         </div>
@@ -1897,7 +2064,6 @@ function AdminDashboard() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Active Users</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
               </tr>
@@ -1909,7 +2075,6 @@ function AdminDashboard() {
                     <div className="text-sm font-medium text-gray-900">{uni.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{uni.users.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{uni.projects.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${uni.revenue.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -1975,7 +2140,6 @@ function AdminDashboard() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Faculty</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth</th>
               </tr>
@@ -1987,7 +2151,6 @@ function AdminDashboard() {
                     <div className="text-sm font-medium text-gray-900">{faculty.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{faculty.users.toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{faculty.projects.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${faculty.revenue.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -2053,7 +2216,6 @@ function AdminDashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Budget</th>
@@ -2065,7 +2227,6 @@ function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{cat.name}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{cat.projects.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${cat.revenue.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -2123,10 +2284,7 @@ function AdminDashboard() {
               {[
                 { id: "overview", name: "Overview", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" },
                 { id: "users", name: "Users", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" },
-                { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
-                { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
-
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }
               ].map(tab => (
@@ -2170,132 +2328,14 @@ function AdminDashboard() {
           <div className="max-w-7xl mx-auto">
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
-            {activeTab === "projects" && renderProjects()}
             {activeTab === "services" && renderServices()}
-            {activeTab === "skills" && renderSkills()}
-
             {activeTab === "posts" && renderPostsApproval()}
             {activeTab === "analytics" && renderAnalytics()}
           </div>
         </div>
       </div>
 
-      {/* Skills Modal */}
-      {showAddSkillModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Add New Skill</h3>
-              <button
-                onClick={() => setShowAddSkillModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
 
-            <form onSubmit={handleAddSkill} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Skill Name</label>
-                <input
-                  type="text"
-                  value={newSkill.name}
-                  onChange={(e) => setNewSkill({...newSkill, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="e.g., React Development"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={newSkill.description}
-                  onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="Describe the skill..."
-                  rows="3"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                <select
-                  value={newSkill.category}
-                  onChange={(e) => setNewSkill({...newSkill, category: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  required
-                >
-                  <option value="">Select a category</option>
-                  {skillCategories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
-                <input
-                  type="text"
-                  value={newSkill.icon}
-                  onChange={(e) => setNewSkill({...newSkill, icon: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                  placeholder="⚡"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Average Price ($)</label>
-                  <input
-                    type="number"
-                    value={newSkill.avgPrice}
-                    onChange={(e) => setNewSkill({...newSkill, avgPrice: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    placeholder="0"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Popularity (%)</label>
-                  <input
-                    type="number"
-                    value={newSkill.popularity}
-                    onChange={(e) => setNewSkill({...newSkill, popularity: parseInt(e.target.value) || 0})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex space-x-4 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                >
-                  Add Skill
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddSkillModal(false)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
 
 
