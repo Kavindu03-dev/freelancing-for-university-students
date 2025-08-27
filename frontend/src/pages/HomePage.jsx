@@ -149,12 +149,7 @@ function HomePage() {
               </Link>
             </div>
             
-            {/* Admin Access Link */}
-            <div className="mt-6 text-center">
-              <Link to="/admin/login" className="text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors duration-300">
-                Admin Access
-              </Link>
-            </div>
+
           </div>
         </div>
       </section>
