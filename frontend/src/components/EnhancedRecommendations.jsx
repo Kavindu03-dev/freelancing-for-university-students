@@ -5,7 +5,10 @@ const EnhancedRecommendations = ({
   studentData, 
   profileCompleteness, 
   onApply, 
-  onBookmark 
+  onBookmark,
+  loading = false,
+  error = null,
+  onRetry = null
 }) => {
   const [recommendations, setRecommendations] = useState([]);
   const [filteredRecommendations, setFilteredRecommendations] = useState([]);
@@ -405,7 +408,9 @@ const EnhancedRecommendations = ({
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">AI-Powered Job Recommendations</h2>
-          <p className="text-gray-600">Personalized opportunities based on your skills and preferences</p>
+          <p className="text-gray-600">
+            {loading ? 'Loading opportunities from database...' : 'Personalized opportunities based on your skills and preferences'}
+          </p>
         </div>
         
         <div className="text-right">
@@ -415,7 +420,7 @@ const EnhancedRecommendations = ({
       </div>
 
       {/* Filters and Sorting */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className={`bg-white rounded-xl shadow-lg border border-gray-200 p-6 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Min Score</label>
@@ -507,7 +512,29 @@ const EnhancedRecommendations = ({
       </div>
 
       {/* Recommendations Grid */}
-      {filteredRecommendations.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading opportunities...</h3>
+          <p className="text-gray-600">Fetching the latest job posts from clients</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading opportunities</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Try Again
+            </button>
+          )}
+        </div>
+      ) : filteredRecommendations.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredRecommendations.map(renderRecommendationCard)}
         </div>
