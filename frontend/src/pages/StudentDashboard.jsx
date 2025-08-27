@@ -83,111 +83,62 @@ function StudentDashboard() {
     { name: "UI/UX Design", level: "Intermediate", projects: 2 }
   ]);
 
-  // Mock data for available opportunities
-  const [availableOpportunities] = useState([
-    {
-      id: 1,
-      title: "Website Redesign for E-commerce",
-      client: "Tech Corp",
-      type: "Project",
-      category: "Web Development",
-      budget: 800,
-      deadline: "2024-02-15",
-      location: "Remote",
-      requiredSkills: ["React", "Node.js", "MongoDB"],
-      degreeField: "Computer Science",
-      description: "Redesign an existing e-commerce website with modern UI/UX",
-      postedDate: "2024-01-15",
-      tags: ["web development", "e-commerce", "UI/UX", "frontend"],
-      degreeRelevance: 95,
-      isBookmarked: false
-    },
-    {
-      id: 2,
-      title: "Logo Design for Startup",
-      client: "Startup Inc",
-      type: "Project",
-      category: "Graphic Design",
-      budget: 300,
-      deadline: "2024-01-30",
-      location: "Remote",
-      requiredSkills: ["Adobe Illustrator", "Logo Design"],
-      degreeField: "Graphic Design",
-      description: "Create a modern logo for a tech startup",
-      postedDate: "2024-01-10",
-      tags: ["graphic design", "logo", "branding", "creative"],
-      degreeRelevance: 85,
-      isBookmarked: true
-    },
-    {
-      id: 3,
-      title: "Data Analysis Internship",
-      client: "Research Corp",
-      type: "Internship",
-      category: "Data Analysis",
-      budget: 500,
-      deadline: "2024-03-01",
-      location: "Hybrid",
-      requiredSkills: ["Python", "Pandas", "SQL"],
-      degreeField: "Computer Science",
-      description: "Analyze customer data and create insights reports",
-      postedDate: "2024-01-12",
-      tags: ["data analysis", "python", "research", "analytics"],
-      degreeRelevance: 90,
-      isBookmarked: false
-    },
-    {
-      id: 4,
-      title: "Content Writing for Tech Blog",
-      client: "Tech Media",
-      type: "Freelance",
-      category: "Content Writing",
-      budget: 150,
-      deadline: "2024-02-20",
-      location: "Remote",
-      requiredSkills: ["Content Writing", "SEO", "Technical Writing"],
-      degreeField: "Communications",
-      description: "Write engaging technical articles for a popular tech blog",
-      postedDate: "2024-01-18",
-      tags: ["content writing", "tech", "SEO", "blogging"],
-      degreeRelevance: 70,
-      isBookmarked: false
-    },
-    {
-      id: 5,
-      title: "Mobile App UI/UX Design",
-      client: "App Studio",
-      type: "Project",
-      category: "UI/UX Design",
-      budget: 1200,
-      deadline: "2024-03-15",
-      location: "Remote",
-      requiredSkills: ["Figma", "UI/UX Design", "Mobile Design"],
-      degreeField: "Design",
-      description: "Design user interface and experience for a mobile fitness app",
-      postedDate: "2024-01-20",
-      tags: ["UI/UX", "mobile", "design", "fitness"],
-      degreeRelevance: 80,
-      isBookmarked: false
-    },
-    {
-      id: 6,
-      title: "Part-time Marketing Assistant",
-      client: "Growth Marketing",
-      type: "Part-time Job",
-      category: "Marketing",
-      budget: 25,
-      deadline: "2024-02-28",
-      location: "On-site",
-      requiredSkills: ["Marketing", "Social Media", "Analytics"],
-      degreeField: "Business",
-      description: "Assist with social media marketing and campaign analytics",
-      postedDate: "2024-01-22",
-      tags: ["marketing", "social media", "analytics", "part-time"],
-      degreeRelevance: 75,
-      isBookmarked: true
+  // Posts from database
+  const [availableOpportunities, setAvailableOpportunities] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState(null);
+
+  // Function to fetch posts from database
+  const fetchPosts = async () => {
+    try {
+      setPostsLoading(true);
+      setPostsError(null);
+      
+      const response = await fetch('http://localhost:5000/api/posts', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.posts) {
+          // Transform posts to match the expected format
+          const transformedPosts = data.posts.map(post => ({
+            id: post._id,
+            title: post.title,
+            client: post.clientName,
+            type: post.type,
+            category: post.category,
+            budget: post.budget,
+            deadline: post.deadline,
+            location: post.location,
+            requiredSkills: post.requiredSkills || [],
+            degreeField: post.degreeField,
+            description: post.description,
+            postedDate: post.createdAt,
+            tags: [post.category, post.type, ...(post.requiredSkills || [])],
+            degreeRelevance: 85, // Default relevance score
+            isBookmarked: false,
+            clientOrganization: post.clientOrganization,
+            status: post.status,
+            applications: post.applications
+          }));
+          setAvailableOpportunities(transformedPosts);
+        } else {
+          setPostsError('Failed to fetch posts');
+        }
+      } else {
+        setPostsError('Failed to fetch posts');
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      setPostsError('Error fetching posts');
+    } finally {
+      setPostsLoading(false);
     }
-  ]);
+  };
 
   // Filter and search state
   const [filters, setFilters] = useState({
@@ -1093,6 +1044,11 @@ function StudentDashboard() {
     }
   }, [studentData]);
 
+  // Fetch posts when component mounts
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
@@ -1281,19 +1237,36 @@ function StudentDashboard() {
       </div>
 
       {/* Top Recommendations */}
-      {recommendations && Array.isArray(recommendations) && recommendations.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Top Recommendations</h3>
+      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">Top Recommendations</h3>
+          <button
+            onClick={() => setActiveTab("recommendations")}
+            className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            View All →
+          </button>
+        </div>
+        
+        {postsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading recommendations...</p>
+          </div>
+        ) : postsError ? (
+          <div className="text-center py-8">
+            <div className="text-red-500 mb-4">⚠️</div>
+            <p className="text-gray-600 mb-4">{postsError}</p>
             <button
-              onClick={() => setActiveTab("recommendations")}
-              className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
+              onClick={fetchPosts}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              View All →
+              Try Again
             </button>
           </div>
+        ) : recommendations && Array.isArray(recommendations) && recommendations.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recommendations && Array.isArray(recommendations) ? recommendations.slice(0, 3).map(opportunity => (
+            {recommendations.slice(0, 3).map(opportunity => (
               <div key={opportunity.id} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors duration-300">
                 <div className="flex justify-between items-start mb-2">
                   <span className={`px-2 py-1 text-xs rounded-full ${
@@ -1313,14 +1286,15 @@ function StudentDashboard() {
                   <span className="text-gray-500">{opportunity.skillMatchCount}/{opportunity.totalSkills} skills</span>
                 </div>
               </div>
-            )) : (
-              <div className="col-span-full text-center py-8 text-gray-500">
-                <p>No recommendations available</p>
-              </div>
-            )}
+            ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No recommendations available</p>
+            <p className="text-sm mt-2">Complete your profile to get personalized recommendations</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -3123,6 +3097,9 @@ function StudentDashboard() {
                 profileCompleteness={profileCompleteness}
                 onApply={handleApply}
                 onBookmark={toggleBookmark}
+                loading={postsLoading}
+                error={postsError}
+                onRetry={fetchPosts}
               />
             )}
             {activeTab === "opportunities" && renderBrowseOpportunities()}
