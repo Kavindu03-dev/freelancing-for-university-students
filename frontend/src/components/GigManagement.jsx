@@ -13,38 +13,50 @@ const GigManagement = ({ user }) => {
     title: '',
     description: '',
     category: '',
-    price: '',
-    duration: '',
     skills: '',
-    portfolio: ''
+    portfolio: '',
+    packages: {
+      basic: {
+        name: 'Basic',
+        price: '',
+        description: '',
+        features: [''],
+        deliveryTime: '',
+        revisions: 1
+      },
+      standard: {
+        name: 'Standard',
+        price: '',
+        description: '',
+        features: [''],
+        deliveryTime: '',
+        revisions: 2
+      },
+      premium: {
+        name: 'Premium',
+        price: '',
+        description: '',
+        features: [''],
+        deliveryTime: '',
+        revisions: 3
+      }
+    }
   });
 
   const [selectedImages, setSelectedImages] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
-
   const [formErrors, setFormErrors] = useState({});
+  const [activeStep, setActiveStep] = useState(1);
 
   // Function to get user ID from JWT token
   const getUserIdFromToken = () => {
     try {
       const token = localStorage.getItem('userToken');
-      if (!token) {
-        console.log('No token found in localStorage');
-        return null;
-      }
+      if (!token) return null;
       
-      console.log('Token structure:', token);
-      console.log('Token parts:', token.split('.'));
-      
-      // Decode JWT token (payload is the second part)
       const payload = token.split('.')[1];
-      console.log('Token payload (base64):', payload);
-      
       const decoded = JSON.parse(atob(payload));
-      console.log('Decoded token payload:', decoded);
-      console.log('User ID from token:', decoded.id);
-      
       return decoded.id;
     } catch (error) {
       console.error('Error decoding token:', error);
@@ -77,12 +89,6 @@ const GigManagement = ({ user }) => {
       const token = localStorage.getItem('userToken');
       const userId = getUserIdFromToken();
       
-      console.log('=== User ID Comparison ===');
-      console.log('User ID from JWT token:', userId);
-      console.log('User ID from localStorage (user._id):', user?._id);
-      console.log('Are they the same?', userId === user?._id);
-      console.log('Token:', token);
-      
       if (!userId) {
         setError('Unable to get user ID from token');
         return;
@@ -93,16 +99,11 @@ const GigManagement = ({ user }) => {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('Fetch response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched gigs:', data);
         setGigs(data.data || []);
       } else {
-        const errorData = await response.json();
-        console.log('Fetch error:', errorData);
         setError('Failed to fetch gigs');
       }
     } catch (error) {
@@ -120,13 +121,66 @@ const GigManagement = ({ user }) => {
       [name]: value
     }));
     
-    // Clear error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+  };
+
+  const handlePackageChange = (packageType, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      packages: {
+        ...prev.packages,
+        [packageType]: {
+          ...prev.packages[packageType],
+          [field]: value
+        }
+      }
+    }));
+  };
+
+  const handleFeatureChange = (packageType, index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      packages: {
+        ...prev.packages,
+        [packageType]: {
+          ...prev.packages[packageType],
+          features: prev.packages[packageType].features.map((feature, i) => 
+            i === index ? value : feature
+          )
+        }
+      }
+    }));
+  };
+
+  const addFeature = (packageType) => {
+    setFormData(prev => ({
+      ...prev,
+      packages: {
+        ...prev.packages,
+        [packageType]: {
+          ...prev.packages[packageType],
+          features: [...prev.packages[packageType].features, '']
+        }
+      }
+    }));
+  };
+
+  const removeFeature = (packageType, index) => {
+    setFormData(prev => ({
+      ...prev,
+      packages: {
+        ...prev.packages,
+        [packageType]: {
+          ...prev.packages[packageType],
+          features: prev.packages[packageType].features.filter((_, i) => i !== index)
+        }
+      }
+    }));
   };
 
   const handleImageSelect = (e) => {
@@ -181,22 +235,23 @@ const GigManagement = ({ user }) => {
   const validateForm = () => {
     const errors = {};
     
-    console.log('=== VALIDATION DEBUG ===');
-    console.log('Title:', formData.title, 'Valid:', !!formData.title?.trim());
-    console.log('Description:', formData.description, 'Valid:', !!formData.description?.trim());
-    console.log('Category:', formData.category, 'Valid:', !!formData.category);
-    console.log('Price:', formData.price, 'Valid:', !!(formData.price && Number(formData.price) > 0));
-    console.log('Duration:', formData.duration, 'Valid:', !!formData.duration);
-    console.log('Skills:', formData.skills, 'Valid:', !!formData.skills?.trim());
-    
     if (!formData.title?.trim()) errors.title = 'Title is required';
     if (!formData.description?.trim()) errors.description = 'Description is required';
     if (!formData.category) errors.category = 'Category is required';
-    if (!formData.price || Number(formData.price) <= 0) errors.price = 'Valid price is required';
-    if (!formData.duration || formData.duration.toString().trim() === '') errors.duration = 'Duration is required';
     if (!formData.skills?.trim()) errors.skills = 'Skills are required';
+    
+    // Validate packages
+    const packages = formData.packages;
+    if (!packages.basic.price || !packages.basic.description) {
+      errors.packages = 'Basic package requires price and description';
+    }
+    if (!packages.standard.price || !packages.standard.description) {
+      errors.packages = 'Standard package requires price and description';
+    }
+    if (!packages.premium.price || !packages.premium.description) {
+      errors.packages = 'Premium package requires price and description';
+    }
 
-    console.log('Validation errors:', errors);
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -220,20 +275,18 @@ const GigManagement = ({ user }) => {
         }
       }
       
-      // Prepare gig data with images and proper field mapping
+      // Prepare gig data with packages
       const gigData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        price: formData.price,
-        duration: formData.duration, // Send as duration, backend will map to deliveryTime
-        skills: formData.skills, // Backend will handle string to array conversion
+        price: formData.packages.basic.price, // Use basic package price as main price
+        duration: formData.packages.basic.deliveryTime || 1,
+        skills: formData.skills,
         portfolio: formData.portfolio || '',
-        images: images
+        images: images,
+        packages: formData.packages
       };
-      
-      console.log('Creating gig with data:', gigData);
-      console.log('Token:', token);
       
       const response = await fetch('/api/services', {
         method: 'POST',
@@ -243,29 +296,15 @@ const GigManagement = ({ user }) => {
         },
         body: JSON.stringify(gigData)
       });
-
-      console.log('Create response status:', response.status);
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Create success:', result);
         setSuccess('Gig created successfully!');
-        setFormData({
-          title: '',
-          description: '',
-          category: '',
-          price: '',
-          duration: '',
-          skills: '',
-          portfolio: ''
-        });
-        setSelectedImages([]);
-        setUploadedImages([]);
+        resetForm();
         setShowCreateForm(false);
-        fetchUserGigs(); // Refresh the list
+        fetchUserGigs();
       } else {
         const errorData = await response.json();
-        console.log('Create error:', errorData);
         setError(errorData.message || 'Failed to create gig');
       }
     } catch (error) {
@@ -279,46 +318,34 @@ const GigManagement = ({ user }) => {
   const handleEditGig = async (e) => {
     e.preventDefault();
     
-    console.log('=== EDIT GIG DEBUG ===');
-    console.log('Form data:', formData);
-    console.log('Selected images:', selectedImages);
-    console.log('Uploaded images:', uploadedImages);
-    console.log('Editing gig:', editingGig);
-    
-    if (!validateForm()) {
-      console.log('Form validation failed');
-      return;
-    }
+    if (!validateForm() || !editingGig) return;
 
     try {
       setLoading(true);
       const token = localStorage.getItem('userToken');
       
-      // Upload new images if any are selected
-      let images = editingGig.images || []; // Keep existing images
+      // Upload images first if any are selected
+      let images = [];
       if (selectedImages.length > 0) {
-        const newImages = await uploadImages();
-        if (newImages.length > 0) {
-          images = [...images, ...newImages]; // Add new images to existing ones
+        images = await uploadImages();
+        if (images.length === 0 && selectedImages.length > 0) {
+          setError('Failed to upload images. Please try again.');
+          return;
         }
       }
       
-      // Prepare gig data with proper field mapping
+      // Prepare gig data with packages
       const gigData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        price: formData.price,
-        duration: formData.duration, // Send as duration, backend will map to deliveryTime
-        skills: formData.skills, // Backend will handle string to array conversion
+        price: formData.packages.basic.price,
+        duration: formData.packages.basic.deliveryTime || 1,
+        skills: formData.skills,
         portfolio: formData.portfolio || '',
-        images: images
+        images: images,
+        packages: formData.packages
       };
-      
-      console.log('Editing gig:', editingGig._id);
-      console.log('Form data:', gigData);
-      console.log('Token:', token);
-      console.log('Request payload:', JSON.stringify(gigData));
       
       const response = await fetch(`/api/services/${editingGig._id}`, {
         method: 'PUT',
@@ -328,31 +355,16 @@ const GigManagement = ({ user }) => {
         },
         body: JSON.stringify(gigData)
       });
-
-      console.log('Edit response status:', response.status);
       
       if (response.ok) {
         const result = await response.json();
-        console.log('Edit success:', result);
         setSuccess('Gig updated successfully!');
+        resetForm();
         setShowEditForm(false);
         setEditingGig(null);
-        setFormData({
-          title: '',
-          description: '',
-          category: '',
-          price: '',
-          duration: '',
-          skills: '',
-          portfolio: ''
-        });
-        setSelectedImages([]);
-        setUploadedImages([]);
-        fetchUserGigs(); // Refresh the list
+        fetchUserGigs();
       } else {
         const errorData = await response.json();
-        console.log('Edit error status:', response.status);
-        console.log('Edit error data:', errorData);
         setError(errorData.message || 'Failed to update gig');
       }
     } catch (error) {
@@ -365,12 +377,10 @@ const GigManagement = ({ user }) => {
 
   const handleDeleteGig = async (gigId) => {
     if (!window.confirm('Are you sure you want to delete this gig?')) return;
-
+    
     try {
       setLoading(true);
       const token = localStorage.getItem('userToken');
-      console.log('Deleting gig:', gigId);
-      console.log('Token:', token);
       
       const response = await fetch(`/api/services/${gigId}`, {
         method: 'DELETE',
@@ -378,17 +388,12 @@ const GigManagement = ({ user }) => {
           'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('Delete response status:', response.status);
       
       if (response.ok) {
-        const result = await response.json();
-        console.log('Delete success:', result);
         setSuccess('Gig deleted successfully!');
-        fetchUserGigs(); // Refresh the list
+        fetchUserGigs();
       } else {
         const errorData = await response.json();
-        console.log('Delete error:', errorData);
         setError(errorData.message || 'Failed to delete gig');
       }
     } catch (error) {
@@ -405,64 +410,158 @@ const GigManagement = ({ user }) => {
       title: gig.title || '',
       description: gig.description || '',
       category: gig.category || '',
-      price: gig.price || '',
-      duration: (gig.deliveryTime || gig.duration || '').toString(), // Ensure duration is a string
-      skills: Array.isArray(gig.skills) ? gig.skills.join(', ') : (gig.skills || ''),
-      portfolio: Array.isArray(gig.portfolio) && gig.portfolio.length > 0 ? gig.portfolio[0].description || '' : (gig.portfolio || '')
+      skills: Array.isArray(gig.skills) ? gig.skills.join(', ') : gig.skills || '',
+      portfolio: gig.portfolio || '',
+      packages: gig.packages || {
+        basic: { name: 'Basic', price: '', description: '', features: [''], deliveryTime: '', revisions: 1 },
+        standard: { name: 'Standard', price: '', description: '', features: [''], deliveryTime: '', revisions: 2 },
+        premium: { name: 'Premium', price: '', description: '', features: [''], deliveryTime: '', revisions: 3 }
+      }
     });
-    // Set existing images for editing
-    setUploadedImages(gig.images || []);
-    setSelectedImages([]); // Clear any new selected images
     setShowEditForm(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      category: '',
+      skills: '',
+      portfolio: '',
+      packages: {
+        basic: { name: 'Basic', price: '', description: '', features: [''], deliveryTime: '', revisions: 1 },
+        standard: { name: 'Standard', price: '', description: '', features: [''], deliveryTime: '', revisions: 2 },
+        premium: { name: 'Premium', price: '', description: '', features: [''], deliveryTime: '', revisions: 3 }
+      }
+    });
+    setSelectedImages([]);
+    setUploadedImages([]);
+    setFormErrors({});
+    setActiveStep(1);
   };
 
   const closeForms = () => {
     setShowCreateForm(false);
     setShowEditForm(false);
     setEditingGig(null);
-    setFormData({
-      title: '',
-      description: '',
-      category: '',
-      price: '',
-      duration: '',
-      skills: '',
-      portfolio: ''
-    });
-    setSelectedImages([]);
-    setUploadedImages([]);
-    setFormErrors({});
+    resetForm();
     setError('');
     setSuccess('');
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending Review' },
-      approved: { color: 'bg-green-100 text-green-800', text: 'Approved' },
-      rejected: { color: 'bg-red-100 text-red-800', text: 'Rejected' }
-    };
-    
-    const config = statusConfig[status] || statusConfig.pending;
-    return (
-      <span className={`px-2 py-1 text-xs rounded-full ${config.color}`}>
-        {config.text}
-      </span>
-    );
+  const nextStep = () => {
+    if (activeStep < 3) setActiveStep(activeStep + 1);
   };
 
-  const renderGigForm = (isEdit = false) => (
+  const prevStep = () => {
+    if (activeStep > 1) setActiveStep(activeStep - 1);
+  };
+
+  const renderPackageForm = (packageType, packageData) => (
+    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-lg font-semibold text-gray-900 capitalize">{packageType} Package</h4>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-500">Revisions:</span>
+          <input
+            type="number"
+            min="0"
+            max="10"
+            value={packageData.revisions}
+            onChange={(e) => handlePackageChange(packageType, 'revisions', parseInt(e.target.value))}
+            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Price (USD) *
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={packageData.price}
+            onChange={(e) => handlePackageChange(packageType, 'price', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+            placeholder="e.g., 100"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Delivery Time (Days) *
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={packageData.deliveryTime}
+            onChange={(e) => handlePackageChange(packageType, 'deliveryTime', e.target.value)}
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+            placeholder="e.g., 3"
+          />
+        </div>
+      </div>
+      
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Description *
+        </label>
+        <textarea
+          value={packageData.description}
+          onChange={(e) => handlePackageChange(packageType, 'description', e.target.value)}
+          rows="3"
+          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+          placeholder={`Describe what's included in the ${packageType} package...`}
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Features
+        </label>
+        {packageData.features.map((feature, index) => (
+          <div key={index} className="flex items-center space-x-2 mb-2">
+            <input
+              type="text"
+              value={feature}
+              onChange={(e) => handleFeatureChange(packageType, index, e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., Responsive design"
+            />
+            <button
+              type="button"
+              onClick={() => removeFeature(packageType, index)}
+              className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => addFeature(packageType)}
+          className="mt-2 px-4 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium"
+        >
+          + Add Feature
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderGigForm = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">
-                {isEdit ? 'Edit Gig' : 'Create New Gig'}
+                {showEditForm ? 'Edit Gig' : 'Create New Gig'}
               </h2>
               <p className="text-blue-100 text-sm mt-1">
-                {isEdit ? 'Update your gig information' : 'Create a new service to offer clients'}
+                {showEditForm ? 'Update your service details' : 'Create a new service to offer clients'}
               </p>
             </div>
             <button
@@ -474,236 +573,258 @@ const GigManagement = ({ user }) => {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={isEdit ? handleEditGig : handleCreateGig} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Title */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gig Title *
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.title ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="e.g., Professional Website Development"
-              />
-              {formErrors.title && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
-              )}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category *
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.category ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select Category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-              {formErrors.category && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
-              )}
-            </div>
-
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price (USD) *
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                min="1"
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.price ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="e.g., 100"
-              />
-              {formErrors.price && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.price}</p>
-              )}
-            </div>
-
-            {/* Duration */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Duration *
-              </label>
-              <input
-                type="text"
-                name="duration"
-                value={formData.duration}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.duration ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="e.g., 3-5 days"
-              />
-              {formErrors.duration && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.duration}</p>
-              )}
-            </div>
-
-            {/* Skills */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Required Skills *
-              </label>
-              <input
-                type="text"
-                name="skills"
-                value={formData.skills}
-                onChange={handleInputChange}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.skills ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="e.g., React, Node.js, MongoDB"
-              />
-              {formErrors.skills && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.skills}</p>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description *
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows="4"
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
-                  formErrors.description ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Describe your service in detail..."
-              />
-              {formErrors.description && (
-                <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
-              )}
-            </div>
-
-            {/* Portfolio Link */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Portfolio Link (Optional)
-              </label>
-              <input
-                type="url"
-                name="portfolio"
-                value={formData.portfolio}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                placeholder="https://your-portfolio.com"
-              />
-            </div>
-
-            {/* Gig Images */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gig Images (Optional) - Max 5 images
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Upload images related to your gig. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per image.
-              </p>
-              
-              {/* Selected Images Preview */}
-              {selectedImages.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images:</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {selectedImages.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+        {/* Progress Steps */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-center space-x-8">
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  activeStep >= step 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {step}
                 </div>
-              )}
-
-              {/* Uploaded Images Display */}
-              {uploadedImages.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Uploaded Images:</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {uploadedImages.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image.url}
-                          alt={image.caption}
-                          className="w-full h-24 object-cover rounded-lg border border-gray-300"
-                        />
-                        <p className="text-xs text-gray-600 mt-1 truncate">{image.caption}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Progress */}
-              {isUploadingImages && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                    <span className="text-sm text-blue-700">Uploading images...</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                <span className={`ml-2 text-sm font-medium ${
+                  activeStep >= step ? 'text-blue-600' : 'text-gray-500'
+                }`}>
+                  {step === 1 ? 'Basic Info' : step === 2 ? 'Packages' : 'Media & Submit'}
+                </span>
+                {step < 3 && (
+                  <div className={`w-16 h-0.5 ml-4 ${
+                    activeStep > step ? 'bg-blue-500' : 'bg-gray-200'
+                  }`} />
+                )}
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={closeForms}
-              className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : (isEdit ? 'Update Gig' : 'Create Gig')}
-            </button>
+        {/* Form */}
+        <form onSubmit={showEditForm ? handleEditGig : handleCreateGig} className="p-6 space-y-6">
+          {/* Step 1: Basic Information */}
+          {activeStep === 1 && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-gray-900">Basic Information</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gig Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      formErrors.title ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="e.g., Professional Website Development"
+                  />
+                  {formErrors.title && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      formErrors.category ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                  {formErrors.category && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.category}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Required Skills *
+                  </label>
+                  <input
+                    type="text"
+                    name="skills"
+                    value={formData.skills}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      formErrors.skills ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="e.g., React, Node.js, MongoDB"
+                  />
+                  {formErrors.skills && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.skills}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    rows="4"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500 ${
+                      formErrors.description ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Describe your service in detail..."
+                  />
+                  {formErrors.description && (
+                    <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Portfolio Link (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    name="portfolio"
+                    value={formData.portfolio}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="https://your-portfolio.com"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Packages */}
+          {activeStep === 2 && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-gray-900">Service Packages</h3>
+              <p className="text-gray-600">Define your service tiers with different features and pricing.</p>
+              
+              {formErrors.packages && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <p className="text-red-800 text-sm">{formErrors.packages}</p>
+                </div>
+              )}
+              
+              <div className="space-y-6">
+                {renderPackageForm('basic', formData.packages.basic)}
+                {renderPackageForm('standard', formData.packages.standard)}
+                {renderPackageForm('premium', formData.packages.premium)}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Media & Submit */}
+          {activeStep === 3 && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-gray-900">Media & Final Details</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Gig Images (Optional) - Max 5 images
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Upload images related to your gig. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per image.
+                  </p>
+                  
+                  {/* Selected Images Preview */}
+                  {selectedImages.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images:</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {selectedImages.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(image)}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload Progress */}
+                  {isUploadingImages && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <span className="text-sm text-blue-700">Uploading images...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+            <div className="flex space-x-4">
+              {activeStep > 1 && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Previous
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={closeForms}
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+            
+            <div className="flex space-x-4">
+              {activeStep < 3 && (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors"
+                >
+                  Next
+                </button>
+              )}
+              {activeStep === 3 && (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 disabled:opacity-50"
+                >
+                  {loading ? 'Saving...' : (showEditForm ? 'Update Gig' : 'Create Gig')}
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
@@ -720,7 +841,7 @@ const GigManagement = ({ user }) => {
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
-          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
+          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
           + Create New Gig
         </button>
@@ -770,118 +891,186 @@ const GigManagement = ({ user }) => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {gigs.map(gig => (
-            <div key={gig._id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300">
-              {/* Status Badge */}
-              <div className="flex justify-between items-start mb-4">
-                {getStatusBadge(gig.status)}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => openEditForm(gig)}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteGig(gig._id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              {/* Gig Info */}
-              <h4 className="text-lg font-bold text-gray-900 mb-2">{gig.title}</h4>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-3">{gig.description}</p>
-              
-              {/* Gig Images */}
-              {gig.images && gig.images.length > 0 && (
-                <div className="mb-4">
-                  <p className="text-sm text-gray-500 mb-2">Images:</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {gig.images.slice(0, 4).map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image.url}
-                          alt={image.caption || `Gig image ${index + 1}`}
-                          className="w-full h-20 object-cover rounded-lg border border-gray-200"
-                        />
-                        {index === 3 && gig.images.length > 4 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
-                            <span className="text-white text-xs font-medium">+{gig.images.length - 4}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+            <div key={gig._id} className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
+              {/* Gig Header */}
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-white">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="text-xl font-bold leading-tight line-clamp-2">{gig.title}</h4>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => openEditForm(gig)}
+                      className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all duration-200"
+                      title="Edit Gig"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGig(gig._id)}
+                      className="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all duration-200"
+                      title="Delete Gig"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-              )}
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Category:</span>
-                  <span className="font-semibold text-blue-600">{gig.category}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Price:</span>
-                  <span className="font-semibold text-green-600">${gig.price}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-semibold">{gig.deliveryTime ? `${gig.deliveryTime} Days` : gig.duration}</span>
+                <div className="flex items-center space-x-4 text-blue-100 text-sm">
+                  <span className="flex items-center space-x-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span>{gig.category}</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{gig.deliveryTime || 1} {gig.deliveryUnit || 'Days'}</span>
+                  </span>
                 </div>
               </div>
 
-              {/* Skills */}
-              <div className="mb-4">
-                <p className="text-sm text-gray-500 mb-2">Skills:</p>
-                <div className="flex flex-wrap gap-1">
-                  {Array.isArray(gig.skills) 
-                    ? gig.skills.map((skill, index) => (
-                        <span key={index} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+              {/* Gig Content */}
+              <div className="p-6">
+                {/* Description */}
+                <p className="text-gray-700 text-sm leading-relaxed mb-6 line-clamp-3">
+                  {gig.description}
+                </p>
+
+                {/* Skills */}
+                {gig.skills && gig.skills.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-sm font-semibold text-gray-900 mb-3">Skills Required</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {Array.isArray(gig.skills) ? gig.skills.map((skill, index) => (
+                        <span key={index} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
                           {skill}
                         </span>
-                      ))
-                    : gig.skills.split(',').map((skill, index) => (
-                        <span key={index} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {skill.trim()}
+                      )) : (
+                        <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
+                          {gig.skills}
                         </span>
-                      ))
-                  }
-                </div>
-              </div>
-
-              {/* Rating */}
-              {gig.rating > 0 && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    {[...Array(5)].map((_, i) => (
-                      <svg
-                        key={i}
-                        className={`w-4 h-4 ${i < Math.floor(gig.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                  <span>{gig.rating.toFixed(1)} ({gig.totalReviews} reviews)</span>
-                </div>
-              )}
+                )}
 
-              {/* Created Date */}
-              <div className="text-xs text-gray-500 mt-4 pt-4 border-t border-gray-200">
-                Created: {new Date(gig.createdAt).toLocaleDateString()}
+                {/* Packages Display */}
+                {gig.packages && Object.keys(gig.packages).length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-sm font-semibold text-gray-900 mb-3">Service Packages</h5>
+                    <div className="space-y-3">
+                      {Object.entries(gig.packages).map(([type, pkg]) => (
+                        <div key={type} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                                type === 'basic' ? 'bg-green-100 text-green-800' :
+                                type === 'standard' ? 'bg-blue-100 text-blue-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </span>
+                              <span className="text-sm font-medium text-gray-700">{pkg.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600">${pkg.price}</div>
+                              <div className="text-xs text-gray-500">{pkg.deliveryTime} days</div>
+                            </div>
+                          </div>
+                          
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{pkg.description}</p>
+                          
+                          {/* Features */}
+                          {pkg.features && pkg.features.length > 0 && pkg.features[0] && (
+                            <div className="space-y-1">
+                              {pkg.features.slice(0, 3).map((feature, index) => (
+                                <div key={index} className="flex items-center space-x-2 text-xs text-gray-600">
+                                  <svg className="w-3 h-3 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="line-clamp-1">{feature}</span>
+                                </div>
+                              ))}
+                              {pkg.features.length > 3 && (
+                                <div className="text-xs text-gray-500 pt-1">
+                                  +{pkg.features.length - 3} more features
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Revisions */}
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex justify-between items-center text-xs text-gray-500">
+                              <span>Revisions:</span>
+                              <span className="font-medium">{pkg.revisions || 1}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Portfolio */}
+                {gig.portfolio && gig.portfolio.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-sm font-semibold text-gray-900 mb-3">Portfolio</h5>
+                    <div className="space-y-2">
+                      {Array.isArray(gig.portfolio) ? gig.portfolio.map((item, index) => (
+                        <div key={index} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <h6 className="text-sm font-medium text-gray-800 mb-1">{item.title}</h6>
+                          <p className="text-xs text-gray-600 line-clamp-2">{item.description}</p>
+                        </div>
+                      )) : (
+                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                          <p className="text-sm text-gray-600">{gig.portfolio}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Status and Actions */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      gig.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      gig.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      gig.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {gig.status ? gig.status.charAt(0).toUpperCase() + gig.status.slice(1) : 'Draft'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => openEditForm(gig)}
+                      className="px-4 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGig(gig._id)}
+                      className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Create/Edit Forms */}
-      {showCreateForm && renderGigForm(false)}
-      {showEditForm && renderGigForm(true)}
+      {/* Create/Edit Form */}
+      {(showCreateForm || showEditForm) && renderGigForm()}
     </div>
   );
 };

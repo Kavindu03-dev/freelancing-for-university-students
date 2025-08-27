@@ -40,6 +40,33 @@ const serviceSchema = new mongoose.Schema({
     required: true,
     enum: ['Days', 'Hours', 'Weeks', 'Months']
   },
+  // New fields for packages and revisions
+  packages: {
+    basic: {
+      name: { type: String, default: 'Basic' },
+      price: { type: Number, required: true, min: 0 },
+      description: { type: String, required: true },
+      features: [{ type: String }],
+      deliveryTime: { type: Number, required: true, min: 1 },
+      revisions: { type: Number, default: 1, min: 0 }
+    },
+    standard: {
+      name: { type: String, default: 'Standard' },
+      price: { type: Number, required: true, min: 0 },
+      description: { type: String, required: true },
+      features: [{ type: String }],
+      deliveryTime: { type: Number, required: true, min: 1 },
+      revisions: { type: Number, default: 2, min: 0 }
+    },
+    premium: {
+      name: { type: String, default: 'Premium' },
+      price: { type: Number, required: true, min: 0 },
+      description: { type: String, required: true },
+      features: [{ type: String }],
+      deliveryTime: { type: Number, required: true, min: 1 },
+      revisions: { type: Number, default: 3, min: 0 }
+    }
+  },
   skills: [{
     type: String,
     trim: true

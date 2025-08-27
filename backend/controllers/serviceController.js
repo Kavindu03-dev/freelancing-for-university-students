@@ -8,7 +8,17 @@ import { uploadToImgBB, cleanupTempFile } from '../middleware/imgbbUpload.js';
 // @access  Private (Freelancers only)
 const createService = async (req, res) => {
   try {
-    const { title, description, category, price, duration, skills, portfolio, images } = req.body;
+    const { 
+      title, 
+      description, 
+      category, 
+      price, 
+      duration, 
+      skills, 
+      portfolio, 
+      images,
+      packages 
+    } = req.body;
 
     console.log('Creating service with data:', req.body);
     console.log('User from request:', req.user);
@@ -28,6 +38,41 @@ const createService = async (req, res) => {
       ? [{ title: 'Portfolio Item', description: portfolio, imageUrl: '', projectUrl: '' }]
       : portfolio || [];
 
+    // Validate packages if provided
+    let validatedPackages = {};
+    if (packages) {
+      if (packages.basic && packages.basic.price && packages.basic.description) {
+        validatedPackages.basic = {
+          name: packages.basic.name || 'Basic',
+          price: Number(packages.basic.price),
+          description: packages.basic.description,
+          features: packages.basic.features || [],
+          deliveryTime: Number(packages.basic.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.basic.revisions) || 1
+        };
+      }
+      if (packages.standard && packages.standard.price && packages.standard.description) {
+        validatedPackages.standard = {
+          name: packages.standard.name || 'Standard',
+          price: Number(packages.standard.price),
+          description: packages.standard.description,
+          features: packages.standard.features || [],
+          deliveryTime: Number(packages.standard.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.standard.revisions) || 2
+        };
+      }
+      if (packages.premium && packages.premium.price && packages.premium.description) {
+        validatedPackages.premium = {
+          name: packages.premium.name || 'Premium',
+          price: Number(packages.premium.price),
+          description: packages.premium.description,
+          features: packages.premium.features || [],
+          deliveryTime: Number(packages.premium.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.premium.revisions) || 3
+        };
+      }
+    }
+
     // Create new service with proper field mapping
     const serviceData = {
       title,
@@ -40,6 +85,7 @@ const createService = async (req, res) => {
       skills: skillsArray,
       portfolio: portfolioArray,
       images: images || [],
+      packages: validatedPackages,
       freelancerId: req.user._id,
       freelancerName: `${req.user.firstName} ${req.user.lastName}`,
       university: req.user.university || '',
@@ -283,11 +329,11 @@ const getPendingServices = async (req, res) => {
 // @access  Private (Service owner only)
 const updateService = async (req, res) => {
   try {
-    const { title, description, category, price, duration, skills, portfolio, images } = req.body;
+    const { title, description, category, price, duration, skills, portfolio, images, packages } = req.body;
     
     console.log('=== UPDATE SERVICE DEBUG ===');
     console.log('Request body:', req.body);
-    console.log('Extracted fields:', { title, description, category, price, duration, skills, portfolio, images });
+    console.log('Extracted fields:', { title, description, category, price, duration, skills, portfolio, images, packages });
 
     const service = await Service.findById(req.params.id);
 
@@ -342,6 +388,41 @@ const updateService = async (req, res) => {
     }
     */
 
+    // Validate packages if provided
+    let validatedPackages = {};
+    if (packages) {
+      if (packages.basic && packages.basic.price && packages.basic.description) {
+        validatedPackages.basic = {
+          name: packages.basic.name || 'Basic',
+          price: Number(packages.basic.price),
+          description: packages.basic.description,
+          features: packages.basic.features || [],
+          deliveryTime: Number(packages.basic.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.basic.revisions) || 1
+        };
+      }
+      if (packages.standard && packages.standard.price && packages.standard.description) {
+        validatedPackages.standard = {
+          name: packages.standard.name || 'Standard',
+          price: Number(packages.standard.price),
+          description: packages.standard.description,
+          features: packages.standard.features || [],
+          deliveryTime: Number(packages.standard.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.standard.revisions) || 2
+        };
+      }
+      if (packages.premium && packages.premium.price && packages.premium.description) {
+        validatedPackages.premium = {
+          name: packages.premium.name || 'Premium',
+          price: Number(packages.premium.price),
+          description: packages.premium.description,
+          features: packages.premium.features || [],
+          deliveryTime: Number(packages.premium.deliveryTime) || Number(duration) || 1,
+          revisions: Number(packages.premium.revisions) || 3
+        };
+      }
+    }
+
     // Update service
     const updateData = {
       title,
@@ -353,6 +434,7 @@ const updateService = async (req, res) => {
       skills: typeof skills === 'string' ? skills.split(',').map(skill => skill.trim()).filter(skill => skill) : skills,
       portfolio: typeof portfolio === 'string' && portfolio.trim() ? [{ title: 'Portfolio Item', description: portfolio, imageUrl: '', projectUrl: '' }] : portfolio,
       images: images || [],
+      packages: validatedPackages,
       status: 'pending' // Reset to pending for admin review
     };
     
