@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { logout, isAuthenticated, getUserData } from "../utils/auth";
+import Logo from "../assets/Logo.png";
 
 function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -165,15 +166,14 @@ function Header() {
       <div className="px-4 lg:px-8 mx-auto">
         <div className="flex justify-between items-center h-16 lg:h-20">
           
-          {/* Left Side - Logo and Website Name */}
+          {/* Left Side - Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
-                <span className="text-black font-bold text-sm">F</span>
-              </div>
-              <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
-                FlexiHire
-              </h1>
+            <Link to="/" className="flex items-center group">
+              <img 
+                src={Logo} 
+                alt="Logo" 
+                className="h-10 w-auto group-hover:scale-105 transition-all duration-300"
+              />
             </Link>
           </div>
 
