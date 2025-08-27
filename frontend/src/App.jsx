@@ -19,6 +19,8 @@ import ServiceDetailsPage from "./pages/ServiceDetailsPage";
 import ResourceDetailPage from "./pages/ResourceDetailPage";
 import MessagesPage from "./pages/MessagesPage";
 import OrdersPage from "./pages/OrdersPage";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
+import OrderCancelPage from "./pages/OrderCancelPage";
 import StaffDashboard from "./pages/StaffDashboard";
 import FreelancerDashboard from "./pages/StudentDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -53,6 +55,8 @@ function AppContent() {
 
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/orders/success" element={<OrderSuccessPage />} />
+        <Route path="/orders/cancel" element={<OrderCancelPage />} />
         <Route path="/service/:id" element={<ServiceDetailsPage />} />
         <Route path="/resource/:id" element={<ResourceDetailPage />} />
         <Route path="/" element={<HomePage />} />
