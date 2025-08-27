@@ -220,25 +220,54 @@ const getServices = async (req, res) => {
   }
 };
 
-// @desc    Get service by ID
+// @desc    Get service by ID (handles both gigs and job posts)
 // @route   GET /api/services/:id
 // @access  Public
 const getServiceById = async (req, res) => {
   try {
-    const service = await Service.findById(req.params.id)
-      .populate('freelancer', 'firstName lastName email skills bio hourlyRate')
-      .populate('reviews.client', 'firstName lastName');
+    // First try to find in Service model (gigs)
+    let service = await Service.findById(req.params.id)
+      .populate('freelancerId', 'firstName lastName email skills bio hourlyRate profileImage')
+      .populate('reviews.client', 'firstName lastName profileImage');
 
-    if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
+    if (service) {
+      // This is a gig (freelancer service)
+      return res.json({
+        success: true,
+        data: {
+          ...service.toObject(),
+          type: 'gig',
+          source: 'freelancer'
+        }
+      });
     }
 
-    res.json({
-      success: true,
-      data: service
-    });
+    // If not found in Service model, try Post model (job posts)
+    const Post = (await import('../models/Post.js')).default;
+    const jobPost = await Post.findById(req.params.id)
+      .populate('clientId', 'firstName lastName email organization profileImage');
+
+    if (jobPost) {
+      // This is a job post (client job)
+      return res.json({
+        success: true,
+        data: {
+          ...jobPost.toObject(),
+          type: 'job',
+          source: 'client',
+          price: jobPost.budget,
+          priceType: 'Fixed',
+          deliveryTime: Math.ceil((new Date(jobPost.deadline) - new Date()) / (1000 * 60 * 60 * 24)),
+          deliveryUnit: 'Days'
+        }
+      });
+    }
+
+    // If neither found
+    return res.status(404).json({ message: 'Service or job post not found' });
+
   } catch (error) {
-    console.error('Error getting service:', error);
+    console.error('Error getting service by ID:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
