@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import VerificationRequestPopup from "../components/VerificationRequestPopup";
 import OnboardingWizard from "../components/OnboardingWizard";
 import ApplicationTracker from "../components/ApplicationTracker";
-import SkillsAssessment from "../components/SkillsAssessment";
 import EnhancedRecommendations from "../components/EnhancedRecommendations";
 import GigManagement from "../components/GigManagement";
 
@@ -32,6 +31,9 @@ function StudentDashboard() {
   const [isSavingSummary, setIsSavingSummary] = useState(false);
   const [summarySaveMessage, setSummarySaveMessage] = useState('');
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
+  
+  // Notification state
+  const [bookmarkNotification, setBookmarkNotification] = useState({ show: false, message: '', type: '' });
   
   // Verification state
   const [showVerificationPopup, setShowVerificationPopup] = useState(false);
@@ -153,9 +155,7 @@ function StudentDashboard() {
   });
 
   // Bookmarked opportunities
-  const [bookmarkedOpportunities, setBookmarkedOpportunities] = useState(
-    availableOpportunities && Array.isArray(availableOpportunities) ? availableOpportunities.filter(opp => opp.isBookmarked) : []
-  );
+  const [bookmarkedOpportunities, setBookmarkedOpportunities] = useState([]);
 
   // Recommendations state
   const [recommendations, setRecommendations] = useState([]);
@@ -172,6 +172,13 @@ function StudentDashboard() {
 
   // Helper functions
   const toggleBookmark = (opportunityId) => {
+    // Find the opportunity in available opportunities
+    const opportunity = availableOpportunities.find(opp => opp.id === opportunityId);
+    if (!opportunity) return;
+
+    const isCurrentlyBookmarked = opportunity.isBookmarked;
+
+    // Update available opportunities
     setAvailableOpportunities(prev => {
       if (!prev || !Array.isArray(prev)) return prev;
       return prev.map(opp => 
@@ -179,16 +186,33 @@ function StudentDashboard() {
       );
     });
     
+    // Update bookmarked opportunities
     setBookmarkedOpportunities(prev => {
-      if (!availableOpportunities || !Array.isArray(availableOpportunities)) return prev;
-      const opportunity = availableOpportunities.find(opp => opp.id === opportunityId);
-      if (!opportunity) return prev;
-      if (opportunity.isBookmarked) {
-        return prev && Array.isArray(prev) ? prev.filter(opp => opp.id !== opportunityId) : [];
+      if (isCurrentlyBookmarked) {
+        // Remove from bookmarks
+        return prev.filter(opp => opp.id !== opportunityId);
       } else {
-        return prev && Array.isArray(prev) ? [...prev, { ...opportunity, isBookmarked: true }] : [{ ...opportunity, isBookmarked: true }];
+        // Add to bookmarks
+        const opportunityToAdd = { ...opportunity, isBookmarked: true };
+        return [...prev, opportunityToAdd];
       }
     });
+
+    // Show notification
+    const message = isCurrentlyBookmarked 
+      ? `Removed "${opportunity.title}" from bookmarks` 
+      : `Added "${opportunity.title}" to bookmarks`;
+    
+    setBookmarkNotification({
+      show: true,
+      message,
+      type: isCurrentlyBookmarked ? 'removed' : 'added'
+    });
+
+    // Auto-hide notification after 3 seconds
+    setTimeout(() => {
+      setBookmarkNotification({ show: false, message: '', type: '' });
+    }, 3000);
   };
 
   const getFilteredOpportunities = () => {
@@ -598,6 +622,14 @@ function StudentDashboard() {
       setRecommendations(recs);
     }
   }, [studentData, availableOpportunities, stats]);
+
+  // Sync bookmarked opportunities when available opportunities are loaded
+  useEffect(() => {
+    if (availableOpportunities && Array.isArray(availableOpportunities)) {
+      const bookmarked = availableOpportunities.filter(opp => opp.isBookmarked);
+      setBookmarkedOpportunities(bookmarked);
+    }
+  }, [availableOpportunities]);
 
   // Initialize professional summary state when student data is loaded
   useEffect(() => {
@@ -1027,7 +1059,7 @@ function StudentDashboard() {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'portfolio', 'skills', 'profile', 'completeProfile'].includes(tabParam)) {
+          if (tabParam && ['overview', 'recommendations', 'opportunities', 'bookmarks', 'applications', 'profile', 'completeProfile'].includes(tabParam)) {
       // If trying to access completeProfile but profile is already complete, redirect to profile tab
       if (tabParam === 'completeProfile' && profileCompleteness >= 100) {
         setActiveTab('profile');
@@ -1305,9 +1337,14 @@ function StudentDashboard() {
         <div className="flex space-x-2">
           <button
             onClick={() => setActiveTab("bookmarks")}
-            className="px-4 py-2 bg-yellow-500 text-white rounded-xl font-medium hover:bg-yellow-600 transition-all duration-300"
+            className="px-4 py-2 bg-yellow-500 text-white rounded-xl font-medium hover:bg-yellow-600 transition-all duration-300 relative"
           >
-            📚 Bookmarks ({bookmarkedOpportunities && Array.isArray(bookmarkedOpportunities) ? bookmarkedOpportunities.length : 0})
+            📚 Bookmarks 
+            {bookmarkedOpportunities && Array.isArray(bookmarkedOpportunities) && bookmarkedOpportunities.length > 0 && (
+              <span className="ml-2 bg-white text-yellow-500 px-2 py-1 rounded-full text-xs font-bold">
+                {bookmarkedOpportunities.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -1474,9 +1511,10 @@ function StudentDashboard() {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => toggleBookmark(opportunity.id)}
-                  className={`text-2xl transition-all duration-300 ${
+                  className={`text-2xl transition-all duration-300 hover:scale-110 ${
                     opportunity.isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'
                   }`}
+                  title={opportunity.isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}
                 >
                   {opportunity.isBookmarked ? '★' : '☆'}
                 </button>
@@ -1750,7 +1788,8 @@ function StudentDashboard() {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => toggleBookmark(opportunity.id)}
-                    className="text-2xl text-yellow-500 transition-all duration-300"
+                    className="text-2xl text-yellow-500 transition-all duration-300 hover:scale-110"
+                    title="Remove from bookmarks"
                   >
                     ★
                   </button>
@@ -1829,47 +1868,7 @@ function StudentDashboard() {
     </div>
   );
 
-  const renderPortfolio = () => (
-    <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-gray-900">Project Portfolio</h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeProjects && recentProjects && Array.isArray(activeProjects) && Array.isArray(recentProjects) ? 
-          [...activeProjects, ...recentProjects].map(project => (
-          <div key={project.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
-            <h4 className="text-lg font-bold text-gray-900 mb-2">{project.title}</h4>
-            <p className="text-gray-600 text-sm mb-3">{project.client}</p>
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-gray-500">Earnings: ${project.earnings}</span>
-              <span className={`px-2 py-1 text-xs rounded-full ${
-                project.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-              }`}>
-                {project.status}
-              </span>
-            </div>
-            {project.progress && (
-              <div className="mb-3">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full" 
-                    style={{ width: `${project.progress}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">{project.progress}% Complete</p>
-              </div>
-            )}
-            <button className="w-full px-4 py-2 border-2 border-blue-500 text-blue-500 rounded-xl font-medium hover:bg-blue-500 hover:text-white transition-all duration-300">
-              View Details
-            </button>
-          </div>
-        )) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-gray-500">No projects available</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+
 
 
 
@@ -3061,11 +3060,9 @@ function StudentDashboard() {
               { id: "overview", name: "Overview", icon: "📊" },
               { id: "recommendations", name: "Recommended", icon: "⭐" },
               { id: "opportunities", name: "Browse Opportunities", icon: "🔍" },
-              { id: "bookmarks", name: "Bookmarks", icon: "📚" },
+              { id: "bookmarks", name: "Bookmarks", icon: "📚", count: bookmarkedOpportunities.length },
               { id: "applications", name: "My Applications", icon: "📝" },
               { id: "gigs", name: "My Gigs", icon: "💼" },
-              { id: "portfolio", name: "Portfolio", icon: "🎨" },
-              { id: "skills", name: "Skills", icon: "🛠️" },
               { id: "messages", name: "Messages", icon: "💬" },
               { id: "profile", name: "Profile", icon: "👤" }
             ].map(tab => (
@@ -3080,6 +3077,11 @@ function StudentDashboard() {
               >
                 <span className="text-lg flex-shrink-0">{tab.icon}</span>
                 <span className="font-medium">{tab.name}</span>
+                {tab.count > 0 && (
+                  <span className="ml-auto bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-bold">
+                    {tab.count}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -3088,6 +3090,28 @@ function StudentDashboard() {
 
               {/* Main Content Area */}
         <div className="flex-1 p-8 pt-8 overflow-y-auto mt-20">
+          {/* Bookmark Notification */}
+          {bookmarkNotification.show && (
+            <div className={`fixed top-24 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+              bookmarkNotification.type === 'added' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-yellow-500 text-white'
+            }`}>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">
+                  {bookmarkNotification.type === 'added' ? '★' : '☆'}
+                </span>
+                <span className="font-medium">{bookmarkNotification.message}</span>
+                <button
+                  onClick={() => setBookmarkNotification({ show: false, message: '', type: '' })}
+                  className="ml-2 text-white hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+          
           <div className="max-w-7xl mx-auto">
             {activeTab === "overview" && renderOverview()}
             {activeTab === "recommendations" && (
@@ -3119,20 +3143,6 @@ function StudentDashboard() {
             )}
             {activeTab === "gigs" && (
               <GigManagement user={studentData} />
-            )}
-            {activeTab === "portfolio" && renderPortfolio()}
-            {activeTab === "skills" && (
-              <SkillsAssessment
-                currentSkills={studentData?.technicalSkills}
-                onSkillsUpdate={(skills) => {
-                  // Handle skills update
-                  console.log('Update skills:', skills);
-                }}
-                onLearningPathUpdate={(path) => {
-                  // Handle learning path update
-                  console.log('Update learning path:', path);
-                }}
-              />
             )}
             {activeTab === "messages" && (
               <div className="text-center py-12">
