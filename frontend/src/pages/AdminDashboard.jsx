@@ -273,40 +273,7 @@ function AdminDashboard() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState(null);
 
-  // Mock data for reported content of the admin dashboard
-  const [reportedContent] = useState([
-    {
-      id: 1,
-      type: "Service",
-      title: "Suspicious Service Post",
-      reporter: "user123",
-      reason: "Spam/Inappropriate content",
-      status: "Pending Review",
-      reportedAt: "2024-01-16",
-      content: "This service post contains inappropriate language and spam links...",
-      severity: "High"
-    },
-    {
-      id: 2,
-      type: "Message",
-      reporter: "user456",
-      reason: "Harassment",
-      status: "Under Investigation",
-      reportedAt: "2024-01-15",
-      content: "User sent inappropriate messages with offensive content...",
-      severity: "Critical"
-    },
-    {
-      id: 3,
-      type: "Project",
-      reporter: "user789",
-      reason: "Fake project",
-      status: "Resolved",
-      reportedAt: "2024-01-14",
-      content: "Project description contains false information...",
-      severity: "Medium"
-    }
-  ]);
+
 
   // Analytics state
   const [universityStats, setUniversityStats] = useState([]);
@@ -342,6 +309,41 @@ function AdminDashboard() {
     'Data & Analytics'
   ]);
 
+  // Resources management state
+  const [resources, setResources] = useState([]);
+  const [showAddResourceModal, setShowAddResourceModal] = useState(false);
+  const [newResource, setNewResource] = useState({
+    title: '',
+    description: '',
+    category: '',
+    type: '',
+    readTime: '',
+    difficulty: 'Beginner',
+    tags: '',
+    link: '',
+    featured: false
+  });
+  const [resourceCategories] = useState([
+    'Getting Started',
+    'Best Practices',
+    'Tools & Software',
+    'Business Tips',
+    'Marketing',
+    'Legal & Contracts',
+    'Pricing Strategies',
+    'Client Management'
+  ]);
+  const [resourceTypes] = useState([
+    'Guide',
+    'Tutorial',
+    'Resource List',
+    'Article',
+    'Legal Guide',
+    'Strategy Guide',
+    'Branding Guide',
+    'Business Guide'
+  ]);
+
   // Skills management functions
   const fetchSkills = async () => {
     try {
@@ -369,6 +371,36 @@ function AdminDashboard() {
       }
     } catch (error) {
       console.error('🔍 Error fetching skills:', error);
+    }
+  };
+
+  // Resources management functions
+  const fetchResources = async () => {
+    try {
+      console.log('🔍 fetchResources called');
+      const adminToken = localStorage.getItem('adminToken');
+      console.log('🔍 adminToken:', adminToken ? 'exists' : 'missing');
+      
+      const response = await fetch('http://localhost:5000/api/resources/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+      
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Resources data received:', data);
+        setResources(data.data || []);
+        console.log('🔍 Resources state updated with:', data.data || []);
+      } else {
+        const errorData = await response.json();
+        console.error('🔍 Error response:', errorData);
+      }
+    } catch (error) {
+      console.error('🔍 Error fetching resources:', error);
     }
   };
 
@@ -493,6 +525,44 @@ function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error adding skill:', error);
+    }
+  };
+
+  const handleAddResource = async (e) => {
+    e.preventDefault();
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      const response = await fetch('http://localhost:5000/api/resources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify(newResource)
+      });
+
+      if (response.ok) {
+        setShowAddResourceModal(false);
+        setNewResource({
+          title: '',
+          description: '',
+          category: '',
+          type: '',
+          readTime: '',
+          difficulty: 'Beginner',
+          tags: '',
+          link: '',
+          featured: false
+        });
+        fetchResources(); // Refresh the resources list
+        alert('Resource added successfully!');
+      } else {
+        const errorData = await response.json();
+        alert('Failed to add resource: ' + (errorData.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error adding resource:', error);
+      alert('Failed to add resource: ' + error.message);
     }
   };
 
@@ -691,6 +761,7 @@ function AdminDashboard() {
     console.log('🔍 Admin is logged in, setting username and fetching skills');
     setAdminUsername(adminEmail); // Use email as username for display of the admin dashboard
     fetchSkills(); // Fetch skills when component mounts
+    fetchResources(); // Fetch resources when component mounts
     fetchUsers(); // Fetch users when component mounts
     fetchAnalytics(); // Fetch analytics when component mounts
   }, [navigate]);
@@ -1708,179 +1779,174 @@ function AdminDashboard() {
   );
   };
 
-  const renderModeration = () => (
+  const renderResources = () => (
     <div className="space-y-8">
-      {/* Content Moderation Header */}
+      {/* Resources Header */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-2xl font-bold text-gray-900">Content Moderation</h3>
-            <p className="text-gray-600 mt-1">Review and manage reported content, spam, and inappropriate posts</p>
+            <h3 className="text-2xl font-bold text-gray-900">Resources Management</h3>
+            <p className="text-gray-600 mt-1">Manage educational resources and guides for freelancers</p>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="bg-gradient-to-r from-red-400 to-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
-              {reportedContent.filter(item => item.status === "Pending Review").length} Pending
-            </span>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
-              Bulk Actions
-            </button>
-          </div>
+          <button
+            onClick={() => setShowAddResourceModal(true)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-2 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add Resource</span>
+          </button>
         </div>
 
-        {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Types</option>
-            <option value="service">Service</option>
-            <option value="message">Message</option>
-            <option value="project">Project</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Severity</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <select className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-            <option value="">All Status</option>
-            <option value="pending">Pending Review</option>
-            <option value="investigation">Under Investigation</option>
-            <option value="resolved">Resolved</option>
-          </select>
-          <input
-            type="text"
-            placeholder="Search reported content..."
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          />
-        </div>
-
-        {/* Reported Content List */}
-        <div className="space-y-4">
-          {reportedContent.map(item => (
-            <div key={item.id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-6 border border-gray-200 hover:border-yellow-300 hover:shadow-lg transition-all duration-300">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg ${
-                      item.severity === 'Critical' ? 'bg-red-500' :
-                      item.severity === 'High' ? 'bg-orange-500' :
-                      item.severity === 'Medium' ? 'bg-yellow-500' : 'bg-blue-500'
-                    }`}>
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-gray-900">{item.title}</h4>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full font-medium ${
-                          item.severity === 'Critical' ? 'bg-red-100 text-red-800' :
-                          item.severity === 'High' ? 'bg-orange-100 text-orange-800' :
-                          item.severity === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {item.severity}
-                        </span>
-                        <span className="text-gray-600">Type: {item.type}</span>
-                        <span className="text-gray-600">By: {item.reporter}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 mb-4 leading-relaxed">{item.content}</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                      </svg>
-                      <span className="text-gray-600">Reason: <span className="font-medium">{item.reason}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-600">Reported: <span className="font-medium">{item.reportedAt}</span></span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-gray-600">Status: <span className="font-medium">{item.status}</span></span>
-                    </div>
-                  </div>
-                </div>
+        {/* Resources Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm font-medium">Total Resources</p>
+                <p className="text-3xl font-bold">{resources.length}</p>
               </div>
-              <div className="flex space-x-4">
-                <button className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Approve</span>
-                </button>
-                <button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Remove</span>
-                </button>
-                <button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  <span>Investigate</span>
-                </button>
-                <button className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span>View Details</span>
-                </button>
+              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm font-medium">Featured</p>
+                <p className="text-3xl font-bold">{resources.filter(r => r.featured).length}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm font-medium">Categories</p>
+                <p className="text-3xl font-bold">{resourceCategories.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl p-6 text-white shadow-xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-orange-100 text-sm font-medium">Types</p>
+                <p className="text-3xl font-bold">{resourceTypes.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Spam Detection Tools */}
+      {/* Resources List */}
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">Spam Detection & Filtering</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Content Filters</h4>
-            <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Auto-detect spam keywords</span>
-              </label>
-              <label className="flex items-center space-x3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Filter suspicious links</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-400" defaultChecked />
-                <span className="text-sm text-gray-700">Detect duplicate content</span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input type="checkbox" className="rounded text-yellow-500 focus:ring-yellow-500" />
-                <span className="text-sm text-gray-700">AI-powered content analysis</span>
-              </label>
-            </div>
+        <div className="flex items-center justify-between mb-6">
+          <h4 className="text-xl font-bold text-gray-900">All Resources</h4>
+          <div className="flex items-center space-x-4">
+            <input
+              type="text"
+              placeholder="Search resources..."
+              className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+            />
+            <select className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
+              <option value="">All Categories</option>
+              {resourceCategories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
           </div>
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800">Action Settings</h4>
-            <div className="space-y-3">
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-                <option value="auto">Auto-flag suspicious content</option>
-                <option value="manual">Manual review only</option>
-                <option value="hybrid">Hybrid approach</option>
-              </select>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500">
-                <option value="warn">Warn user first</option>
-                <option value="suspend">Suspend account immediately</option>
-                <option value="ban">Ban account permanently</option>
-              </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resource</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Read Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Featured</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {resources.map((resource, index) => (
+                <tr key={resource.id || index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{resource.title}</div>
+                      <div className="text-sm text-gray-500">{resource.description}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {resource.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      resource.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
+                      resource.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {resource.difficulty}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.readTime}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {resource.featured ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Featured
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button className="text-blue-600 hover:text-blue-900">Edit</button>
+                      <button className="text-red-600 hover:text-red-900">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          
+          {resources.length === 0 && (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No resources yet</h3>
+              <p className="text-gray-600 max-w-md mx-auto">Start by adding the first resource to help freelancers succeed.</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -2369,8 +2435,8 @@ function AdminDashboard() {
                 { id: "projects", name: "Projects", icon: "M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
                 { id: "skills", name: "Skills", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
+                { id: "resources", name: "Resources", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-                { id: "moderation", name: "Moderation", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
                 { id: "settings", name: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" }
               ].map(tab => (
@@ -2415,12 +2481,12 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "projects" && renderProjects()}
-                    {activeTab === "services" && renderServices()}
-        {activeTab === "skills" && renderSkills()}
+            {activeTab === "services" && renderServices()}
+            {activeTab === "skills" && renderSkills()}
+            {activeTab === "resources" && renderResources()}
             {activeTab === "posts" && renderPostsApproval()}
-        {activeTab === "moderation" && renderModeration()}
-        {activeTab === "analytics" && renderAnalytics()}
-        {activeTab === "settings" && renderSettings()}
+            {activeTab === "analytics" && renderAnalytics()}
+            {activeTab === "settings" && renderSettings()}
           </div>
         </div>
       </div>
@@ -2532,6 +2598,164 @@ function AdminDashboard() {
                 <button
                   type="button"
                   onClick={() => setShowAddSkillModal(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Resources Modal */}
+      {showAddResourceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Add New Resource</h3>
+              <button
+                onClick={() => setShowAddResourceModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddResource} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={newResource.title}
+                  onChange={(e) => setNewResource({...newResource, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., Complete Guide to Starting Your Freelance Career"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={newResource.description}
+                  onChange={(e) => setNewResource({...newResource, description: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="Describe the resource..."
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={newResource.category}
+                    onChange={(e) => setNewResource({...newResource, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {resourceCategories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <select
+                    value={newResource.type}
+                    onChange={(e) => setNewResource({...newResource, type: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="">Select a type</option>
+                    {resourceTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Read Time</label>
+                  <input
+                    type="text"
+                    value={newResource.readTime}
+                    onChange={(e) => setNewResource({...newResource, readTime: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="e.g., 15 min"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                  <select
+                    value={newResource.difficulty}
+                    onChange={(e) => setNewResource({...newResource, difficulty: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    required
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Link</label>
+                  <input
+                    type="url"
+                    value={newResource.link}
+                    onChange={(e) => setNewResource({...newResource, link: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                    placeholder="https://example.com/resource"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                <input
+                  type="text"
+                  value={newResource.tags}
+                  onChange={(e) => setNewResource({...newResource, tags: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                  placeholder="e.g., freelancing, career, beginners (comma separated)"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={newResource.featured}
+                  onChange={(e) => setNewResource({...newResource, featured: e.target.checked})}
+                  className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                />
+                <label htmlFor="featured" className="ml-2 block text-sm text-gray-900">
+                  Mark as featured resource
+                </label>
+              </div>
+
+              <div className="flex space-x-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Add Resource
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddResourceModal(false)}
                   className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
                 >
                   Cancel
