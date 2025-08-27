@@ -256,8 +256,14 @@ const getAllUsers = async (req, res) => {
     // Build filter object
     const filter = {};
     
+    // Always exclude admin users from the list
+    filter.userType = { $ne: 'admin' };
+    
     if (userType && userType !== 'all') {
-      filter.userType = userType;
+      // If a specific userType is requested, make sure it's not admin
+      if (userType !== 'admin') {
+        filter.userType = userType;
+      }
     }
     
 
@@ -292,14 +298,14 @@ const getAllUsers = async (req, res) => {
     const totalUsers = await User.countDocuments(filter);
     const totalPages = Math.ceil(totalUsers / limit);
 
-    // Get statistics
+    // Get statistics (excluding admin users)
     const stats = {
       total: totalUsers,
       freelancers: await User.countDocuments({ userType: 'freelancer' }),
       clients: await User.countDocuments({ userType: 'client' }),
       universityStaff: await User.countDocuments({ userType: 'universityStaff' }),
-      active: await User.countDocuments({ status: 'active' }),
-      suspended: await User.countDocuments({ status: 'suspended' })
+      active: await User.countDocuments({ userType: { $ne: 'admin' }, status: 'active' }),
+      suspended: await User.countDocuments({ userType: { $ne: 'admin' }, status: 'suspended' })
     };
 
     res.json({

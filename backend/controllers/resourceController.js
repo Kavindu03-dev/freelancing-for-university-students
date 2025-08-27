@@ -116,7 +116,7 @@ export const getAllResourcesForAdmin = async (req, res) => {
   try {
     const resources = await Resource.find()
       .sort({ createdAt: -1 })
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name userType firstName lastName');
 
     res.json({
       success: true,
@@ -162,6 +162,9 @@ export const createResource = async (req, res) => {
       processedTags = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
     }
 
+    // Determine the creator ID (admin or staff)
+    const creatorId = req.admin ? req.admin._id : req.staff._id;
+
     const newResource = new Resource({
       title,
       description,
@@ -172,7 +175,7 @@ export const createResource = async (req, res) => {
       tags: processedTags,
       featured: featured || false,
       link,
-      createdBy: req.admin.id
+      createdBy: creatorId
     });
 
     const savedResource = await newResource.save();
@@ -199,6 +202,23 @@ export const updateResource = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // Find the resource first to check ownership
+    const resource = await Resource.findById(id);
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found'
+      });
+    }
+
+    // Check if staff member is trying to edit someone else's resource
+    if (req.staff && resource.createdBy.toString() !== req.staff._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only edit your own resources'
+      });
+    }
+
     // Process tags if provided
     if (updateData.tags && typeof updateData.tags === 'string') {
       updateData.tags = updateData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
@@ -209,13 +229,6 @@ export const updateResource = async (req, res) => {
       updateData,
       { new: true, runValidators: true }
     ).populate('createdBy', 'name');
-
-    if (!updatedResource) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resource not found'
-      });
-    }
 
     res.json({
       success: true,
@@ -237,18 +250,28 @@ export const deleteResource = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const resource = await Resource.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    );
-
+    // Find the resource first to check ownership
+    const resource = await Resource.findById(id);
     if (!resource) {
       return res.status(404).json({
         success: false,
         message: 'Resource not found'
       });
     }
+
+    // Check if staff member is trying to delete someone else's resource
+    if (req.staff && resource.createdBy.toString() !== req.staff._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own resources'
+      });
+    }
+
+    const updatedResource = await Resource.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
 
     res.json({
       success: true,
@@ -302,14 +325,24 @@ export const permanentlyDeleteResource = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const resource = await Resource.findByIdAndDelete(id);
-
+    // Find the resource first to check ownership
+    const resource = await Resource.findById(id);
     if (!resource) {
       return res.status(404).json({
         success: false,
         message: 'Resource not found'
       });
     }
+
+    // Check if staff member is trying to delete someone else's resource
+    if (req.staff && resource.createdBy.toString() !== req.staff._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own resources'
+      });
+    }
+
+    const deletedResource = await Resource.findByIdAndDelete(id);
 
     res.json({
       success: true,
@@ -362,6 +395,43 @@ export const searchResources = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to search resources',
+      error: error.message
+    });
+  }
+};
+
+// Get resource by ID (public)
+export const getResourceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const resource = await Resource.findById(id)
+      .populate('createdBy', 'name');
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found'
+      });
+    }
+
+    // Check if resource is active (for public access)
+    if (!resource.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: resource
+    });
+  } catch (error) {
+    console.error('Error fetching resource by ID:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resource',
       error: error.message
     });
   }

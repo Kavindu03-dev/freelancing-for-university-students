@@ -94,4 +94,51 @@ const authenticateAdmin = async (req, res, next) => {
   }
 };
 
-export { protect, authenticateAdmin };
+const authenticateStaff = async (req, res, next) => {
+  let token;
+
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    try {
+      // Get token from header
+      token = req.headers.authorization.split(' ')[1];
+
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+
+      // Get user from the token and check if they're a staff member
+      const user = await User.findById(decoded.id).select('-password');
+
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+
+      // Check if user is a staff member
+      if (user.userType !== 'universityStaff') {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Access denied. Staff privileges required.' 
+        });
+      }
+
+      // Add staff user to request object
+      req.staff = user;
+      next();
+    } catch (error) {
+      console.error('Token verification error:', error);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Not authorized, token failed' 
+      });
+    }
+  } else {
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Not authorized, no token' 
+    });
+  }
+};
+
+export { protect, authenticateAdmin, authenticateStaff };
