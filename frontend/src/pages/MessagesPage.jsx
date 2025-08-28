@@ -13,6 +13,11 @@ function MessagesPage() {
   const currentUser = getUserData();
   const location = useLocation();
 
+  const [loading, setLoading] = useState(false);
+  const token = typeof window !== 'undefined'
+    ? (localStorage.getItem('userToken') || (localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')).token : null))
+    : null;
+
   // Mock conversations data
   const mockConversations = [
     {
@@ -145,56 +150,76 @@ function MessagesPage() {
   };
 
   useEffect(() => {
-    if (isAuthenticated()) {
-      // Check if there's a freelancer parameter in the URL
-      const searchParams = new URLSearchParams(location.search);
-      const freelancerId = searchParams.get('freelancer');
-      
-      if (freelancerId) {
-        // Check if conversation already exists with this freelancer
-        const existingConversation = mockConversations.find(conv => conv.participant.id === parseInt(freelancerId));
-        
-        if (existingConversation) {
-          // Select existing conversation
-          setConversations(mockConversations);
-          setSelectedConversation(existingConversation);
-          setMessages(mockMessages[existingConversation.id] || []);
-        } else {
-          // Create new conversation with freelancer
-          const newConversation = {
-            id: Date.now(),
-            participant: {
-              id: parseInt(freelancerId),
-              name: 'Freelancer', // This would be fetched from API
-              avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80',
-              isOnline: true,
-              lastSeen: 'Online'
-            },
-            lastMessage: {
-              text: 'Start a new conversation',
-              timestamp: new Date().toISOString(),
-              senderId: currentUser?.id || 1
-            },
-            unreadCount: 0,
-            projectTitle: 'New Project Discussion',
-            status: 'pending'
-          };
-          
-          const updatedConversations = [newConversation, ...mockConversations];
-          setConversations(updatedConversations);
-          setSelectedConversation(newConversation);
-          setMessages([]);
+    const fetchConversations = async () => {
+      if (!isAuthenticated() || !token) return;
+      setLoading(true);
+      try {
+        const res = await fetch('http://localhost:5000/api/messages/conversations', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data?.success) {
+          const formatted = (data.conversations || []).map((conv) => {
+            const other = (conv.participants || []).find(p => (p?._id || p) !== (currentUser?._id || currentUser?.id));
+            return {
+              id: conv._id,
+              participant: {
+                id: other?._id || other,
+                name: other ? `${other.firstName || ''} ${other.lastName || ''}`.trim() || 'User' : 'User',
+                avatar: other?.profileImage?.url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80',
+                isOnline: false,
+                lastSeen: ''
+              },
+              lastMessage: { text: '', timestamp: conv.lastMessageAt || conv.updatedAt || conv.createdAt, senderId: '' },
+              unreadCount: 0,
+              projectTitle: conv.orderId ? 'Order Conversation' : 'Conversation',
+              status: 'active'
+            };
+          });
+          setConversations(formatted);
         }
-      } else {
-        // Normal flow - show existing conversations
-        setConversations(mockConversations);
-        if (mockConversations.length > 0) {
-          setSelectedConversation(mockConversations[0]);
-          setMessages(mockMessages[mockConversations[0].id] || []);
-        }
+      } catch (e) {
+        console.error('Fetch conversations failed', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchConversations();
+  }, [currentUser?._id]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    const searchParams = new URLSearchParams(location.search);
+    const conversationId = searchParams.get('conversation');
+    if (conversationId && conversations.length > 0) {
+      const found = conversations.find(c => c.id === conversationId);
+      if (found) {
+        setSelectedConversation(found);
+        // fetch messages
+        (async () => {
+          try {
+            const res = await fetch(`http://localhost:5000/api/messages/conversations/${conversationId}/messages`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data?.success) {
+              const mapped = (data.messages || []).map((m) => ({
+                id: m._id,
+                text: m.text,
+                senderId: m.senderId,
+                timestamp: m.createdAt,
+                type: m.type
+              }));
+              setMessages(mapped);
+            }
+          } catch (e) {
+            console.error('Fetch messages failed', e);
+          }
+        })();
       }
     }
-  }, [location.search, currentUser?.id]);
+  }, [location.search, conversations]);
 
   useEffect(() => {
     scrollToBottom();
@@ -206,7 +231,26 @@ function MessagesPage() {
 
   const handleConversationSelect = (conversation) => {
     setSelectedConversation(conversation);
-    setMessages(mockMessages[conversation.id] || []);
+    (async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/messages/conversations/${conversation.id}/messages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data?.success) {
+          const mapped = (data.messages || []).map((m) => ({
+            id: m._id,
+            text: m.text,
+            senderId: m.senderId,
+            timestamp: m.createdAt,
+            type: m.type
+          }));
+          setMessages(mapped);
+        }
+      } catch (e) {
+        console.error('Fetch messages failed', e);
+      }
+    })();
     
     // Mark as read
     setConversations(prev => 
@@ -218,52 +262,32 @@ function MessagesPage() {
     );
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversation) return;
-
-    const message = {
-      id: messages.length + 1,
-      text: newMessage,
-      senderId: currentUser?.id || 1,
-      timestamp: new Date().toISOString(),
-      type: 'text'
-    };
-
-    setMessages(prev => [...prev, message]);
-    setNewMessage('');
-
-    // Update last message in conversation
-    setConversations(prev =>
-      prev.map(conv =>
-        conv.id === selectedConversation.id
-          ? {
-              ...conv,
-              lastMessage: {
-                text: newMessage,
-                timestamp: new Date().toISOString(),
-                senderId: currentUser?.id || 1
-              }
-            }
-          : conv
-      )
-    );
-
-    // Simulate typing indicator and response (for demo)
-    setTimeout(() => {
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        const response = {
-          id: messages.length + 2,
-          text: 'Thanks for your message! I\'ll get back to you shortly.',
-          senderId: selectedConversation.participant.id,
-          timestamp: new Date().toISOString(),
-          type: 'text'
-        };
-        setMessages(prev => [...prev, response]);
-      }, 2000);
-    }, 1000);
+    try {
+      const res = await fetch(`http://localhost:5000/api/messages/conversations/${selectedConversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ text: newMessage })
+      });
+      const data = await res.json();
+      if (data?.success && data.message) {
+        setMessages(prev => [...prev, {
+          id: data.message._id,
+          text: data.message.text,
+          senderId: data.message.senderId,
+          timestamp: data.message.createdAt,
+          type: data.message.type
+        }]);
+        setNewMessage('');
+      }
+    } catch (err) {
+      console.error('Send message failed', err);
+    }
   };
 
   const handleSendOffer = () => {
