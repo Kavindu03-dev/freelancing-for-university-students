@@ -201,16 +201,7 @@ function Header() {
               Services
             </Link>
 
-            <Link 
-              to="/skills" 
-              className={`px-3 py-2 rounded-md text-base font-semibold transition-all duration-200 ${
-                isActiveLink('/skills') 
-                  ? 'text-yellow-400 bg-yellow-400/10 border-b-2 border-yellow-400 shadow-lg' 
-                  : 'text-white hover:text-yellow-400'
-              }`}
-            >
-              Skills
-            </Link>
+
             
             <Link 
               to="/resources" 
@@ -428,17 +419,7 @@ function Header() {
             >
               Services
             </Link>
-            <Link 
-              to="/skills" 
-              onClick={closeMobileMenu} 
-              className={`block px-3 py-2 text-base font-medium rounded-md transition-all duration-200 ${
-                isActiveLink('/skills') 
-                  ? 'text-yellow-400 bg-yellow-500/20 border-l-4 border-yellow-400 shadow-lg' 
-                  : 'text-white hover:text-yellow-400 hover:bg-yellow-500/20'
-              }`}
-            >
-              Skills
-            </Link>
+
             <Link 
               to="/resources" 
               onClick={closeMobileMenu} 

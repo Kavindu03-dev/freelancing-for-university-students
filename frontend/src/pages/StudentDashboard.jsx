@@ -3311,12 +3311,6 @@ function StudentDashboard() {
                             </p>
                           </div>
                           <div className="flex space-x-2">
-                            <button
-                              onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
-                              className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-                            >
-                              View Job Post
-                            </button>
                             {app.status === 'Pending' && (
                               <button
                                 onClick={() => handleWithdrawApplication(app._id)}
@@ -3415,26 +3409,7 @@ function StudentDashboard() {
 
                           {/* Right Column - Interview & Additional Info */}
                           <div className="space-y-6">
-                            {/* Debug: Show status and interview details */}
-                            {console.log('App:', app._id, 'Status:', app.status, 'Interview details:', app.interviewDetails, 'Full app:', app)}
-                            
-                            {/* Debug display for development */}
-                            {process.env.NODE_ENV === 'development' && (
-                              <div className="bg-red-50 rounded-xl p-4 border border-red-200 mb-4">
-                                <h4 className="font-semibold text-red-900 mb-2">Debug Info (Development Only)</h4>
-                                <div className="text-xs text-red-700 space-y-1">
-                                  <div>Status: {app.status}</div>
-                                  <div>Has Interview Details: {app.interviewDetails ? 'Yes' : 'No'}</div>
-                                  {app.interviewDetails && (
-                                    <>
-                                      <div>Scheduled Date: {app.interviewDetails.scheduledDate}</div>
-                                      <div>Scheduled Time: {app.interviewDetails.scheduledTime}</div>
-                                      <div>Location: {app.interviewDetails.location}</div>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+
                             
                             {/* Interview Details Section */}
                             {app.status === 'Interview Scheduled' ? (
@@ -3487,30 +3462,7 @@ function StudentDashboard() {
                               )
                             ) : null}
 
-                            {/* Professional Summary */}
-                            <div className="bg-gray-50 rounded-xl p-4">
-                              <h4 className="font-semibold text-gray-900 mb-3">Professional Summary</h4>
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Experience:</span>
-                                  <span className="font-medium text-gray-900">
-                                    {app.relevantExperience || 'Not specified'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Timeline:</span>
-                                  <span className="font-medium text-gray-900">
-                                    {app.proposedTimeline || 'Not specified'}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Availability:</span>
-                                  <span className="font-medium text-gray-900">
-                                    {app.availability || 'Not specified'}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+
 
                             {/* Skills & Qualifications */}
                             <div className="bg-gray-50 rounded-xl p-4">
@@ -3574,12 +3526,6 @@ function StudentDashboard() {
                                   Withdraw Application
                                 </button>
                               )}
-                              <button
-                                onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                              >
-                                View Full Job Post
-                              </button>
                             </div>
                           </div>
                         </div>

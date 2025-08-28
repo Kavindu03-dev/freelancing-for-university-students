@@ -127,7 +127,34 @@ const jobApplicationSchema = new mongoose.Schema({
   
   // Client action timestamps
   reviewedAt: Date,
-  respondedAt: Date
+  respondedAt: Date,
+  
+  // Status change history
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: [
+        'Pending',
+        'Under Review', 
+        'Accepted',
+        'Interview Scheduled',
+        'Hired',
+        'Declined',
+        'Rejected'
+      ]
+    },
+    changedAt: {
+      type: Date,
+      default: Date.now
+    },
+    changedBy: {
+      type: String,
+      enum: ['Client', 'System'],
+      default: 'Client'
+    },
+    reason: String,
+    feedback: String
+  }]
 });
 
 // Update the updatedAt field before saving

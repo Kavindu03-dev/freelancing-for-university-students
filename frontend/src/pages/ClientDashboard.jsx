@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import FreelancerProfilePopup from "../components/FreelancerProfilePopup";
+import ProfileImageUpload from "../components/ProfileImageUpload";
 
 function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -117,10 +118,14 @@ function ClientDashboard() {
     companySize: '',
     industry: '',
     website: '',
-    companyDescription: ''
+    companyDescription: '',
+    bio: ''
   });
   const [editErrors, setEditErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const [isRemovingProfileImage, setIsRemovingProfileImage] = useState(false);
+  const [showProfileImageMenu, setShowProfileImageMenu] = useState(false);
 
   // Recommendation algorithms
   const getRecommendedFreelancers = (postRequirements = null) => {
@@ -312,12 +317,41 @@ function ClientDashboard() {
     }
   };
 
+  // Function to fetch complete profile data from backend
+  const fetchCompleteProfile = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update client data with complete profile
+          setClientData(result.data);
+          // Update localStorage with complete data
+          localStorage.setItem('userData', JSON.stringify(result.data));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching complete profile:', error);
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     if (userData) {
       const parsed = JSON.parse(userData);
       if (parsed.userType === 'client') {
         setClientData(parsed);
+        // Also fetch fresh data from backend to ensure we have the latest profile image
+        fetchCompleteProfile();
       } else {
         navigate('/signin');
       }
@@ -369,6 +403,20 @@ function ClientDashboard() {
       setActiveTab(tabParam);
     }
   }, [location.search]);
+
+  // Close profile image menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileImageMenu && !event.target.closest('.profile-image-container')) {
+        setShowProfileImageMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileImageMenu]);
   
   // Fetch applications when applications tab or overview tab is active
   useEffect(() => {
@@ -461,7 +509,8 @@ function ClientDashboard() {
       companySize: clientData?.companySize || '',
       industry: clientData?.industry || '',
       website: clientData?.website || '',
-      companyDescription: clientData?.companyDescription || ''
+      companyDescription: clientData?.companyDescription || '',
+      bio: clientData?.bio || ''
     });
     setEditErrors({});
     setShowEditProfile(true);
@@ -525,6 +574,108 @@ function ClientDashboard() {
   const handleCancelEdit = () => {
     setShowEditProfile(false);
     setEditErrors({});
+  };
+
+  // Profile Image Upload Functions
+  const handleProfileImageUpload = async (file) => {
+    try {
+      setIsUploadingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to upload profile image');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update client data with new profile image
+          setClientData(prev => ({
+            ...prev,
+            profileImage: result.data.profileImage
+          }));
+          
+          // Update localStorage
+          const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+          const updatedUserData = {
+            ...currentUserData,
+            profileImage: result.data.profileImage
+          };
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          alert('Profile image uploaded successfully!');
+        } else {
+          alert(result.message || 'Failed to upload profile image');
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to upload profile image');
+      }
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      alert('Failed to upload profile image. Please try again.');
+    } finally {
+      setIsUploadingProfileImage(false);
+    }
+  };
+
+  const handleProfileImageRemove = async () => {
+    try {
+      setIsRemovingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to remove profile image');
+        return;
+      }
+
+      // Call backend API to remove profile image
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setClientData(prev => ({
+          ...prev,
+          profileImage: null
+        }));
+        
+        // Update localStorage
+        const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const updatedUserData = {
+          ...currentUserData,
+          profileImage: null
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        alert('Profile image removed successfully!');
+      } else {
+        alert(`Failed to remove profile image: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Profile image remove error:', error);
+      alert('Failed to remove profile image. Please try again.');
+    } finally {
+      setIsRemovingProfileImage(false);
+    }
   };
 
   const handleLogout = () => {
@@ -1562,11 +1713,174 @@ function ClientDashboard() {
       <div className="bg-gradient-to-r from-black via-gray-900 to-black text-white rounded-2xl shadow-xl p-8">
         <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
           {/* Profile Picture */}
+          <div className="relative group profile-image-container">
+            {clientData?.profileImage?.url ? (
           <div className="relative">
-            <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black">
+                <img
+                  src={clientData.profileImage.url}
+                  alt="Profile"
+                  className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => setShowProfileImageMenu(!showProfileImageMenu)}
+                />
+                {/* Status indicator */}
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 border-4 border-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                
+                {/* Click indicator */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Profile Image Options Menu */}
+                {showProfileImageMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowProfileImageMenu(false)} />
+                    
+                    {/* Menu */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowProfileImageMenu(false);
+                            document.getElementById('change-profile-image-input').click();
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setShowProfileImageMenu(false);
+                            if (confirm('Are you sure you want to remove your profile picture?')) {
+                              await handleProfileImageRemove();
+                            }
+                          }}
+                          disabled={isRemovingProfileImage}
+                          className={`w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors ${
+                            isRemovingProfileImage ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {isRemovingProfileImage ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Removing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Remove Photo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* Hidden file input for changing photo */}
+                <input
+                  id="change-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            ) : (
+              <div className="relative">
+                <div 
+                  className={`w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => document.getElementById('upload-profile-image-input').click()}
+                >
               {clientData?.firstName?.charAt(0)}{clientData?.lastName?.charAt(0)}
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-500 border-4 border-white rounded-full"></div>
+                
+                {/* Hidden file input for uploading photo */}
+                <input
+                  id="upload-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            )}
+            
+            {/* Upload progress indicator */}
+            {isUploadingProfileImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
+                <div className="text-center text-white">
+                  <svg className="animate-spin w-8 h-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-sm font-medium">Uploading...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Upload instruction */}
+            <div className="text-center mt-2">
+              <p className="text-xs text-gray-300 opacity-75">
+                {clientData?.profileImage?.url ? 'Click for options' : 'Click to upload photo'}
+              </p>
+            </div>
           </div>
 
           {/* Profile Info */}
@@ -1600,8 +1914,12 @@ function ClientDashboard() {
             </div>
 
             <p className="text-gray-300 max-w-2xl">
-              Experienced client looking for talented student freelancers to help bring projects to life. 
-              Committed to providing clear requirements and fair compensation for quality work.
+              {clientData?.bio || 'Experienced client looking for talented student freelancers to help bring projects to life. Committed to providing clear requirements and fair compensation for quality work.'}
+              {clientData?.profileImage?.url && (
+                <span className="block mt-2 text-sm text-green-300">
+                  ✓ Professional profile picture uploaded
+                </span>
+              )}
             </p>
           </div>
 
@@ -1666,52 +1984,7 @@ function ClientDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Project Preferences</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500"
-                  placeholder="e.g., Technology, Healthcare, Education"
-                  defaultValue="Technology"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Budget Range</label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500">
-                    <option value="">Select budget range</option>
-                    <option value="under-500">Under $500</option>
-                    <option value="500-1000">$500 - $1,000</option>
-                    <option value="1000-2500">$1,000 - $2,500</option>
-                    <option value="2500-5000">$2,500 - $5,000</option>
-                    <option value="over-5000">Over $5,000</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Timeline</label>
-                  <select className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500">
-                    <option value="">Select timeline</option>
-                    <option value="1-2-weeks">1-2 weeks</option>
-                    <option value="1-month">1 month</option>
-                    <option value="2-3-months">2-3 months</option>
-                    <option value="3-6-months">3-6 months</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Project Description</label>
-                <textarea
-                  rows="4"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-200 focus:border-green-500"
-                  placeholder="Describe your typical project needs and requirements..."
-                  defaultValue="Looking for talented student freelancers to help with web development, design, and content creation projects. Prefer students with strong technical skills and good communication."
-                />
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {/* Sidebar */}
@@ -1975,6 +2248,15 @@ function ClientDashboard() {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* Profile Image Upload */}
+                <ProfileImageUpload
+                  currentImage={clientData?.profileImage}
+                  onImageUpload={handleProfileImageUpload}
+                  onImageRemove={handleProfileImageRemove}
+                  isUploading={isUploadingProfileImage}
+                  className="mb-6"
+                />
+
                 {/* Personal Information */}
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h4>
@@ -2138,6 +2420,22 @@ function ClientDashboard() {
                         placeholder="Describe your company and what you do..."
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Personal Bio */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Bio</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">About You</label>
+                    <textarea
+                      rows="4"
+                      value={editFormData.bio}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                      placeholder="Tell us about yourself, your experience, and what you're looking for in freelancers..."
+                    />
+                    <p className="text-sm text-gray-500 mt-1">This will be visible to freelancers when they view your profile.</p>
                   </div>
                 </div>
 

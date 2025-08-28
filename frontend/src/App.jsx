@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import Header from "./components/Header";
+import ScrollToTop from "./components/ScrollToTop";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -11,7 +12,7 @@ import HomePage from "./pages/HomePage";
 
 import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
-import SkillsPage from "./pages/SkillsPage";
+
 import ResourcesPage from "./pages/ResourcesPage";
 import ContactPage from "./pages/ContactPage";
 
@@ -38,6 +39,7 @@ function AppContent() {
   
   return (
     <>
+      <ScrollToTop />
       {shouldShowHeader && <Header />}
       <Routes>
         <Route path="/signin" element={<Login />} />
@@ -51,7 +53,7 @@ function AppContent() {
 
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
-        <Route path="/skills" element={<SkillsPage />} />
+
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/contact" element={<ContactPage />} />
 
