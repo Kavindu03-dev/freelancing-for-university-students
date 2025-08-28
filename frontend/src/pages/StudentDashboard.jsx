@@ -799,6 +799,13 @@ function StudentDashboard() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Fetched applications:', result.data); // Debug log
+        console.log('Applications structure:', result.data?.map(app => ({
+          id: app._id,
+          status: app.status,
+          hasInterviewDetails: !!app.interviewDetails,
+          interviewDetails: app.interviewDetails
+        })));
         setApplications(result.data || []);
       } else {
         const errorData = await response.json();
@@ -1130,6 +1137,13 @@ function StudentDashboard() {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // Fetch applications when component mounts
+  useEffect(() => {
+    if (studentData) {
+      fetchApplications();
+    }
+  }, [studentData]);
 
   const handleLogout = () => {
     localStorage.removeItem('userData');
@@ -3239,73 +3253,337 @@ function StudentDashboard() {
                   </div>
                 )}
 
-                {!applicationsLoading && !applicationsError && applications.length > 0 && (
-                  <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                      <h3 className="text-lg font-medium text-gray-900">Application Summary</h3>
+                {/* Applications Summary Cards */}
+                {!applicationsLoading && !applicationsError && applications && applications.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-blue-600">{applications.length}</div>
+                      <div className="text-sm text-gray-600">Total Applications</div>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Post</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {applications.map(app => (
-                            <tr key={app._id} className="hover:bg-gray-50">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {app.postId?.title || 'Job Post'}
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {applications.filter(app => app.status === 'Pending').length}
+                      </div>
+                      <div className="text-sm text-gray-600">Pending Review</div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-green-600">
+                        {applications.filter(app => app.status === 'Accepted').length}
+                      </div>
+                      <div className="text-sm text-gray-600">Accepted</div>
+                    </div>
+                    <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {applications.filter(app => app.status === 'Interview Scheduled').length}
+                      </div>
+                      <div className="text-sm text-gray-600">Interviews</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Applications View */}
+                {!applicationsLoading && !applicationsError && applications && applications.length > 0 && (
+                  <div className="space-y-6">
+                    {applications.map(app => (
+                      <div key={app._id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+                        {/* Application Header */}
+                        <div className="flex justify-between items-start mb-6">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="text-2xl font-bold text-gray-900">
+                                {app.postId?.title || 'Job Post Title'}
+                              </h3>
+                              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                                app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                                app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                                app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
+                                app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
+                                app.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {app.status}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 text-lg">
+                              {app.postId?.type || 'Job Type'} • ${app.postId?.budget || 'Budget'}
+                            </p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
+                              className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                            >
+                              View Job Post
+                            </button>
+                            {app.status === 'Pending' && (
+                              <button
+                                onClick={() => handleWithdrawApplication(app._id)}
+                                className="px-4 py-2 text-red-600 hover:text-red-800 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                              >
+                                Withdraw
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Application Details Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          {/* Left Column - Applicant & Job Info */}
+                          <div className="space-y-6">
+                            {/* Applicant Information */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                                <svg className="w-5 h-5 text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Applicant Information
+                              </h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Name:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {studentData?.firstName} {studentData?.lastName}
+                                  </span>
                                 </div>
-                                <div className="text-sm text-gray-500">
-                                  {app.postId?.type || 'N/A'} • ${app.postId?.budget || 'N/A'}
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Email:</span>
+                                  <span className="font-medium text-gray-900">{studentData?.email}</span>
                                 </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                                  app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
-                                  app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                                  app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
-                                  app.status === 'Declined' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {app.status}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {new Date(app.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button
-                                  onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
-                                  className="text-blue-600 hover:text-blue-900 mr-3"
-                                >
-                                  View Job
-                                </button>
-                                {app.status === 'Pending' && (
-                                  <button
-                                    onClick={() => handleWithdrawApplication(app._id)}
-                                    className="text-red-600 hover:text-red-900"
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Phone:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {studentData?.phoneNumber || 'Not specified'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Portfolio:</span>
+                                  <a 
+                                    href="#" 
+                                    className="text-blue-600 hover:text-blue-800 font-medium"
                                   >
-                                    Withdraw
-                                  </button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                    View Portfolio
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Cover Letter */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3">Cover Letter</h4>
+                              <p className="text-gray-700 text-sm leading-relaxed">
+                                {app.coverLetter || 'No cover letter provided'}
+                              </p>
+                            </div>
+
+                            {/* Application & Job Details */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3">Application Details</h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Applied:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {new Date(app.createdAt).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Job Type:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {app.postId?.type || 'Project'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Budget:</span>
+                                  <span className="font-medium text-green-600">
+                                    ${app.postId?.budget || 'N/A'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Deadline:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {app.postId?.deadline || 'Not specified'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Column - Interview & Additional Info */}
+                          <div className="space-y-6">
+                            {/* Debug: Show status and interview details */}
+                            {console.log('App:', app._id, 'Status:', app.status, 'Interview details:', app.interviewDetails, 'Full app:', app)}
+                            
+                            {/* Debug display for development */}
+                            {process.env.NODE_ENV === 'development' && (
+                              <div className="bg-red-50 rounded-xl p-4 border border-red-200 mb-4">
+                                <h4 className="font-semibold text-red-900 mb-2">Debug Info (Development Only)</h4>
+                                <div className="text-xs text-red-700 space-y-1">
+                                  <div>Status: {app.status}</div>
+                                  <div>Has Interview Details: {app.interviewDetails ? 'Yes' : 'No'}</div>
+                                  {app.interviewDetails && (
+                                    <>
+                                      <div>Scheduled Date: {app.interviewDetails.scheduledDate}</div>
+                                      <div>Scheduled Time: {app.interviewDetails.scheduledTime}</div>
+                                      <div>Location: {app.interviewDetails.location}</div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Interview Details Section */}
+                            {app.status === 'Interview Scheduled' ? (
+                              app.interviewDetails && typeof app.interviewDetails === 'object' ? (
+                                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                                  <h4 className="font-semibold text-blue-900 mb-3">Interview Details</h4>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                      <span className="text-blue-700">Date:</span>
+                                      <span className="font-medium text-blue-900">
+                                        {(() => {
+                                          try {
+                                            if (app.interviewDetails.scheduledDate) {
+                                              const date = new Date(app.interviewDetails.scheduledDate);
+                                              if (!isNaN(date.getTime())) {
+                                                return date.toLocaleDateString('en-US', {
+                                                  year: 'numeric',
+                                                  month: 'long',
+                                                  day: 'numeric'
+                                                });
+                                              }
+                                            }
+                                            return 'TBD';
+                                          } catch (error) {
+                                            console.error('Error formatting date:', error);
+                                            return 'TBD';
+                                          }
+                                        })()}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-blue-700">Time:</span>
+                                      <span className="font-medium text-blue-900">
+                                        {app.interviewDetails.scheduledTime || 'TBD'}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-blue-700">Location:</span>
+                                      <span className="font-medium text-blue-900">
+                                        {app.interviewDetails.location || 'TBD'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                                  <h4 className="font-semibold text-yellow-900 mb-3">Interview Scheduled</h4>
+                                  <p className="text-yellow-700 text-sm">Interview has been scheduled but details are not yet available.</p>
+                                </div>
+                              )
+                            ) : null}
+
+                            {/* Professional Summary */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3">Professional Summary</h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Experience:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {app.relevantExperience || 'Not specified'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Timeline:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {app.proposedTimeline || 'Not specified'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Availability:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {app.availability || 'Not specified'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Skills & Qualifications */}
+                            <div className="bg-gray-50 rounded-xl p-4">
+                              <h4 className="font-semibold text-gray-900 mb-3">Skills & Qualifications</h4>
+                              <div className="space-y-2 text-sm">
+                                <div>
+                                  <span className="text-gray-600">Required Skills:</span>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {app.postId?.requiredSkills && Array.isArray(app.postId.requiredSkills) ? 
+                                      app.postId.requiredSkills.map(skill => (
+                                        <span key={skill} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                          {skill}
+                                        </span>
+                                      )) : (
+                                        <span className="text-gray-400 text-xs">No skills specified</span>
+                                      )
+                                    }
+                                  </div>
+                                </div>
+                                <div className="pt-2">
+                                  <span className="text-gray-600">Your Skills:</span>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {studentData?.technicalSkills && Array.isArray(studentData.technicalSkills) ? 
+                                      studentData.technicalSkills.map(skill => (
+                                        <span key={skill} className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                          {skill}
+                                        </span>
+                                      )) : (
+                                        <span className="text-gray-400 text-xs">No skills specified</span>
+                                      )
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Client Feedback - Only show if provided */}
+                            {app.clientFeedback && (
+                              <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                                <h4 className="font-semibold text-yellow-900 mb-3">Client Feedback</h4>
+                                <p className="text-yellow-800 text-sm">
+                                  {app.clientFeedback}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Application Actions */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm text-gray-500">
+                              Application ID: {app._id}
+                            </div>
+                            <div className="flex space-x-3">
+                              {app.status === 'Pending' && (
+                                <button
+                                  onClick={() => handleWithdrawApplication(app._id)}
+                                  className="px-4 py-2 text-red-600 hover:text-red-800 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                                >
+                                  Withdraw Application
+                                </button>
+                              )}
+                              <button
+                                onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                View Full Job Post
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
