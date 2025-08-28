@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isAuthenticated, getUserData } from '../utils/auth';
+import { isAuthenticated } from '../utils/auth';
 
 const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
   const navigate = useNavigate();
@@ -25,6 +25,22 @@ const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
     
     if (!isAuthenticated()) {
       navigate('/signin');
+      return;
+    }
+
+    // Validate service availability
+    if (!service) {
+      setError('Service information is missing');
+      return;
+    }
+    
+    if (!service.isActive) {
+      setError('This service is currently not available for orders');
+      return;
+    }
+    
+    if (!service.packages || !service.packages[selectedPackage]) {
+      setError('Selected package is not available');
       return;
     }
 
@@ -105,7 +121,16 @@ const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
     console.log('Service packages:', service?.packages);
     console.log('Basic package details:', service?.packages?.basic);
     
-    if (!service) return null;
+    // Check if service is available for orders
+    if (!service) {
+      console.error('No service data provided');
+      return null;
+    }
+    
+    if (!service.isActive) {
+      console.error('Service is not active');
+      return null;
+    }
     
     // If service has packages, use them
     if (service.packages && service.packages[selectedPackage]) {
@@ -170,6 +195,18 @@ const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
               <p className="text-gray-600 text-sm mb-4">
                 {service.freelancerName} • {service.category}
               </p>
+              
+              {/* Debug Info - Remove in production */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <p className="text-xs text-yellow-800">
+                  <strong>Debug Info:</strong><br/>
+                  Service ID: {service._id}<br/>
+                  isActive: {String(service.isActive)}<br/>
+                  Status: {service.status}<br/>
+                  Has Packages: {service.packages ? 'Yes' : 'No'}<br/>
+                  Selected Package: {selectedPackage}
+                </p>
+              </div>
               
               {packageDetails && (
                                  <div className="bg-gray-50 p-4 rounded-lg mb-4 transition-all duration-300 hover:bg-gray-100 hover:shadow-md transform hover:-translate-y-1">

@@ -43,14 +43,45 @@ const placeOrderStripe = async (req, res) => {
                 message: "Service not found"
             });
         }
+        
+        // Debug logging
+        console.log('Service found:', {
+            id: service._id,
+            title: service.title,
+            isActive: service.isActive,
+            status: service.status,
+            freelancerId: service.freelancerId
+        });
+        
+        console.log('Service object keys:', Object.keys(service));
+        console.log('Service isActive type:', typeof service.isActive);
+        console.log('Service isActive value:', service.isActive);
+        console.log('Service status type:', typeof service.status);
+        console.log('Service status value:', service.status);
 
-        // Check if service is active
-        if (!service.isActive || service.status !== 'approved') {
+        // Check if service is active and available for orders
+        if (service.isActive === false) {
             return res.status(400).json({
                 success: false,
                 message: "Service is not available for orders"
             });
         }
+        
+        // Ensure service has required fields
+        if (!service.packages || Object.keys(service.packages).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Service packages are not configured"
+            });
+        }
+        
+        // Optional: Check if service is approved (can be commented out if you want all active services to be orderable)
+        // if (service.status !== 'approved') {
+        //     return res.status(400).json({
+        //         success: false,
+        //         message: "Service is pending approval and not available for orders yet"
+        //     });
+        // }
 
         // Handle services without packages - create default packages
         let packageDetails;
