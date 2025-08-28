@@ -5,12 +5,15 @@ import OnboardingWizard from "../components/OnboardingWizard";
 import ApplicationTracker from "../components/ApplicationTracker";
 import EnhancedRecommendations from "../components/EnhancedRecommendations";
 import GigManagement from "../components/GigManagement";
+import PostPaymentModal from "../components/PostPaymentModal";
 
 function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [studentData, setStudentData] = useState(null);
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPostForPayment, setSelectedPostForPayment] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editedProfileData, setEditedProfileData] = useState({});
   const [showEditPopup, setShowEditPopup] = useState(false);
@@ -89,6 +92,47 @@ function StudentDashboard() {
   const [availableOpportunities, setAvailableOpportunities] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState(null);
+  
+  // Post orders state
+  const [postOrders, setPostOrders] = useState([]);
+  const [postOrdersLoading, setPostOrdersLoading] = useState(false);
+  const [postOrdersError, setPostOrdersError] = useState(null);
+
+  // Function to fetch post orders
+  const fetchPostOrders = async () => {
+    try {
+      setPostOrdersLoading(true);
+      setPostOrdersError(null);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        setPostOrdersError('Authentication required');
+        return;
+      }
+      
+      const response = await fetch('http://localhost:5000/api/post-orders/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setPostOrders(result.postOrders);
+        } else {
+          setPostOrdersError(result.message || 'Failed to fetch post orders');
+        }
+      } else {
+        setPostOrdersError('Failed to fetch post orders');
+      }
+    } catch (error) {
+      console.error('Error fetching post orders:', error);
+      setPostOrdersError('Error connecting to server');
+    } finally {
+      setPostOrdersLoading(false);
+    }
+  };
 
   // Function to fetch posts from database
   const fetchPosts = async () => {
@@ -1079,6 +1123,7 @@ function StudentDashboard() {
   // Fetch posts when component mounts
   useEffect(() => {
     fetchPosts();
+    fetchPostOrders();
   }, []);
 
   const handleLogout = () => {
@@ -1116,8 +1161,8 @@ function StudentDashboard() {
   };
 
   const handleApply = (post) => {
-    setSelectedPost(post);
-    setShowApplicationForm(true);
+    setSelectedPostForPayment(post);
+    setShowPaymentModal(true);
   };
 
   const handleSubmitApplication = () => {
@@ -1739,6 +1784,133 @@ function StudentDashboard() {
 
 
 
+  const renderPostOrders = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">My Post Orders</h3>
+        <button
+          onClick={fetchPostOrders}
+          className="px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-all duration-300"
+        >
+          🔄 Refresh
+        </button>
+      </div>
+
+      {postOrdersLoading ? (
+        <div className="text-center py-16">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading post orders...</p>
+        </div>
+      ) : postOrdersError ? (
+        <div className="text-center py-16">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <p className="text-red-800">Error: {postOrdersError}</p>
+            <button
+              onClick={fetchPostOrders}
+              className="mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-300"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      ) : postOrders.length === 0 ? (
+        <div className="text-center py-16">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="text-xl font-semibold text-gray-500 mb-2">No Post Orders Yet</h3>
+          <p className="text-gray-400">You haven't applied to any job posts yet.</p>
+          <button
+            onClick={() => setActiveTab("opportunities")}
+            className="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-300"
+          >
+            Browse Opportunities
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {postOrders.map((order) => (
+            <div key={order._id} className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-all duration-300">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-800 mb-2">{order.postDetails?.title || 'Untitled Post'}</h4>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                      {order.postDetails?.type || 'Unknown Type'}
+                    </span>
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                      {order.postDetails?.category || 'Unknown Category'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-green-600">${order.totalAmount}</div>
+                  <div className="text-sm text-gray-500">Total Amount</div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Deadline: {new Date(order.deadline).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Status: {order.status}</span>
+                </div>
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Payment: {order.paymentStatus}</span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <h5 className="font-medium text-gray-700 mb-2">Your Requirements:</h5>
+                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  {order.requirements}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-500">
+                  Applied: {new Date(order.createdAt).toLocaleDateString()}
+                </div>
+                <div className="flex space-x-2">
+                  {order.status === 'Pending' && (
+                    <button className="px-3 py-1 bg-yellow-500 text-white text-xs rounded-lg hover:bg-yellow-600 transition-colors">
+                      Pending
+                    </button>
+                  )}
+                  {order.status === 'Payment Confirmed' && (
+                    <button className="px-3 py-1 bg-green-500 text-white text-xs rounded-lg hover:bg-green-600 transition-colors">
+                      Payment Confirmed
+                    </button>
+                  )}
+                  {order.status === 'In Progress' && (
+                    <button className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors">
+                      In Progress
+                    </button>
+                  )}
+                  {order.status === 'Completed' && (
+                    <button className="px-3 py-1 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors">
+                      Completed
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   const renderBookmarks = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -2070,8 +2242,8 @@ function StudentDashboard() {
               
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-gray-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                  <circle cx="12" cy="10" r="3" />
                 </svg>
                 <span>{studentData?.university || 'University'}</span>
               </div>
@@ -3062,6 +3234,7 @@ function StudentDashboard() {
               { id: "opportunities", name: "Browse Opportunities", icon: "🔍" },
               { id: "bookmarks", name: "Bookmarks", icon: "📚", count: bookmarkedOpportunities.length },
               { id: "applications", name: "My Applications", icon: "📝" },
+              { id: "postOrders", name: "Post Orders", icon: "📋" },
               { id: "gigs", name: "My Gigs", icon: "💼" },
               { id: "messages", name: "Messages", icon: "💬" },
               { id: "profile", name: "Profile", icon: "👤" }
@@ -3141,6 +3314,7 @@ function StudentDashboard() {
                 }}
               />
             )}
+            {activeTab === "postOrders" && renderPostOrders()}
             {activeTab === "gigs" && (
               <GigManagement user={studentData} />
             )}
@@ -3178,6 +3352,16 @@ function StudentDashboard() {
         isOpen={showVerificationPopup}
         onClose={() => setShowVerificationPopup(false)}
         onRequestSubmitted={handleVerificationRequestSubmitted}
+      />
+
+      {/* Post Payment Modal */}
+      <PostPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setSelectedPostForPayment(null);
+        }}
+        post={selectedPostForPayment}
       />
     </div>
   );

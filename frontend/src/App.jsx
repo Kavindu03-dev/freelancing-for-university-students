@@ -21,6 +21,9 @@ import MessagesPage from "./pages/MessagesPage";
 import OrdersPage from "./pages/OrdersPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import OrderCancelPage from "./pages/OrderCancelPage";
+import PostOrderSuccessPage from "./pages/PostOrderSuccessPage";
+import PostOrderCancelPage from "./pages/PostOrderCancelPage";
+import PostOrdersPage from "./pages/PostOrdersPage";
 import StaffDashboard from "./pages/StaffDashboard";
 import FreelancerDashboard from "./pages/StudentDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -57,7 +60,11 @@ function AppContent() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/success" element={<OrderSuccessPage />} />
         <Route path="/orders/cancel" element={<OrderCancelPage />} />
+        <Route path="/post-orders" element={<PostOrdersPage />} />
+        <Route path="/post-orders/success" element={<PostOrderSuccessPage />} />
+        <Route path="/post-orders/cancel" element={<PostOrderCancelPage />} />
         <Route path="/service/:id" element={<ServiceDetailsPage />} />
+        <Route path="/post/:id" element={<ServiceDetailsPage />} />
         <Route path="/resource/:id" element={<ResourceDetailPage />} />
         <Route path="/" element={<HomePage />} />
       </Routes>

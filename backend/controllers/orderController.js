@@ -52,8 +52,47 @@ const placeOrderStripe = async (req, res) => {
             });
         }
 
-        // Get package details
-        const packageDetails = service.packages[selectedPackage];
+        // Handle services without packages - create default packages
+        let packageDetails;
+        if (!service.packages || !service.packages[selectedPackage]) {
+            // Create default package based on service data
+            const defaultPackages = {
+                basic: {
+                    name: 'Basic',
+                    price: service.price,
+                    description: `${service.title} - Basic Package`,
+                    features: ['Basic requirements', 'Standard delivery'],
+                    deliveryTime: service.deliveryTime,
+                    revisions: 1
+                },
+                standard: {
+                    name: 'Standard',
+                    price: Math.round(service.price * 1.5),
+                    description: `${service.title} - Standard Package`,
+                    features: ['Enhanced features', 'Priority support', 'Faster delivery'],
+                    deliveryTime: Math.max(1, Math.round(service.deliveryTime * 0.8)),
+                    revisions: 2
+                },
+                premium: {
+                    name: 'Premium',
+                    price: Math.round(service.price * 2.5),
+                    description: `${service.title} - Premium Package`,
+                    features: ['All features', 'Premium support', 'Fastest delivery', 'Unlimited revisions'],
+                    deliveryTime: Math.max(1, Math.round(service.deliveryTime * 0.6)),
+                    revisions: 3
+                }
+            };
+            
+            packageDetails = defaultPackages[selectedPackage];
+            
+            // Update the service with packages for future use
+            await Service.findByIdAndUpdate(serviceId, {
+                $set: { packages: defaultPackages }
+            });
+        } else {
+            packageDetails = service.packages[selectedPackage];
+        }
+
         if (!packageDetails) {
             return res.status(400).json({
                 success: false,

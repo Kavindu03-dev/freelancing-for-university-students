@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { isAuthenticated, getUserData } from '../utils/auth';
 import PaymentModal from '../components/PaymentModal';
+import PostPaymentModal from '../components/PostPaymentModal';
 
 function ServiceDetailsPage() {
   const { id } = useParams();
@@ -76,7 +77,13 @@ function ServiceDetailsPage() {
       navigate('/signin');
       return;
     }
-    setShowOrderModal(true);
+    
+    if (service.type === 'gig') {
+      setShowOrderModal(true);
+    } else {
+      // For job posts, show post payment modal
+      setShowOrderModal(true);
+    }
   };
 
   const confirmOrder = () => {
@@ -894,12 +901,20 @@ function ServiceDetailsPage() {
       )}
 
       {/* Payment Modal */}
-      <PaymentModal
-        isOpen={showOrderModal}
-        onClose={closeOrderModal}
-        service={service}
-        selectedPackage={selectedPackage}
-      />
+      {service.type === 'gig' ? (
+        <PaymentModal
+          isOpen={showOrderModal}
+          onClose={closeOrderModal}
+          service={service}
+          selectedPackage={selectedPackage}
+        />
+      ) : (
+        <PostPaymentModal
+          isOpen={showOrderModal}
+          onClose={closeOrderModal}
+          post={service}
+        />
+      )}
 
     </div>
   );

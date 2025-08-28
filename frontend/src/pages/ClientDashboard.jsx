@@ -195,19 +195,49 @@ function ClientDashboard() {
       setOrdersError(null);
       
       const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:5000/api/orders/all', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
+      // Fetch both service orders and post orders
+      const [serviceOrdersResponse, postOrdersResponse] = await Promise.all([
+        fetch('http://localhost:5000/api/orders/all', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('http://localhost:5000/api/post-orders/all', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+      
+      let allOrders = [];
+      
+      if (serviceOrdersResponse.ok) {
+        const serviceData = await serviceOrdersResponse.json();
+        const serviceOrders = (serviceData.orders || []).map(order => ({
+          ...order,
+          orderType: 'service',
+          displayTitle: order.serviceId?.title || 'Service Order'
+        }));
+        allOrders.push(...serviceOrders);
       }
       
-      const data = await response.json();
-      setOrders(data.orders || []);
+      if (postOrdersResponse.ok) {
+        const postData = await postOrdersResponse.json();
+        const postOrders = (postData.postOrders || []).map(order => ({
+          ...order,
+          orderType: 'post',
+          displayTitle: order.postDetails?.title || 'Post Order'
+        }));
+        allOrders.push(...postOrders);
+      }
+      
+      // Sort by creation date (newest first)
+      allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      setOrders(allOrders);
     } catch (err) {
       setOrdersError(err.message);
       console.error('Error fetching orders:', err);
@@ -351,10 +381,10 @@ function ClientDashboard() {
     }
   }, [clientData]);
 
-  // Update stats when posts change
+  // Update stats when posts or orders change
   useEffect(() => {
-    calculateStats(jobPosts);
-  }, [jobPosts]);
+    calculateStats(jobPosts, orders);
+  }, [jobPosts, orders]);
 
   // Handle URL query parameter for tab
   useEffect(() => {
@@ -634,6 +664,22 @@ function ClientDashboard() {
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-orange-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">${stats.totalSpent}</h3>
           <p className="text-gray-600">Total Spent</p>
+        </div>
+      </div>
+
+      {/* Additional Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-indigo-200">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.totalOrders}</h3>
+          <p className="text-gray-600">Total Orders</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-teal-200">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.activeOrders}</h3>
+          <p className="text-gray-600">Active Orders</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-emerald-200">
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.completedOrders}</h3>
+          <p className="text-gray-600">Completed Orders</p>
         </div>
       </div>
 
@@ -1642,9 +1688,16 @@ function ClientDashboard() {
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {order.serviceId?.title || 'Service Order'}
-                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {order.displayTitle}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          order.orderType === 'post' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {order.orderType === 'post' ? 'Job Post' : 'Service'}
+                        </span>
+                      </div>
                       <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                         order.status === 'Completed' ? 'bg-green-100 text-green-800' :
                         order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
@@ -1657,9 +1710,19 @@ function ClientDashboard() {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Package:</span> {order.selectedPackage}
-                      </div>
+                      {order.orderType === 'service' ? (
+                        <>
+                          <div>
+                            <span className="font-medium">Package:</span> {order.selectedPackage}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div>
+                            <span className="font-medium">Type:</span> {order.postDetails?.type || 'N/A'}
+                          </div>
+                        </>
+                      )}
                       <div>
                         <span className="font-medium">Amount:</span> ${order.totalAmount}
                       </div>

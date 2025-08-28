@@ -105,8 +105,42 @@ const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
     console.log('Service packages:', service?.packages);
     console.log('Basic package details:', service?.packages?.basic);
     
-    if (!service || !service.packages) return null;
-    return service.packages[selectedPackage];
+    if (!service) return null;
+    
+    // If service has packages, use them
+    if (service.packages && service.packages[selectedPackage]) {
+      return service.packages[selectedPackage];
+    }
+    
+    // Create default packages if none exist
+    const defaultPackages = {
+      basic: {
+        name: 'Basic',
+        price: service.price || 0,
+        description: `${service.title} - Basic Package`,
+        features: ['Basic requirements', 'Standard delivery'],
+        deliveryTime: service.deliveryTime || 7,
+        revisions: 1
+      },
+      standard: {
+        name: 'Standard',
+        price: Math.round((service.price || 0) * 1.5),
+        description: `${service.title} - Standard Package`,
+        features: ['Enhanced features', 'Priority support', 'Faster delivery'],
+        deliveryTime: Math.max(1, Math.round((service.deliveryTime || 7) * 0.8)),
+        revisions: 2
+      },
+      premium: {
+        name: 'Premium',
+        price: Math.round((service.price || 0) * 2.5),
+        description: `${service.title} - Premium Package`,
+        features: ['All features', 'Premium support', 'Fastest delivery', 'Unlimited revisions'],
+        deliveryTime: Math.max(1, Math.round((service.deliveryTime || 7) * 0.6)),
+        revisions: 3
+      }
+    };
+    
+    return defaultPackages[selectedPackage];
   };
 
   const packageDetails = getPackageDetails();

@@ -601,8 +601,8 @@ function ServicesPage() {
                     {activeTab === 'posts' && service.location && (
                       <div className="flex items-center text-sm text-gray-500">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                          <circle cx="12" cy="10" r="3" />
                         </svg>
                         Location: {service.location}
                       </div>
@@ -637,10 +637,10 @@ function ServicesPage() {
                     )}
 
                     <Link
-                      to={`/service/${service.id}`}
+                      to={service.type === 'gig' ? `/service/${service.id}` : `/post/${service.id}`}
                       className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300 text-center block"
                     >
-                      View Details
+                      {service.type === 'gig' ? 'View Details' : 'Apply Now'}
                     </Link>
                   </div>
                 </div>
