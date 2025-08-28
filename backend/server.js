@@ -15,6 +15,7 @@ import jobApplicationRoutes from './routes/jobApplications.js';
 import contactRoutes from './routes/contact.js';
 import adminRoutes from './routes/admin.js';
 import staffRoutes from './routes/staff.js';
+import messageRoutes from './routes/messages.js';
 
 // Load environment variables
 dotenv.config();
@@ -58,6 +59,7 @@ app.use('/api/job-applications', jobApplicationRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

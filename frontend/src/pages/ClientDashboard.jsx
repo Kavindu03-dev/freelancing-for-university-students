@@ -628,6 +628,31 @@ function ClientDashboard() {
     // You can add logic here to open a contact form or redirect to messaging
   };
 
+  const handleContactFromOrder = async (freelancerId, orderId) => {
+    try {
+      const token = localStorage.getItem('userToken') || (localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')).token : null);
+      if (!token) return navigate('/signin');
+
+      const res = await fetch('http://localhost:5000/api/messages/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ freelancerId, orderId })
+      });
+      const data = await res.json();
+      if (data?.success && data.conversation?._id) {
+        navigate(`/messages?conversation=${data.conversation._id}`);
+      } else {
+        alert(data?.message || 'Failed to start conversation');
+      }
+    } catch (e) {
+      console.error('Start conversation failed', e);
+      alert('Could not start conversation.');
+    }
+  };
+
   const renderOverview = () => (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1797,6 +1822,9 @@ function ClientDashboard() {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {order.serviceId?.title || 'Service Order'}
                       </h3>
+                      <p className="text-sm text-gray-600 mr-4">
+                        Freelancer: {order.freelancerId ? `${order.freelancerId.firstName} ${order.freelancerId.lastName}` : 'N/A'}
+                      </p>
                       <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                         order.status === 'Completed' ? 'bg-green-100 text-green-800' :
                         order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
@@ -1849,6 +1877,12 @@ function ClientDashboard() {
                     <button className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium text-sm border border-blue-200 rounded-lg hover:bg-blue-50">
                       View Details
                     </button>
+                    <button
+                      onClick={() => handleContactFromOrder(order.freelancerId?._id || order.freelancerId, order._id)}
+                      className="px-4 py-2 text-purple-600 hover:text-purple-800 font-medium text-sm border border-purple-200 rounded-lg hover:bg-purple-50"
+                    >
+                      Contact
+                    </button>
                     {order.status === 'In Progress' && (
                       <button className="px-4 py-2 text-green-600 hover:text-green-800 font-medium text-sm border border-green-200 rounded-lg hover:bg-green-50">
                         Track Progress
@@ -1892,6 +1926,7 @@ function ClientDashboard() {
               { id: "posts", name: "Manage Posts", icon: "📝" },
               { id: "applications", name: "Applications", icon: "📋" },
               { id: "orders", name: "My Orders", icon: "📦" },
+              { id: "messages", name: "Messages", icon: "💬" },
               { id: "profile", name: "Profile", icon: "👤" }
             ].map(tab => (
               <button
