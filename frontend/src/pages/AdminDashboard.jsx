@@ -591,10 +591,11 @@ function AdminDashboard() {
     totalClients: 0,
     totalGigs: 0,
     totalPosts: 0,
-    totalRevenue: 45678,
-    pendingApprovals: 23,
-    monthlyGrowth: 12.5,
-    conversionRate: 8.3
+    totalRevenue: 0,
+    pendingApprovals: 0,
+    newMessages: 0,
+    monthlyGrowth: 0,
+    conversionRate: 0
   });
 
   const [users, setUsers] = useState([]);
@@ -624,11 +625,44 @@ function AdminDashboard() {
 
 
 
-  // Fetch pending services and posts when component mounts
+  // Fetch dashboard stats and data when component mounts
   useEffect(() => {
+    fetchDashboardStats();
     fetchPendingPosts();
     fetchAllServices();
   }, []);
+
+  // Fetch dashboard statistics
+  const fetchDashboardStats = async () => {
+    try {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('http://localhost:5000/api/admin/dashboard/stats', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard stats');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setStats(result.data);
+      } else {
+        console.error('Error fetching dashboard stats:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
 
   // Fetch all services (gigs and posts)
   const fetchAllServices = async () => {
@@ -670,16 +704,9 @@ function AdminDashboard() {
       formattedServices.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setPendingServices(formattedServices);
       
-      // Calculate gig and post counts
+      // Calculate gig and post counts for display purposes only
       const gigs = formattedServices.filter(service => service.type === 'gig');
       const posts = formattedServices.filter(service => service.type === 'post');
-      
-      // Update stats with gig and post counts
-      setStats(prevStats => ({
-        ...prevStats,
-        totalGigs: gigs.length,
-        totalPosts: posts.length
-      }));
       
     } catch (err) {
       setServicesError(err.message);
@@ -746,14 +773,6 @@ function AdminDashboard() {
         setUsers(data.data || []);
         setUserStats(data.stats || {});
         setUserPagination(data.pagination || {});
-        
-        // Update dashboard stats
-        setStats(prevStats => ({
-          ...prevStats,
-          totalUsers: data.stats?.total || 0,
-          totalFreelancers: data.stats?.freelancers || 0,
-          totalClients: data.stats?.clients || 0
-        }));
       } else {
         console.error('Error fetching users:', response.status);
       }
@@ -1202,6 +1221,21 @@ function AdminDashboard() {
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.pendingApprovals}</h3>
           <p className="text-gray-600">Pending Approvals</p>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <span className="text-blue-500 text-sm font-medium">New</span>
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.newMessages || 0}</h3>
+          <p className="text-gray-600">New Messages</p>
         </div>
       </div>
 

@@ -1,5 +1,8 @@
 import User from '../models/User.js';
-import mongoose from 'mongoose';
+import Service from '../models/Service.js';
+import Post from '../models/Post.js';
+import Contact from '../models/Contact.js';
+import Order from '../models/Order.js';
 
 // @desc    Get all users with filters
 // @route   GET /api/admin/users
@@ -225,6 +228,108 @@ export const getUserStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error fetching user stats',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get admin dashboard statistics
+// @route   GET /api/admin/dashboard/stats
+// @access  Private (Admin only)
+export const getDashboardStats = async (req, res) => {
+  try {
+    // Get user statistics
+    const totalUsers = await User.countDocuments({ userType: { $ne: 'admin' } });
+    const totalFreelancers = await User.countDocuments({ userType: 'freelancer' });
+    const totalClients = await User.countDocuments({ userType: 'client' });
+    const totalUniversityStaff = await User.countDocuments({ userType: 'universityStaff' });
+
+    // Get service/gig statistics
+    const totalGigs = await Service.countDocuments({ isActive: true });
+    const pendingGigs = await Service.countDocuments({ status: 'pending' });
+
+    // Get post statistics
+    const totalPosts = await Post.countDocuments({ isActive: true });
+    const pendingPosts = await Post.countDocuments({ approvalStatus: 'Pending' });
+
+    // Get contact message statistics
+    const totalMessages = await Contact.countDocuments({});
+    const newMessages = await Contact.countDocuments({ status: 'new' });
+    const repliedMessages = await Contact.countDocuments({ status: 'replied' });
+
+    // Calculate total revenue from completed orders
+    const revenueData = await Order.aggregate([
+      { $match: { status: 'Completed' } },
+      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' } } }
+    ]);
+    const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
+
+    // Calculate pending approvals (gigs + posts)
+    const pendingApprovals = pendingGigs + pendingPosts;
+
+    // Calculate monthly growth (users created in last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const newUsersThisMonth = await User.countDocuments({
+      userType: { $ne: 'admin' },
+      createdAt: { $gte: thirtyDaysAgo }
+    });
+
+    const previousMonthUsers = await User.countDocuments({
+      userType: { $ne: 'admin' },
+      createdAt: { 
+        $gte: new Date(thirtyDaysAgo.getTime() - 30 * 24 * 60 * 60 * 1000),
+        $lt: thirtyDaysAgo
+      }
+    });
+
+    const monthlyGrowth = previousMonthUsers > 0 
+      ? ((newUsersThisMonth - previousMonthUsers) / previousMonthUsers * 100).toFixed(1)
+      : newUsersThisMonth > 0 ? 100 : 0;
+
+    // Calculate conversion rate (users who have completed at least one order)
+    const usersWithOrders = await Order.distinct('userId');
+    const conversionRate = totalUsers > 0 
+      ? ((usersWithOrders.length / totalUsers) * 100).toFixed(1)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        // User stats
+        totalUsers,
+        totalFreelancers,
+        totalClients,
+        totalUniversityStaff,
+        
+        // Service stats
+        totalGigs,
+        pendingGigs,
+        
+        // Post stats
+        totalPosts,
+        pendingPosts,
+        
+        // Contact stats
+        totalMessages,
+        newMessages,
+        repliedMessages,
+        
+        // Financial stats
+        totalRevenue,
+        pendingApprovals,
+        
+        // Growth stats
+        monthlyGrowth: parseFloat(monthlyGrowth),
+        conversionRate: parseFloat(conversionRate)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics',
       error: error.message
     });
   }

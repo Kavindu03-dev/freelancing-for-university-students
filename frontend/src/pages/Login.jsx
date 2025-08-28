@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { setAuthData } from "../utils/auth";
 
 function Login() {
@@ -13,6 +13,8 @@ function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
 
   // Validation functions
   const validateEmail = (email) => {
@@ -116,19 +118,26 @@ function Login() {
           }
         }
         
-        // Redirect based on user type
+        // Redirect based on user type or redirect parameter
         const userType = result.data.userType;
-        if (userType === 'admin') {
-          navigate('/admin/dashboard');
-        } else if (userType === 'universityStaff') {
-          navigate('/staff/dashboard');
-        } else if (userType === 'freelancer') {
-          navigate('/freelancer/dashboard');
-        } else if (userType === 'client') {
-          navigate('/client/dashboard');
+        
+        // If there's a redirect parameter, use it (except for admin users)
+        if (redirectTo && userType !== 'admin') {
+          navigate(redirectTo);
         } else {
-          // Default redirect for other user types
-          navigate('/');
+          // Default redirect based on user type
+          if (userType === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (userType === 'universityStaff') {
+            navigate('/staff/dashboard');
+          } else if (userType === 'freelancer') {
+            navigate('/freelancer/dashboard');
+          } else if (userType === 'client') {
+            navigate('/client/dashboard');
+          } else {
+            // Default redirect for other user types
+            navigate('/');
+          }
         }
       } else {
         // Handle login errors
