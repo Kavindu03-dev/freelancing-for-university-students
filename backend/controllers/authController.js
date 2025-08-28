@@ -240,6 +240,8 @@ const login = async (req, res) => {
       isVerified: user.isVerified,
       agreeToTerms: user.agreeToTerms,
       agreeToMarketing: user.agreeToMarketing,
+      profileImage: user.profileImage,
+      bio: user.bio,
       token: generateToken(user._id)
     };
 
