@@ -13,6 +13,8 @@ import analyticsRoutes from './routes/analytics.js';
 import orderRoutes from './routes/orders.js';
 import jobApplicationRoutes from './routes/jobApplications.js';
 import contactRoutes from './routes/contact.js';
+import adminRoutes from './routes/admin.js';
+import staffRoutes from './routes/staff.js';
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +56,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/job-applications', jobApplicationRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Basic route
 app.get('/', (req, res) => {

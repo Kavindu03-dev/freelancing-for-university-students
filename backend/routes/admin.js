@@ -4,7 +4,8 @@ import {
   getUserById,
   updateUserStatus,
   deleteUser,
-  getUserStats
+  getUserStats,
+  getDashboardStats
 } from '../controllers/adminController.js';
 import { protect } from '../middleware/adminAuth.js';
 
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // All admin routes require authentication
 router.use(protect);
+
+// Dashboard stats route
+router.get('/dashboard/stats', getDashboardStats);
 
 // User management routes
 router.get('/users', getAllUsers);
