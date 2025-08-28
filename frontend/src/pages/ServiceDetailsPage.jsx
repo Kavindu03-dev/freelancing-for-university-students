@@ -577,13 +577,66 @@ function ServiceDetailsPage() {
                   </div>
                 )}
 
-                {service.gpa && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">GPA:</span>
-                    <span className="font-medium">{service.gpa}</span>
-                  </div>
-                )}
               </div>
+
+                             {/* Profile Details Section */}
+               <div className="mt-6 pt-6 border-t border-gray-200">
+                 <div className="space-y-4">
+                   {/* Response Time */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Response Time</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.responseTime || 'Usually responds in 1 hour'}
+                     </span>
+                   </div>
+
+                   {/* Last Seen */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Last Seen</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.lastSeen ? new Date(service.lastSeen).toLocaleDateString() : 'Recently'}
+                     </span>
+                   </div>
+
+                   {/* Member Since */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Member Since</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.memberSince ? new Date(service.memberSince).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '2024'}
+                     </span>
+                   </div>
+
+                                                            {/* Languages */}
+                     <div className="flex items-center justify-between">
+                       <span className="text-gray-600 text-sm">Languages</span>
+                       <div className="flex gap-2 justify-end">
+                         {service.languages && service.languages.length > 0 ? (
+                           <>
+                             {service.languages.slice(0, 3).map((language, index) => (
+                               <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                 {language}
+                               </span>
+                             ))}
+                             {service.languages.length > 3 && (
+                               <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                 +{service.languages.length - 3}
+                               </span>
+                             )}
+                           </>
+                         ) : (
+                           <>
+                             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                               English
+                             </span>
+                             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                               Sinhala
+                             </span>
+                           </>
+                         )}
+                       </div>
+                     </div>
+                 </div>
+               </div>
 
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <Link
