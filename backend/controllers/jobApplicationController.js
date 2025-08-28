@@ -86,7 +86,13 @@ export const createJobApplication = async (req, res) => {
       portfolioLink,
       attachments: attachments || [],
       paymentAmount: post.budget,
-      paymentStatus: post.budget > 0 ? 'Pending' : 'Not Required'
+      paymentStatus: post.budget > 0 ? 'Pending' : 'Not Required',
+      statusHistory: [{
+        status: 'Pending',
+        changedAt: new Date(),
+        changedBy: 'System',
+        reason: 'Application submitted'
+      }]
     });
 
     await jobApplication.save();
@@ -226,20 +232,40 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
 
-    // Validate status transition
-    const validTransitions = {
-      'Pending': ['Under Review', 'Accepted', 'Declined'],
-      'Under Review': ['Accepted', 'Declined'],
-      'Accepted': ['Interview Scheduled', 'Hired', 'Rejected'],
-      'Interview Scheduled': ['Hired', 'Rejected'],
-      'Declined': ['Rejected']
-    };
+    // Allow flexible status transitions - clients can change to any valid status
+    const validStatuses = [
+      'Pending',
+      'Under Review', 
+      'Accepted',
+      'Interview Scheduled',
+      'Hired',
+      'Declined',
+      'Rejected'
+    ];
 
-    if (!validTransitions[application.status]?.includes(status)) {
+    if (!validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid status transition from ${application.status} to ${status}`
+        message: `Invalid status: ${status}. Valid statuses are: ${validStatuses.join(', ')}`
       });
+    }
+
+    // Optional: Add business logic warnings for unusual transitions
+    const unusualTransitions = [
+      { from: 'Hired', to: 'Pending' },
+      { from: 'Hired', to: 'Under Review' },
+      { from: 'Hired', to: 'Accepted' },
+      { from: 'Hired', to: 'Interview Scheduled' },
+      { from: 'Rejected', to: 'Hired' },
+      { from: 'Rejected', to: 'Accepted' }
+    ];
+
+    const isUnusual = unusualTransitions.some(transition => 
+      transition.from === application.status && transition.to === status
+    );
+
+    if (isUnusual) {
+      console.log(`Warning: Unusual status transition from ${application.status} to ${status} for application ${applicationId}`);
     }
 
     // Update the application
@@ -252,13 +278,33 @@ export const updateApplicationStatus = async (req, res) => {
       updateData.clientFeedback = feedback;
     }
 
-    if (interviewDetails && (status === 'Interview Scheduled' || status === 'Accepted')) {
+    // Handle interview details when status is Interview Scheduled
+    if (status === 'Interview Scheduled' && interviewDetails) {
       updateData.interviewDetails = interviewDetails;
     }
 
     if (status === 'Accepted' || status === 'Interview Scheduled' || status === 'Hired') {
       updateData.respondedAt = Date.now();
     }
+
+    // Add to status history
+    let reason = feedback || `Status changed to ${status}`;
+    
+    // If status is Interview Scheduled and we have interview details, include them in the reason
+    if (status === 'Interview Scheduled' && interviewDetails) {
+      const date = new Date(interviewDetails.scheduledDate).toLocaleDateString();
+      const time = interviewDetails.scheduledTime;
+      const location = interviewDetails.location;
+      reason = `Interview scheduled for ${date} at ${time} at ${location}`;
+    }
+    
+    updateData.statusHistory = [...application.statusHistory, {
+      status,
+      changedAt: Date.now(),
+      changedBy: 'Client',
+      reason: reason,
+      feedback: feedback || ''
+    }];
 
     const updatedApplication = await JobApplication.findByIdAndUpdate(
       applicationId,
@@ -306,12 +352,10 @@ export const scheduleInterview = async (req, res) => {
       });
     }
 
-    // Check if application is accepted
-    if (application.status !== 'Accepted') {
-      return res.status(400).json({
-        success: false,
-        message: 'Can only schedule interviews for accepted applications'
-      });
+    // Allow scheduling interviews from various statuses, but warn about unusual cases
+    const interviewableStatuses = ['Accepted', 'Under Review', 'Pending'];
+    if (!interviewableStatuses.includes(application.status)) {
+      console.log(`Warning: Scheduling interview for application with status: ${application.status}`);
     }
 
     // Update the application with interview details
@@ -327,7 +371,15 @@ export const scheduleInterview = async (req, res) => {
           isOnline,
           meetingLink
         },
-        updatedAt: Date.now()
+        updatedAt: Date.now(),
+        // Add to status history
+        statusHistory: [...application.statusHistory, {
+          status: 'Interview Scheduled',
+          changedAt: Date.now(),
+          changedBy: 'Client',
+          reason: `Interview scheduled for ${scheduledDate} at ${scheduledTime}`,
+          feedback: notes || ''
+        }]
       },
       { new: true }
     ).populate('freelancerId', 'firstName lastName email profileImage')

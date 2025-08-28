@@ -6,10 +6,13 @@ const ClientApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -61,22 +64,31 @@ const ClientApplicationsPage = () => {
     });
   };
 
-  const handleStatusUpdate = async (applicationId, newStatus, feedback = '') => {
+  const handleStatusUpdate = async (applicationId, newStatus, feedback = '', interviewDetails = null) => {
     try {
       const token = localStorage.getItem('userToken');
+      const requestBody = { status: newStatus, feedback };
+      
+      // Include interview details if provided
+      if (interviewDetails) {
+        requestBody.interviewDetails = interviewDetails;
+      }
+      
       const response = await fetch(`/api/job-applications/${applicationId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ status: newStatus, feedback })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.ok) {
         await fetchApplications(); // Refresh the list
         setShowStatusModal(false);
         setSelectedApplication(null);
+        setSuccessMessage('Status updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 5000); // Clear message after 5 seconds
       } else {
         const result = await response.json();
         setError(result.message || 'Failed to update status');
@@ -103,6 +115,8 @@ const ClientApplicationsPage = () => {
         await fetchApplications(); // Refresh the list
         setShowInterviewModal(false);
         setSelectedApplication(null);
+        setSuccessMessage('Interview scheduled successfully!');
+        setTimeout(() => setSuccessMessage(''), 5000); // Clear message after 5 seconds
       } else {
         const result = await response.json();
         setError(result.message || 'Failed to schedule interview');
@@ -190,6 +204,13 @@ const ClientApplicationsPage = () => {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
             {error}
+          </div>
+        )}
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md mb-6">
+            {successMessage}
           </div>
         )}
 
@@ -350,6 +371,46 @@ const ClientApplicationsPage = () => {
                         <p className="text-sm text-gray-700">{application.clientFeedback}</p>
                       </div>
                     )}
+
+                    {/* Status History */}
+                    {application.statusHistory && application.statusHistory.length > 1 && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 className="font-medium text-blue-900 mb-3">Status Change History</h4>
+                        <div className="space-y-2">
+                          {application.statusHistory.slice().reverse().map((history, index) => (
+                            <div key={index} className="flex items-start space-x-3 text-sm">
+                              <div className={`w-2 h-2 rounded-full mt-2 ${
+                                history.status === 'Hired' ? 'bg-emerald-500' :
+                                history.status === 'Accepted' ? 'bg-green-500' :
+                                history.status === 'Interview Scheduled' ? 'bg-purple-500' :
+                                history.status === 'Under Review' ? 'bg-blue-500' :
+                                history.status === 'Pending' ? 'bg-yellow-500' :
+                                'bg-red-500'
+                              }`}></div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-blue-900">{history.status}</span>
+                                  <span className="text-blue-600 text-xs">
+                                    {new Date(history.changedAt).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                </div>
+                                {history.reason && (
+                                  <p className="text-blue-700 text-xs mt-1">{history.reason}</p>
+                                )}
+                                {history.feedback && (
+                                  <p className="text-blue-600 text-xs mt-1 italic">"{history.feedback}"</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -361,52 +422,95 @@ const ClientApplicationsPage = () => {
                       View Job Post
                     </Link>
                     
-                    {/* Status Update Actions */}
+                    {/* Main Status Change Button */}
+                    <button
+                      onClick={() => {
+                        setSelectedApplication(application);
+                        setShowStatusModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium border border-blue-200 px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                    >
+                      Change Status
+                    </button>
+                    
+                    {/* Quick Action Buttons */}
                     {application.status === 'Pending' && (
-                      <>
+                      <div className="flex flex-col space-y-1 mt-2">
                         <button
-                          onClick={() => {
-                            setSelectedApplication(application);
-                            setShowStatusModal(true);
-                          }}
-                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          onClick={() => handleStatusUpdate(application._id, 'Accepted', 'Application accepted')}
+                          className="text-green-600 hover:text-green-800 text-xs font-medium bg-green-50 px-2 py-1 rounded hover:bg-green-100 transition-colors"
                         >
-                          Accept
+                          Quick Accept
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedApplication(application);
-                            setShowStatusModal(true);
-                          }}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                          onClick={() => handleStatusUpdate(application._id, 'Under Review', 'Application under review')}
+                          className="text-blue-600 hover:text-blue-800 text-xs font-medium bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
                         >
-                          Decline
+                          Quick Review
                         </button>
-                      </>
+                      </div>
                     )}
 
                     {application.status === 'Accepted' && (
-                      <button
-                        onClick={() => {
-                          setSelectedApplication(application);
-                          setShowInterviewModal(true);
-                        }}
-                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                      >
-                        Schedule Interview
-                      </button>
+                      <div className="flex flex-col space-y-1 mt-2">
+                        <button
+                          onClick={() => {
+                            setSelectedApplication(application);
+                            setShowStatusModal(true);
+                            // Pre-select Interview Scheduled status
+                            setTimeout(() => {
+                              const statusSelect = document.querySelector('select[value="Interview Scheduled"]');
+                              if (statusSelect) {
+                                statusSelect.value = 'Interview Scheduled';
+                                statusSelect.dispatchEvent(new Event('change'));
+                              }
+                            }, 100);
+                          }}
+                          className="text-purple-600 hover:text-purple-800 text-xs font-medium bg-purple-50 px-2 py-1 rounded hover:bg-purple-100 transition-colors"
+                        >
+                          Schedule Interview
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(application._id, 'Hired', 'Direct hire without interview')}
+                          className="text-emerald-600 hover:text-emerald-800 text-xs font-medium bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100 transition-colors"
+                        >
+                          Quick Hire
+                        </button>
+                      </div>
                     )}
 
                     {application.status === 'Interview Scheduled' && (
-                      <button
-                        onClick={() => {
-                          setSelectedApplication(application);
-                          setShowStatusModal(true);
-                        }}
-                        className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
-                      >
-                        Hire
-                      </button>
+                      <div className="flex flex-col space-y-1 mt-2">
+                        <button
+                          onClick={() => handleStatusUpdate(application._id, 'Hired', 'Hired after successful interview')}
+                          className="text-emerald-600 hover:text-emerald-800 text-xs font-medium bg-emerald-50 px-2 py-1 rounded hover:bg-emerald-100 transition-colors"
+                        >
+                          Quick Hire
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(application._id, 'Rejected', 'Not selected after interview')}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors"
+                        >
+                          Quick Reject
+                        </button>
+                      </div>
+                    )}
+
+                    {application.status === 'Under Review' && (
+                      <div className="flex flex-col space-y-1 mt-2">
+                        <button
+                          onClick={() => handleStatusUpdate(application._id, 'Accepted', 'Application accepted after review')}
+                          className="text-green-600 hover:text-green-800 text-xs font-medium bg-green-50 px-2 py-1 rounded hover:bg-green-100 transition-colors"
+                        >
+                          Quick Accept
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(application._id, 'Declined', 'Application declined after review')}
+                          className="text-red-600 hover:text-red-800 text-xs font-medium bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors"
+                        >
+                          Quick Decline
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -448,13 +552,52 @@ const StatusUpdateModal = ({ application, onClose, onUpdate }) => {
   const [status, setStatus] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interviewData, setInterviewData] = useState({
+    scheduledDate: '',
+    scheduledTime: '',
+    location: '',
+    notes: '',
+    isOnline: false,
+    meetingLink: ''
+  });
+
+  // Define all possible status transitions for any current status
+  const getAllPossibleStatuses = (currentStatus) => {
+    const allStatuses = [
+      'Pending',
+      'Under Review', 
+      'Accepted',
+      'Interview Scheduled',
+      'Hired',
+      'Declined',
+      'Rejected'
+    ];
+    
+    // Remove current status from options
+    return allStatuses.filter(s => s !== currentStatus);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!status) return;
 
+    // Validate interview data if status is Interview Scheduled
+    if (status === 'Interview Scheduled') {
+      if (!interviewData.scheduledDate || !interviewData.scheduledTime || !interviewData.location) {
+        alert('Please fill in all required interview details (Date, Time, and Location)');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
-    await onUpdate(application._id, status, feedback);
+    
+    // If status is Interview Scheduled, include interview details
+    if (status === 'Interview Scheduled') {
+      await onUpdate(application._id, status, feedback, interviewData);
+    } else {
+      await onUpdate(application._id, status, feedback);
+    }
+    
     setIsSubmitting(false);
   };
 
@@ -463,6 +606,9 @@ const StatusUpdateModal = ({ application, onClose, onUpdate }) => {
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Update Application Status</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Current status: <span className="font-medium">{application.status}</span>
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           <div>
@@ -475,34 +621,16 @@ const StatusUpdateModal = ({ application, onClose, onUpdate }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Select status</option>
-              {application.status === 'Pending' && (
-                <>
-                  <option value="Under Review">Under Review</option>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Declined">Declined</option>
-                </>
-              )}
-              {application.status === 'Under Review' && (
-                <>
-                  <option value="Accepted">Accepted</option>
-                  <option value="Declined">Declined</option>
-                </>
-              )}
-              {application.status === 'Accepted' && (
-                <>
-                  <option value="Interview Scheduled">Interview Scheduled</option>
-                  <option value="Hired">Hired</option>
-                  <option value="Rejected">Rejected</option>
-                </>
-              )}
-              {application.status === 'Interview Scheduled' && (
-                <>
-                  <option value="Hired">Hired</option>
-                  <option value="Rejected">Rejected</option>
-                </>
-              )}
+              <option value="">Select new status</option>
+              {getAllPossibleStatuses(application.status).map(statusOption => (
+                <option key={statusOption} value={statusOption}>
+                  {statusOption}
+                </option>
+              ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              You can change the status to any other available status
+            </p>
           </div>
 
           <div>
@@ -517,6 +645,94 @@ const StatusUpdateModal = ({ application, onClose, onUpdate }) => {
               placeholder="Provide feedback to the applicant..."
             />
           </div>
+
+          {/* Interview Details Section - Show when Interview Scheduled is selected */}
+          {status === 'Interview Scheduled' && (
+            <div className="border-t border-gray-200 pt-4 space-y-4">
+              <h4 className="font-medium text-gray-900">Interview Details</h4>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Interview Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={interviewData.scheduledDate}
+                  onChange={(e) => setInterviewData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Interview Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={interviewData.scheduledTime}
+                  onChange={(e) => setInterviewData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={interviewData.location}
+                  onChange={(e) => setInterviewData(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Office address or meeting room"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isOnline"
+                  checked={interviewData.isOnline}
+                  onChange={(e) => setInterviewData(prev => ({ ...prev, isOnline: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isOnline" className="ml-2 block text-sm text-gray-900">
+                  Online Interview
+                </label>
+              </div>
+
+              {interviewData.isOnline && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meeting Link
+                  </label>
+                  <input
+                    type="url"
+                    value={interviewData.meetingLink}
+                    onChange={(e) => setInterviewData(prev => ({ ...prev, meetingLink: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://meet.google.com/..."
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={interviewData.notes}
+                  onChange={(e) => setInterviewData(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Any additional information for the candidate..."
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4">
             <button
