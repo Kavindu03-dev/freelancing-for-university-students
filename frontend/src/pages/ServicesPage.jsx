@@ -601,8 +601,7 @@ function ServicesPage() {
                     {activeTab === 'posts' && service.location && (
                       <div className="flex items-center text-sm text-gray-500">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                         </svg>
                         Location: {service.location}
                       </div>
@@ -611,12 +610,21 @@ function ServicesPage() {
 
                   <div className="space-y-2">
                     {isClient && service.status === 'approved' && (
-                      <button
-                        onClick={() => handleHire(service)}
-                        className="w-full bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
-                      >
-                        {activeTab === 'gigs' ? 'Hire Now' : 'Apply Now'}
-                      </button>
+                      <>
+                        {/* Check if current user is the post owner */}
+                        {activeTab === 'posts' && getUserData()?._id === service.clientId?._id ? (
+                          <div className="w-full bg-gray-300 text-gray-600 py-2 px-4 rounded-lg font-semibold text-center cursor-not-allowed">
+                            Your own job post
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleHire(service)}
+                            className="w-full bg-yellow-500 text-black py-2 px-4 rounded-lg font-semibold hover:bg-yellow-400 transition-colors duration-300"
+                          >
+                            {activeTab === 'gigs' ? 'Hire Now' : 'Apply Now'}
+                          </button>
+                        )}
+                      </>
                     )}
                     
                     {isAdmin && service.status === 'pending' && (

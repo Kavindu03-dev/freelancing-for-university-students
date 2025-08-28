@@ -36,32 +36,9 @@ function ClientDashboard() {
     progress: post.status === 'Completed' ? 100 : post.status === 'In Progress' ? 60 : 0
   }));
 
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      postId: 1,
-      studentName: "John Student",
-      university: "MIT",
-      degreeProgram: "Computer Science",
-      gpa: "3.8",
-      skills: ["React", "Node.js", "MongoDB"],
-      experience: "2 years web development",
-      status: "Pending",
-      appliedDate: "2024-01-15"
-    },
-    {
-      id: 2,
-      postId: 1,
-      studentName: "Sarah Wilson",
-      university: "Stanford",
-      degreeProgram: "Computer Science",
-      gpa: "3.9",
-      skills: ["React", "Vue.js", "Python"],
-      experience: "1 year frontend development",
-      status: "Shortlisted",
-      appliedDate: "2024-01-14"
-    }
-  ]);
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState(null);
 
   // Form state for creating/editing posts
   const [postForm, setPostForm] = useState({
@@ -98,6 +75,34 @@ function ClientDashboard() {
   const [showFreelancerPopup, setShowFreelancerPopup] = useState(false);
   
   // Edit profile state
+  
+  // Fetch applications for the client
+  const fetchApplications = async () => {
+    try {
+      setApplicationsLoading(true);
+      setApplicationsError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('/api/job-applications/received', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setApplications(result.data || []);
+      } else {
+        const errorData = await response.json();
+        setApplicationsError(errorData.message || 'Failed to fetch applications');
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      setApplicationsError('Network error. Please try again.');
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editFormData, setEditFormData] = useState({
     firstName: '',
@@ -364,6 +369,13 @@ function ClientDashboard() {
       setActiveTab(tabParam);
     }
   }, [location.search]);
+  
+  // Fetch applications when applications tab or overview tab is active
+  useEffect(() => {
+    if ((activeTab === 'applications' || activeTab === 'overview') && clientData?._id) {
+      fetchApplications();
+    }
+  }, [activeTab, clientData]);
 
   // Fetch freelancers from API
   useEffect(() => {
@@ -658,6 +670,70 @@ function ClientDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Recent Applications */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-gray-900">Recent Applications</h3>
+          <button
+            onClick={() => setActiveTab("applications")}
+            className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
+          >
+            View All →
+          </button>
+        </div>
+        <div className="space-y-4">
+          {applicationsLoading ? (
+            // Loading skeleton
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="border border-gray-200 rounded-xl p-4 animate-pulse">
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 bg-gray-300 rounded mb-1"></div>
+                <div className="h-3 bg-gray-300 rounded w-20"></div>
+              </div>
+            ))
+          ) : applicationsError ? (
+            // Error state
+            <div className="text-center py-4">
+              <p className="text-red-500 text-sm">Failed to load applications</p>
+            </div>
+          ) : applications.length === 0 ? (
+            // Empty state
+            <div className="text-center py-4">
+              <p className="text-gray-500 text-sm">No applications yet</p>
+            </div>
+          ) : (
+            // Recent applications
+            applications.slice(0, 3).map(app => (
+              <div key={app._id} className="border border-gray-200 rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-bold text-gray-900">{app.fullName}</h4>
+                    <p className="text-gray-600">{app.professionalTitle}</p>
+                    <p className="text-sm text-gray-500">{app.postId?.title || 'Job Post'}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                      app.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {app.status}
+                    </span>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(app.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -1073,78 +1149,154 @@ function ClientDashboard() {
 
   const renderApplications = () => (
     <div className="space-y-6">
-      <h3 className="text-2xl font-bold text-gray-900">Student Applications</h3>
-      
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Skills</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {applications.map(app => (
-                <tr key={app.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{app.studentName}</div>
-                      <div className="text-sm text-gray-500">{app.degreeProgram}</div>
-                      <div className="text-sm text-gray-500">GPA: {app.gpa}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{app.university}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {app.skills.map(skill => (
-                        <span key={skill} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{app.appliedDate}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      app.status === 'Shortlisted' ? 'bg-blue-100 text-blue-800' :
-                      app.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {app.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium space-x-2">
-                    {app.status === 'Pending' && (
-                      <>
-                        <button
-                          onClick={() => handleApplicationAction(app.id, 'Shortlisted')}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Shortlist
-                        </button>
-                        <button
-                          onClick={() => handleApplicationAction(app.id, 'Rejected')}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    <button className="text-green-600 hover:text-green-900">
-                      View Profile
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">Job Applications</h3>
+        <button
+          onClick={fetchApplications}
+          disabled={applicationsLoading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+        >
+          {applicationsLoading ? (
+            <>
+              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Refreshing...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </>
+          )}
+        </button>
       </div>
+      
+      {/* Applications Summary */}
+      {!applicationsLoading && !applicationsError && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div className="text-2xl font-bold text-blue-600">{applications.length}</div>
+            <div className="text-sm text-gray-600">Total Applications</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div className="text-2xl font-bold text-yellow-600">
+              {applications.filter(app => app.status === 'Pending').length}
+            </div>
+            <div className="text-sm text-gray-600">Pending Review</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div className="text-2xl font-bold text-green-600">
+              {applications.filter(app => app.status === 'Accepted').length}
+            </div>
+            <div className="text-sm text-gray-600">Accepted</div>
+          </div>
+          <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
+            <div className="text-2xl font-bold text-purple-600">
+              {applications.filter(app => app.status === 'Interview Scheduled').length}
+            </div>
+            <div className="text-sm text-gray-600">Interviews</div>
+          </div>
+        </div>
+      )}
+      
+      {applicationsLoading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading applications...</p>
+        </div>
+      )}
+      
+      {applicationsError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {applicationsError}
+        </div>
+      )}
+      
+      {!applicationsLoading && !applicationsError && applications.length === 0 && (
+        <div className="text-center py-12">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No applications found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            You haven't received any job applications yet.
+          </p>
+        </div>
+      )}
+      
+      {!applicationsLoading && !applicationsError && applications.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Post</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applicant</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Professional Title</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {applications.map(app => (
+                  <tr key={app._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{app.postId?.title || 'Job Post'}</div>
+                        <div className="text-sm text-gray-500">{app.postId?.type || 'N/A'}</div>
+                        <div className="text-sm text-gray-500">${app.postId?.budget || 'N/A'}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{app.fullName}</div>
+                        <div className="text-sm text-gray-500">{app.email}</div>
+                        {app.phoneNumber && (
+                          <div className="text-sm text-gray-500">{app.phoneNumber}</div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{app.professionalTitle}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {new Date(app.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                        app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                        app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
+                        app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
+                        app.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {app.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => navigate(`/client/applications`)}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 
