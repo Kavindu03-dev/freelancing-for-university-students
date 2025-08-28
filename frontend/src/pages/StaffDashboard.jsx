@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import ProfileImageUpload from "../components/ProfileImageUpload";
 
 function StaffDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [staffData, setStaffData] = useState(null);
-  const [professionalSummary, setProfessionalSummary] = useState({
-    bio: '',
-    areasOfExpertise: ''
-  });
-  const [isSavingSummary, setIsSavingSummary] = useState(false);
-  const [summarySaveMessage, setSummarySaveMessage] = useState('');
+
   
   // Edit profile state
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -24,11 +20,13 @@ function StaffDashboard() {
     employeeId: '',
     experience: '',
     qualification: '',
-    bio: '',
-    professionalSummary: ''
+    bio: ''
   });
   const [editErrors, setEditErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingProfileImage, setIsUploadingProfileImage] = useState(false);
+  const [isRemovingProfileImage, setIsRemovingProfileImage] = useState(false);
+  const [showProfileImageMenu, setShowProfileImageMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -161,6 +159,33 @@ function StaffDashboard() {
     }
   };
 
+  // Function to fetch complete profile data from backend
+  const fetchCompleteProfile = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:5000/api/users/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update staff data with complete profile
+          setStaffData(result.data);
+          // Update localStorage with complete data
+          localStorage.setItem('userData', JSON.stringify(result.data));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching complete profile:', error);
+    }
+  };
+
   useEffect(() => {
     // Check if staff is logged in
     const userData = localStorage.getItem('userData');
@@ -168,6 +193,8 @@ function StaffDashboard() {
       const parsed = JSON.parse(userData);
       if (parsed.userType === 'universityStaff') {
         setStaffData(parsed);
+        // Also fetch fresh data from backend to ensure we have the latest profile image
+        fetchCompleteProfile();
       } else {
         navigate('/signin');
       }
@@ -185,15 +212,7 @@ function StaffDashboard() {
     }
   }, [location.search]);
 
-  // Initialize professional summary state when staff data is loaded
-  useEffect(() => {
-    if (staffData) {
-      setProfessionalSummary({
-        bio: staffData.bio || '',
-        areasOfExpertise: staffData.professionalSummary || ''
-      });
-    }
-  }, [staffData]);
+
 
   // Fetch verification requests when component mounts
   useEffect(() => {
@@ -275,6 +294,20 @@ function StaffDashboard() {
   useEffect(() => {
     filterResources();
   }, [filterResources]);
+
+  // Close profile image menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileImageMenu && !event.target.closest('.profile-image-container')) {
+        setShowProfileImageMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileImageMenu]);
 
   const handleEditResource = (resource) => {
     setSelectedResource(resource);
@@ -401,8 +434,7 @@ function StaffDashboard() {
       employeeId: staffData?.employeeId || '',
       experience: staffData?.experience || '',
       qualification: staffData?.qualification || '',
-      bio: staffData?.bio || '',
-      professionalSummary: staffData?.professionalSummary || ''
+      bio: staffData?.bio || ''
     });
     setEditErrors({});
     setShowEditProfile(true);
@@ -466,6 +498,108 @@ function StaffDashboard() {
   const handleCancelEdit = () => {
     setShowEditProfile(false);
     setEditErrors({});
+  };
+
+  // Profile Image Upload Functions
+  const handleProfileImageUpload = async (file) => {
+    try {
+      setIsUploadingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to upload profile image');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('profileImage', file);
+
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          // Update staff data with new profile image
+          setStaffData(prev => ({
+            ...prev,
+            profileImage: result.data.profileImage
+          }));
+          
+          // Update localStorage
+          const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+          const updatedUserData = {
+            ...currentUserData,
+            profileImage: result.data.profileImage
+          };
+          localStorage.setItem('userData', JSON.stringify(updatedUserData));
+          
+          alert('Profile image uploaded successfully!');
+        } else {
+          alert(result.message || 'Failed to upload profile image');
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Failed to upload profile image');
+      }
+    } catch (error) {
+      console.error('Profile image upload error:', error);
+      alert('Failed to upload profile image. Please try again.');
+    } finally {
+      setIsUploadingProfileImage(false);
+    }
+  };
+
+  const handleProfileImageRemove = async () => {
+    try {
+      setIsRemovingProfileImage(true);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please log in to remove profile image');
+        return;
+      }
+
+      // Call backend API to remove profile image
+      const response = await fetch('http://localhost:5000/api/users/profile-image', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setStaffData(prev => ({
+          ...prev,
+          profileImage: null
+        }));
+        
+        // Update localStorage
+        const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const updatedUserData = {
+          ...currentUserData,
+          profileImage: null
+        };
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        
+        alert('Profile image removed successfully!');
+      } else {
+        alert(`Failed to remove profile image: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Profile image remove error:', error);
+      alert('Failed to remove profile image. Please try again.');
+    } finally {
+      setIsRemovingProfileImage(false);
+    }
   };
 
   const verifyStudent = (studentId) => {
@@ -571,63 +705,7 @@ function StaffDashboard() {
     }
   };
 
-  const handleSaveProfessionalSummary = async () => {
-    try {
-      setIsSavingSummary(true);
-      setSummarySaveMessage('');
 
-      // Get the auth token
-      const token = localStorage.getItem('userToken');
-      if (!token) {
-        setSummarySaveMessage('Authentication token not found. Please log in again.');
-        return;
-      }
-
-      // Prepare the data to send to backend
-      const updateData = {
-        bio: professionalSummary.bio,
-        professionalSummary: professionalSummary.areasOfExpertise
-      };
-
-      // Make API call to update profile
-      const response = await fetch('http://localhost:5000/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update the staff data with edited values
-        const updatedData = { 
-          ...staffData, 
-          bio: updateData.bio,
-          professionalSummary: updateData.professionalSummary
-        };
-        
-        setStaffData(updatedData);
-        
-        // Save to localStorage
-        localStorage.setItem('userData', JSON.stringify(updatedData));
-        
-        // Show success message
-        setSummarySaveMessage('Professional summary saved successfully!');
-        setTimeout(() => setSummarySaveMessage(''), 3000);
-      } else {
-        // Show error message from backend
-        setSummarySaveMessage(`Failed to save: ${result.message}`);
-      }
-    } catch (error) {
-      console.error('Error saving professional summary:', error);
-      setSummarySaveMessage('Failed to save. Please try again.');
-    } finally {
-      setIsSavingSummary(false);
-    }
-  };
 
   const renderOverview = () => (
     <div className="space-y-8">
@@ -719,6 +797,188 @@ function StaffDashboard() {
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        {/* Student Verification Status Chart */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Student Verification Status</h3>
+          <div className="flex items-center justify-center h-64">
+            <div className="relative w-48 h-48">
+              {/* Pie Chart */}
+              <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 36 36">
+                {/* Background circle */}
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#e5e7eb"
+                  strokeWidth="3"
+                />
+                
+                {/* Verified Students */}
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="3"
+                  strokeDasharray={`${(studentStats.verifiedStudents / (studentStats.totalStudents || 1)) * 100} ${100 - (studentStats.verifiedStudents / (studentStats.totalStudents || 1)) * 100}`}
+                  strokeLinecap="round"
+                />
+                
+                {/* Pending Verification */}
+                <path
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="#f59e0b"
+                  strokeWidth="3"
+                  strokeDasharray={`${(studentStats.pendingVerification / (studentStats.totalStudents || 1)) * 100} ${100 - (studentStats.pendingVerification / (studentStats.totalStudents || 1)) * 100}`}
+                  strokeDashoffset={`-${(studentStats.verifiedStudents / (studentStats.totalStudents || 1)) * 100}`}
+                  strokeLinecap="round"
+                />
+              </svg>
+              
+              {/* Center text */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">{studentStats.totalStudents}</div>
+                  <div className="text-sm text-gray-600">Total Students</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex justify-center space-x-6 mt-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Verified ({studentStats.verifiedStudents})</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm text-gray-700">Pending ({studentStats.pendingVerification})</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Project Status Chart */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Project Status Overview</h3>
+          <div className="space-y-4">
+            {/* Active Projects */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-700">Active Projects</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-32 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(studentStats.activeProjects / (studentStats.activeProjects + studentStats.completedProjects || 1)) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-bold text-gray-900 w-8 text-right">{studentStats.activeProjects}</span>
+              </div>
+            </div>
+            
+            {/* Completed Projects */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 bg-indigo-500 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-700">Completed Projects</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-32 bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(studentStats.completedProjects / (studentStats.activeProjects + studentStats.completedProjects || 1)) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-sm font-bold text-gray-900 w-8 text-right">{studentStats.completedProjects}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Total Projects */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{studentStats.activeProjects + studentStats.completedProjects}</div>
+              <div className="text-sm text-gray-600">Total Projects</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Revenue and Activity Trends */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        {/* Revenue Overview */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Revenue Overview</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+              <div>
+                <p className="text-sm text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-green-600">${studentStats.totalRevenue.toLocaleString()}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Revenue per student calculation */}
+            <div className="text-center p-4 bg-blue-50 rounded-xl">
+              <p className="text-sm text-gray-600">Average Revenue per Student</p>
+              <p className="text-xl font-bold text-blue-600">
+                ${studentStats.totalStudents > 0 ? (studentStats.totalRevenue / studentStats.totalStudents).toFixed(2) : '0.00'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
+              <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">{studentStats.pendingVerification} pending verifications</p>
+                <p className="text-xs text-gray-600">Requires staff attention</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">{studentStats.verifiedStudents} students verified</p>
+                <p className="text-xs text-gray-600">Successfully processed</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">{studentStats.activeProjects} active projects</p>
+                <p className="text-xs text-gray-600">Currently in progress</p>
+              </div>
             </div>
           </div>
         </div>
@@ -1215,11 +1475,174 @@ function StaffDashboard() {
       <div className="bg-gradient-to-r from-black via-gray-900 to-black text-white rounded-2xl shadow-xl p-8">
         <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
           {/* Profile Picture */}
-          <div className="relative">
-            <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black">
-              {staffData?.firstName?.charAt(0)}{staffData?.lastName?.charAt(0)}
+          <div className="relative group profile-image-container">
+            {staffData?.profileImage?.url ? (
+              <div className="relative">
+                <img
+                  src={staffData.profileImage.url}
+                  alt="Profile"
+                  className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => setShowProfileImageMenu(!showProfileImageMenu)}
+                />
+                {/* Status indicator */}
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-white rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                
+                {/* Click indicator */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                
+                {/* Profile Image Options Menu */}
+                {showProfileImageMenu && (
+                  <>
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-40" onClick={() => setShowProfileImageMenu(false)} />
+                    
+                    {/* Menu */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setShowProfileImageMenu(false);
+                            document.getElementById('change-profile-image-input').click();
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <span>Change Photo</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setShowProfileImageMenu(false);
+                            if (confirm('Are you sure you want to remove your profile picture?')) {
+                              await handleProfileImageRemove();
+                            }
+                          }}
+                          disabled={isRemovingProfileImage}
+                          className={`w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition-colors ${
+                            isRemovingProfileImage ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
+                        >
+                          {isRemovingProfileImage ? (
+                            <>
+                              <svg className="animate-spin w-4 h-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span>Removing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              <span>Remove Photo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                {/* Hidden file input for changing photo */}
+                <input
+                  id="change-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            ) : (
+              <div className="relative">
+                <div 
+                  className={`w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-4xl font-bold text-black cursor-pointer transition-all duration-200 ${
+                    isUploadingProfileImage ? 'opacity-50' : 'group-hover:scale-105 group-hover:shadow-xl'
+                  }`}
+                  onClick={() => document.getElementById('upload-profile-image-input').click()}
+                >
+                  {staffData?.firstName?.charAt(0)}{staffData?.lastName?.charAt(0)}
+                </div>
+                
+                {/* Hidden file input for uploading photo */}
+                <input
+                  id="upload-profile-image-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      // Validate file type
+                      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+                        return;
+                      }
+
+                      // Validate file size (5MB)
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+
+                      handleProfileImageUpload(file);
+                    }
+                  }}
+                  className="hidden"
+                  disabled={isUploadingProfileImage}
+                />
+              </div>
+            )}
+            
+            {/* Upload progress indicator */}
+            {isUploadingProfileImage && (
+              <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
+                <div className="text-center text-white">
+                  <svg className="animate-spin w-8 h-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-sm font-medium">Uploading...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Upload instruction */}
+            <div className="text-center mt-2">
+              <p className="text-xs text-gray-300 opacity-75">
+                {staffData?.profileImage?.url ? 'Click for options' : 'Click to upload photo'}
+              </p>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 border-4 border-white rounded-full"></div>
           </div>
 
           {/* Profile Info */}
@@ -1254,6 +1677,11 @@ function StaffDashboard() {
 
             <p className="text-gray-300 max-w-2xl">
               {staffData?.bio || 'Dedicated university staff member committed to supporting student success and maintaining academic standards. Experienced in student verification, analytics, and academic oversight.'}
+              {staffData?.profileImage?.url && (
+                <span className="block mt-2 text-sm text-green-300">
+                  ✓ Professional profile picture uploaded
+                </span>
+              )}
             </p>
           </div>
 
@@ -1318,67 +1746,7 @@ function StaffDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Professional Summary</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                <textarea
-                  rows="4"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  placeholder="Tell us about your role and responsibilities..."
-                  value={professionalSummary.bio || staffData?.bio || ''}
-                  onChange={(e) => setProfessionalSummary(prev => ({ ...prev, bio: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Areas of Expertise</label>
-                <input 
-                  type="text" 
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                  placeholder="e.g., Student Services, Academic Affairs, Research Support"
-                  value={professionalSummary.areasOfExpertise || staffData?.professionalSummary || ''}
-                  onChange={(e) => setProfessionalSummary(prev => ({ ...prev, areasOfExpertise: e.target.value }))}
-                />
-              </div>
-              
-              {/* Save Message */}
-              {summarySaveMessage && (
-                <div className={`p-3 rounded-lg text-sm font-medium ${
-                  summarySaveMessage.includes('successfully') 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {summarySaveMessage}
-                </div>
-              )}
-              
-              {/* Save Button */}
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={handleSaveProfessionalSummary}
-                  disabled={isSavingSummary}
-                  className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 ${
-                    isSavingSummary
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:scale-105'
-                  }`}
-                >
-                  {isSavingSummary ? (
-                    <div className="flex items-center space-x-2">
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Saving...</span>
-                    </div>
-                  ) : (
-                    'Save Professional Summary'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {/* Sidebar */}
@@ -1510,6 +1878,15 @@ function StaffDashboard() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Profile Image Upload */}
+              <ProfileImageUpload
+                currentImage={staffData?.profileImage}
+                onImageUpload={handleProfileImageUpload}
+                onImageRemove={handleProfileImageRemove}
+                isUploading={isUploadingProfileImage}
+                className="mb-6"
+              />
+
               {/* Personal Information */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h4>
@@ -1654,32 +2031,25 @@ function StaffDashboard() {
                 </div>
               </div>
 
-              {/* Professional Summary */}
+              {/* Personal Bio */}
               <div>
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Professional Summary</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                    <textarea
-                      rows="4"
-                      value={editFormData.bio}
-                      onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                      placeholder="Tell us about your role and responsibilities..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Summary</label>
-                    <textarea
-                      rows="3"
-                      value={editFormData.professionalSummary}
-                      onChange={(e) => setEditFormData(prev => ({ ...prev, professionalSummary: e.target.value }))}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
-                      placeholder="Describe your areas of expertise and specializations..."
-                    />
-                  </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Bio</h4>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <textarea
+                    rows="4"
+                    value={editFormData.bio}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                    placeholder="Tell us about your role, responsibilities, and what you do to support students..."
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    This bio will be displayed on your profile and helps others understand your role and expertise.
+                  </p>
                 </div>
               </div>
+
+
             </div>
 
             {/* Action Buttons */}

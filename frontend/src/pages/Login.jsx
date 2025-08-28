@@ -93,10 +93,19 @@ function Login() {
         // Store initial user data and token
         setAuthData(result.data.token, result.data);
         
-        // For freelancers, fetch complete profile data including CV
-        if (result.data.userType === 'freelancer') {
-          try {
-            const profileResponse = await fetch('http://localhost:5000/api/freelancer/profile', {
+        // For all users, fetch complete profile data to ensure we have the latest data including profile images
+        try {
+          let profileEndpoint = '';
+          if (result.data.userType === 'freelancer') {
+            profileEndpoint = 'http://localhost:5000/api/freelancer/profile';
+          } else if (result.data.userType === 'client') {
+            profileEndpoint = 'http://localhost:5000/api/users/profile';
+          } else if (result.data.userType === 'universityStaff') {
+            profileEndpoint = 'http://localhost:5000/api/users/profile';
+          }
+          
+          if (profileEndpoint) {
+            const profileResponse = await fetch(profileEndpoint, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${result.data.token}`
@@ -112,10 +121,10 @@ function Login() {
                 window.dispatchEvent(new Event('authStateChanged'));
               }
             }
-          } catch (error) {
-            console.error('Error fetching complete profile:', error);
-            // Continue with login even if profile fetch fails
           }
+        } catch (error) {
+          console.error('Error fetching complete profile:', error);
+          // Continue with login even if profile fetch fails
         }
         
         // Redirect based on user type or redirect parameter
