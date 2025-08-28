@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { isAuthenticated, getUserData } from '../utils/auth';
 
 function ContactPage() {
   const [formData, setFormData] = useState({
@@ -12,6 +14,127 @@ function ContactPage() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [userMessages, setUserMessages] = useState([]);
+  const [userMessagesLoading, setUserMessagesLoading] = useState(false);
+  const [userMessagesError, setUserMessagesError] = useState(null);
+  const [showUserMessages, setShowUserMessages] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyLoading, setReplyLoading] = useState(false);
+
+  // Check if user is authenticated
+  const isUserAuthenticated = isAuthenticated();
+
+  // Pre-fill form with user data if authenticated
+  useEffect(() => {
+    if (isUserAuthenticated) {
+      const userData = getUserData();
+      if (userData) {
+        // Combine firstName and lastName for full name
+        const fullName = userData.firstName && userData.lastName 
+          ? `${userData.firstName} ${userData.lastName}`
+          : userData.name || userData.fullName || '';
+        
+        setFormData(prev => ({
+          ...prev,
+          name: fullName,
+          email: userData.email || ''
+        }));
+      }
+    }
+  }, [isUserAuthenticated]);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const userData = getUserData();
+      if (userData && isAuthenticated()) {
+        // Combine firstName and lastName for full name
+        const fullName = userData.firstName && userData.lastName 
+          ? `${userData.firstName} ${userData.lastName}`
+          : userData.name || userData.fullName || '';
+        
+        setFormData(prev => ({
+          ...prev,
+          name: fullName,
+          email: userData.email || ''
+        }));
+      }
+    };
+
+    window.addEventListener('authStateChanged', handleAuthChange);
+    return () => window.removeEventListener('authStateChanged', handleAuthChange);
+  }, []);
+
+  // Fetch user messages
+  const fetchUserMessages = async () => {
+    if (!isUserAuthenticated) return;
+    
+    try {
+      setUserMessagesLoading(true);
+      setUserMessagesError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/contact/user/messages', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setUserMessages(result.data);
+      } else {
+        setUserMessagesError(result.message || 'Failed to fetch messages');
+      }
+    } catch (error) {
+      console.error('Error fetching user messages:', error);
+      setUserMessagesError('Failed to fetch your messages');
+    } finally {
+      setUserMessagesLoading(false);
+    }
+  };
+
+  // Handle user reply to message
+  const handleUserReply = async (messageId) => {
+    if (!replyText.trim()) {
+      alert('Please enter a reply message');
+      return;
+    }
+    
+    try {
+      setReplyLoading(true);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`http://localhost:5000/api/contact/user/messages/${messageId}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: replyText
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setReplyText('');
+        setReplyingToMessage(null);
+        fetchUserMessages(); // Refresh messages to show the new reply
+        alert('Reply sent successfully!');
+      } else {
+        alert(result.message || 'Failed to send reply');
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      alert('Failed to send reply');
+    } finally {
+      setReplyLoading(false);
+    }
+  };
 
   const categories = [
     'General Inquiry',
@@ -36,21 +159,48 @@ function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setSubmitStatus('success');
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        category: '',
-        message: '',
-        priority: 'normal'
+      const token = localStorage.getItem('userToken');
+      
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add authorization header only if user is authenticated
+      if (isUserAuthenticated && token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch('http://localhost:5000/api/contact/submit', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(formData)
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSubmitStatus('success');
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          category: '',
+          message: '',
+          priority: 'normal'
+        });
+        // Refresh user messages after successful submission
+        if (isUserAuthenticated) {
+          fetchUserMessages();
+        }
+      } else {
+        setSubmitStatus('error');
+      }
     } catch (error) {
+      console.error('Error submitting contact form:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -156,6 +306,40 @@ function ContactPage() {
             <div>
               <h2 className="text-3xl font-bold text-gray-800 mb-8">Send us a Message</h2>
               
+              {!isUserAuthenticated && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-lg font-medium text-blue-800 mb-2">
+                        Guest Message
+                      </h3>
+                      <p className="text-blue-700 mb-4">
+                        You can send us a message as a guest, or sign in for better support and message tracking.
+                      </p>
+                      <div className="flex space-x-3">
+                        <Link
+                          to="/signin"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          to="/signup"
+                          className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                        >
+                          Create Account
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {submitStatus === 'success' && (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
                   <div className="flex items-center">
@@ -191,7 +375,10 @@ function ContactPage() {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      readOnly={isUserAuthenticated}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        isUserAuthenticated ? 'bg-gray-50 cursor-not-allowed' : ''
+                      }`}
                       placeholder="Your full name"
                     />
                   </div>
@@ -207,7 +394,10 @@ function ContactPage() {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      readOnly={isUserAuthenticated}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        isUserAuthenticated ? 'bg-gray-50 cursor-not-allowed' : ''
+                      }`}
                       placeholder="your@email.com"
                     />
                   </div>
@@ -306,6 +496,195 @@ function ContactPage() {
                   )}
                 </button>
               </form>
+
+              {/* User Messages Section */}
+              {isUserAuthenticated && (
+                <div className="mt-12">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">Your Messages</h3>
+                    <button
+                      onClick={() => {
+                        setShowUserMessages(!showUserMessages);
+                        if (!showUserMessages && userMessages.length === 0) {
+                          fetchUserMessages();
+                        }
+                      }}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>{showUserMessages ? 'Hide Messages' : 'View Messages'}</span>
+                    </button>
+                  </div>
+
+                  {showUserMessages && (
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      {userMessagesLoading ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+                          <p className="text-gray-600">Loading your messages...</p>
+                        </div>
+                      ) : userMessagesError ? (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <div className="flex">
+                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            <div className="ml-3">
+                              <p className="text-sm text-red-800">{userMessagesError}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : userMessages.length === 0 ? (
+                        <div className="text-center py-8">
+                          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          <h4 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h4>
+                          <p className="text-gray-600">You haven't sent any messages yet. Send your first message above!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {userMessages.map((message) => (
+                            <div key={message._id} className="bg-white rounded-lg p-6 border border-gray-200 hover:border-yellow-400 transition-colors duration-200">
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <h4 className="text-lg font-semibold text-gray-900">{message.subject}</h4>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      message.status === 'new' ? 'bg-yellow-100 text-yellow-800' :
+                                      message.status === 'replied' ? 'bg-blue-100 text-blue-800' :
+                                      message.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                                      message.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+                                      'bg-purple-100 text-purple-800'
+                                    }`}>
+                                      {message.status.charAt(0).toUpperCase() + message.status.slice(1)}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      message.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                                      message.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                      message.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {message.priority.charAt(0).toUpperCase() + message.priority.slice(1)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                                    <span><strong>Category:</strong> {message.category}</span>
+                                    <span><strong>Sent:</strong> {new Date(message.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                    <p className="text-gray-700 whitespace-pre-wrap">{message.message}</p>
+                                  </div>
+                                  
+                                  {/* Conversation Thread */}
+                                  {message.replies && message.replies.length > 0 && (
+                                    <div className="space-y-3 mb-4">
+                                      {message.replies.map((reply, replyIndex) => (
+                                        <div key={replyIndex} className={`rounded-lg p-4 ${
+                                          reply.senderType === 'admin' 
+                                            ? 'bg-yellow-50 border border-yellow-200' 
+                                            : 'bg-blue-50 border border-blue-200'
+                                        }`}>
+                                          <div className="flex items-center space-x-2 mb-2">
+                                            <svg className={`w-4 h-4 ${
+                                              reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                                            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                            </svg>
+                                            <span className={`text-sm font-medium ${
+                                              reply.senderType === 'admin' ? 'text-yellow-800' : 'text-blue-800'
+                                            }`}>
+                                              {reply.senderType === 'admin' ? 'Admin' : 'You'}
+                                            </span>
+                                            <span className={`text-xs ${
+                                              reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                                            }`}>
+                                              {new Date(reply.repliedAt).toLocaleDateString()}
+                                            </span>
+                                          </div>
+                                          <p className={`whitespace-pre-wrap ${
+                                            reply.senderType === 'admin' ? 'text-yellow-900' : 'text-blue-900'
+                                          }`}>
+                                            {reply.message}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Legacy admin reply display for backward compatibility */}
+                                  {message.adminReply && (!message.replies || message.replies.length === 0) && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                      <div className="flex items-center space-x-2 mb-2">
+                                        <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                        </svg>
+                                        <span className="text-sm font-medium text-yellow-800">Admin Reply</span>
+                                        <span className="text-xs text-yellow-600">
+                                          {new Date(message.adminReply.repliedAt).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                      <p className="text-yellow-900 whitespace-pre-wrap">{message.adminReply.message}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Reply Button and Form */}
+                                  {(message.adminReply || (message.replies && message.replies.length > 0)) && (
+                                    <div className="mt-4">
+                                      {replyingToMessage === message._id ? (
+                                        <div className="space-y-3">
+                                          <textarea
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            rows={3}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                                            placeholder="Type your reply..."
+                                          />
+                                          <div className="flex space-x-2">
+                                            <button
+                                              onClick={() => handleUserReply(message._id)}
+                                              disabled={replyLoading}
+                                              className={`px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
+                                                replyLoading
+                                                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                                                  : 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                                              }`}
+                                            >
+                                              {replyLoading ? 'Sending...' : 'Send Reply'}
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                setReplyingToMessage(null);
+                                                setReplyText('');
+                                              }}
+                                              className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg font-medium transition-colors duration-200"
+                                            >
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          onClick={() => setReplyingToMessage(message._id)}
+                                          className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                                        >
+                                          Reply to Admin
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Additional Info */}

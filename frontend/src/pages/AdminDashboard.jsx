@@ -265,6 +265,26 @@ function AdminDashboard() {
   const [selectedFaculty, setSelectedFaculty] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [dateRange, setDateRange] = useState("30");
+  
+  // Contact Messages State
+  const [contactMessages, setContactMessages] = useState([]);
+  const [contactStats, setContactStats] = useState({});
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState(null);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [contactFilters, setContactFilters] = useState({
+    status: '',
+    priority: '',
+    category: ''
+  });
+  const [contactPagination, setContactPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalMessages: 0
+  });
+  
   const navigate = useNavigate();
 
   // View service details function
@@ -974,8 +994,11 @@ function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'analytics') {
       fetchAnalytics();
+    } else if (activeTab === 'contact') {
+      fetchContactMessages();
+      fetchContactStats();
     }
-  }, [dateRange, selectedUniversity, selectedFaculty, selectedCategory, activeTab]);
+  }, [dateRange, selectedUniversity, selectedFaculty, selectedCategory, activeTab, contactPagination.currentPage, contactFilters]);
 
   const handleLogout = () => {
     console.log('🚪 handleLogout clicked!');
@@ -1012,6 +1035,123 @@ function AdminDashboard() {
   console.log('🔍 Functions defined:');
   console.log('🔍 handleLogout:', typeof handleLogout);
   console.log('🔍 directLogout:', typeof directLogout);
+
+  // Contact Messages Functions
+  const fetchContactMessages = async () => {
+    try {
+      setContactLoading(true);
+      setContactError(null);
+      
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+      
+      const queryParams = new URLSearchParams({
+        page: contactPagination.currentPage,
+        limit: 10,
+        ...contactFilters
+      });
+      
+      const response = await fetch(`http://localhost:5000/api/contact/admin/messages?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch contact messages');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setContactMessages(result.data.messages);
+        setContactPagination(result.data.pagination);
+      } else {
+        throw new Error(result.message || 'Failed to fetch contact messages');
+      }
+    } catch (error) {
+      console.error('Error fetching contact messages:', error);
+      setContactError(error.message);
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  const fetchContactStats = async () => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch('http://localhost:5000/api/contact/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch contact stats');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setContactStats(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching contact stats:', error);
+    }
+  };
+
+  const handleReplyToMessage = async () => {
+    if (!replyMessage.trim()) {
+      alert('Please enter a reply message');
+      return;
+    }
+    
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        throw new Error('No admin token found');
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/contact/admin/messages/${selectedMessage._id}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          message: replyMessage,
+          status: 'replied'
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send reply');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setShowMessageModal(false);
+        setReplyMessage('');
+        setSelectedMessage(null);
+        fetchContactMessages(); // Refresh the messages
+        alert('Reply sent successfully!');
+      } else {
+        throw new Error(result.message || 'Failed to send reply');
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      alert('Failed to send reply: ' + error.message);
+    }
+  };
+
+
 
   const renderOverview = () => (
     <div className="space-y-8">
@@ -1869,6 +2009,280 @@ function AdminDashboard() {
 
 
 
+  const renderContactMessages = () => (
+    <div className="space-y-8">
+      {/* Contact Messages Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Contact Messages</h3>
+            <p className="text-gray-600 mt-1">Manage and respond to user inquiries</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => {
+                setContactFilters({ status: '', priority: '', category: '' });
+                setContactPagination(prev => ({ ...prev, currentPage: 1 }));
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Messages</p>
+                <p className="text-2xl font-bold">{contactStats.total || 0}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-sm">New Messages</p>
+                <p className="text-2xl font-bold">{contactStats.new || 0}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Replied</p>
+                <p className="text-2xl font-bold">{contactStats.replied || 0}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <select
+            value={contactFilters.status}
+            onChange={(e) => setContactFilters(prev => ({ ...prev, status: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="">All Status</option>
+            <option value="new">New</option>
+            <option value="in-progress">In Progress</option>
+            <option value="replied">Replied</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+          
+          <select
+            value={contactFilters.priority}
+            onChange={(e) => setContactFilters(prev => ({ ...prev, priority: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="">All Priorities</option>
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          
+          <select
+            value={contactFilters.category}
+            onChange={(e) => setContactFilters(prev => ({ ...prev, category: e.target.value }))}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="">All Categories</option>
+            <option value="General Inquiry">General Inquiry</option>
+            <option value="Technical Support">Technical Support</option>
+            <option value="Account Issues">Account Issues</option>
+            <option value="Payment Problems">Payment Problems</option>
+            <option value="Report a Bug">Report a Bug</option>
+            <option value="Feature Request">Feature Request</option>
+            <option value="Partnership">Partnership</option>
+            <option value="Media Inquiry">Media Inquiry</option>
+            <option value="Legal Issues">Legal Issues</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        {/* Error Message */}
+        {contactError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{contactError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Contact Messages List */}
+      {contactLoading ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading contact messages...</p>
+        </div>
+      ) : contactMessages.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No contact messages found</h3>
+          <p className="text-gray-600">No messages match your current filters.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {contactMessages.map((message) => (
+            <div key={message._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h4 className="text-lg font-semibold text-gray-900">{message.subject}</h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      message.status === 'new' ? 'bg-yellow-100 text-yellow-800' :
+                      message.status === 'replied' ? 'bg-blue-100 text-blue-800' :
+                      message.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                      message.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {message.status.charAt(0).toUpperCase() + message.status.slice(1)}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      message.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                      message.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                      message.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {message.priority.charAt(0).toUpperCase() + message.priority.slice(1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                    <span><strong>From:</strong> {message.name} ({message.email})</span>
+                    <span><strong>Category:</strong> {message.category}</span>
+                    <span><strong>Date:</strong> {new Date(message.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-gray-700 mb-4 line-clamp-2">{message.message}</p>
+                  
+                  {/* Conversation Thread */}
+                  {message.replies && message.replies.length > 0 && (
+                    <div className="space-y-3 mb-4">
+                      {message.replies.map((reply, replyIndex) => (
+                        <div key={replyIndex} className={`rounded-lg p-4 ${
+                          reply.senderType === 'admin' 
+                            ? 'bg-yellow-50 border border-yellow-200' 
+                            : 'bg-blue-50 border border-blue-200'
+                        }`}>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <svg className={`w-4 h-4 ${
+                              reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                            <span className={`text-sm font-medium ${
+                              reply.senderType === 'admin' ? 'text-yellow-800' : 'text-blue-800'
+                            }`}>
+                              {reply.senderType === 'admin' ? 'Admin' : 'User'}
+                            </span>
+                            <span className={`text-xs ${
+                              reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                            }`}>
+                              {new Date(reply.repliedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className={`whitespace-pre-wrap ${
+                            reply.senderType === 'admin' ? 'text-yellow-900' : 'text-blue-900'
+                          }`}>
+                            {reply.message}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Legacy admin reply display for backward compatibility */}
+                  {message.adminReply && (!message.replies || message.replies.length === 0) && (
+                    <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        <span className="text-sm font-medium text-gray-700">Admin Reply</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(message.adminReply.repliedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700">{message.adminReply.message}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col space-y-2 ml-4">
+                  <button
+                    onClick={() => {
+                      setSelectedMessage(message);
+                      setShowMessageModal(true);
+                    }}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    {message.adminReply || (message.replies && message.replies.length > 0) ? 'View & Reply' : 'Reply'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          
+          {/* Pagination */}
+          {contactPagination.totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 mt-8">
+              <button
+                onClick={() => setContactPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                disabled={!contactPagination.hasPrevPage}
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              
+              <span className="px-4 py-2 text-gray-700">
+                Page {contactPagination.currentPage} of {contactPagination.totalPages}
+              </span>
+              
+              <button
+                onClick={() => setContactPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                disabled={!contactPagination.hasNextPage}
+                className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   const renderAnalytics = () => (
     <div className="space-y-8">
       {/* Analytics Header */}
@@ -2286,6 +2700,7 @@ function AdminDashboard() {
                 { id: "users", name: "Users", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+                { id: "contact", name: "Contact Messages", icon: "M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }
               ].map(tab => (
                 <button
@@ -2330,6 +2745,7 @@ function AdminDashboard() {
             {activeTab === "users" && renderUsers()}
             {activeTab === "services" && renderServices()}
             {activeTab === "posts" && renderPostsApproval()}
+            {activeTab === "contact" && renderContactMessages()}
             {activeTab === "analytics" && renderAnalytics()}
           </div>
         </div>
@@ -2569,6 +2985,186 @@ function AdminDashboard() {
                     Activate User
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Message Reply Modal */}
+      {showMessageModal && selectedMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Reply to Message</h3>
+              <button
+                onClick={() => {
+                  setShowMessageModal(false);
+                  setSelectedMessage(null);
+                  setReplyMessage('');
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Original Message */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Original Message</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <span><strong>From:</strong> {selectedMessage.name} ({selectedMessage.email})</span>
+                    <span><strong>Subject:</strong> {selectedMessage.subject}</span>
+                    <span><strong>Category:</strong> {selectedMessage.category}</span>
+                  </div>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <span><strong>Priority:</strong> 
+                      <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedMessage.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                        selectedMessage.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                        selectedMessage.priority === 'normal' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {selectedMessage.priority.charAt(0).toUpperCase() + selectedMessage.priority.slice(1)}
+                      </span>
+                    </span>
+                    <span><strong>Date:</strong> {new Date(selectedMessage.createdAt).toLocaleDateString()}</span>
+                    <span><strong>Status:</strong> 
+                      <span className={`ml-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedMessage.status === 'new' ? 'bg-yellow-100 text-yellow-800' :
+                        selectedMessage.status === 'replied' ? 'bg-blue-100 text-blue-800' :
+                        selectedMessage.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                        selectedMessage.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {selectedMessage.status.charAt(0).toUpperCase() + selectedMessage.status.slice(1)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.message}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Conversation Thread */}
+              {(selectedMessage.replies && selectedMessage.replies.length > 0) && (
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Conversation Thread</h4>
+                  <div className="space-y-3">
+                    {selectedMessage.replies.map((reply, replyIndex) => (
+                      <div key={replyIndex} className={`rounded-lg p-4 ${
+                        reply.senderType === 'admin' 
+                          ? 'bg-yellow-50 border border-yellow-200' 
+                          : 'bg-blue-50 border border-blue-200'
+                      }`}>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <svg className={`w-4 h-4 ${
+                            reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                          </svg>
+                          <span className={`text-sm font-medium ${
+                            reply.senderType === 'admin' ? 'text-yellow-800' : 'text-blue-800'
+                          }`}>
+                            {reply.senderType === 'admin' ? 'Admin' : 'User'}
+                          </span>
+                          <span className={`text-xs ${
+                            reply.senderType === 'admin' ? 'text-yellow-600' : 'text-blue-600'
+                          }`}>
+                            {new Date(reply.repliedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className={`whitespace-pre-wrap ${
+                          reply.senderType === 'admin' ? 'text-yellow-900' : 'text-blue-900'
+                        }`}>
+                          {reply.message}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Legacy admin reply display for backward compatibility */}
+              {selectedMessage.adminReply && (!selectedMessage.replies || selectedMessage.replies.length === 0) && (
+                <div className="bg-blue-50 rounded-xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Previous Admin Reply</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                      </svg>
+                      <span>Replied on {new Date(selectedMessage.adminReply.repliedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border border-blue-200">
+                      <p className="text-gray-700 whitespace-pre-wrap">{selectedMessage.adminReply.message}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reply Form */}
+              <div className="bg-white rounded-xl p-6 border border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                  {(selectedMessage.adminReply || (selectedMessage.replies && selectedMessage.replies.length > 0)) ? 'Add Reply to Conversation' : 'Send Reply'}
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="replyMessage" className="block text-sm font-medium text-gray-700 mb-2">
+                      Your Reply *
+                    </label>
+                    <textarea
+                      id="replyMessage"
+                      value={replyMessage}
+                      onChange={(e) => setReplyMessage(e.target.value)}
+                      rows={6}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                      placeholder="Type your reply here..."
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={replyMessage.trim() !== ''}
+                        disabled
+                        className="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Message will be sent to {selectedMessage.email}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowMessageModal(false);
+                    setSelectedMessage(null);
+                    setReplyMessage('');
+                  }}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReplyToMessage}
+                  disabled={!replyMessage.trim()}
+                  className={`flex-1 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl ${
+                    replyMessage.trim()
+                      ? 'bg-yellow-500 hover:bg-yellow-600 text-black'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {(selectedMessage.adminReply || (selectedMessage.replies && selectedMessage.replies.length > 0)) ? 'Send Reply' : 'Send Reply'}
+                </button>
               </div>
             </div>
           </div>
