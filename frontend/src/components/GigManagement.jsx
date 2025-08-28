@@ -324,15 +324,18 @@ const GigManagement = ({ user }) => {
       setLoading(true);
       const token = localStorage.getItem('userToken');
       
-      // Upload images first if any are selected
-      let images = [];
+      // Upload new images first if any are selected
+      let newImages = [];
       if (selectedImages.length > 0) {
-        images = await uploadImages();
-        if (images.length === 0 && selectedImages.length > 0) {
-          setError('Failed to upload images. Please try again.');
+        newImages = await uploadImages();
+        if (newImages.length === 0 && selectedImages.length > 0) {
+          setError('Failed to upload new images. Please try again.');
           return;
         }
       }
+      
+      // Combine existing images (that weren't removed) with new images
+      const finalImages = [...uploadedImages, ...newImages];
       
       // Prepare gig data with packages
       const gigData = {
@@ -343,7 +346,7 @@ const GigManagement = ({ user }) => {
         duration: formData.packages.basic.deliveryTime || 1,
         skills: formData.skills,
         portfolio: formData.portfolio || '',
-        images: images,
+        images: finalImages,
         packages: formData.packages
       };
       
@@ -418,6 +421,15 @@ const GigManagement = ({ user }) => {
         premium: { name: 'Premium', price: '', description: '', features: [''], deliveryTime: '', revisions: 3 }
       }
     });
+    
+    // Load existing images if they exist
+    if (gig.images && gig.images.length > 0) {
+      setUploadedImages(gig.images);
+    } else {
+      setUploadedImages([]);
+    }
+    
+    setSelectedImages([]);
     setShowEditForm(true);
   };
 
@@ -745,10 +757,44 @@ const GigManagement = ({ user }) => {
                     Upload images related to your gig. Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB per image.
                   </p>
                   
+                  {/* Current Images Display */}
+                  {uploadedImages.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Current Images:</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {uploadedImages.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={typeof image === 'string' ? image : (image.url || image)}
+                              alt={`Current ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/150x150?text=Image+Error';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUploadedImages(prev => prev.filter((_, i) => i !== index));
+                              }}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Click the × button to remove images. You can add new images below.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Selected Images Preview */}
                   {selectedImages.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Images:</h4>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">New Images to Upload:</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {selectedImages.map((image, index) => (
                           <div key={index} className="relative">
