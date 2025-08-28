@@ -11,6 +11,7 @@ import postRoutes from './routes/posts.js';
 import verificationRoutes from './routes/verification.js';
 import analyticsRoutes from './routes/analytics.js';
 import orderRoutes from './routes/orders.js';
+import jobApplicationRoutes from './routes/jobApplications.js';
 import contactRoutes from './routes/contact.js';
 
 // Load environment variables
@@ -51,6 +52,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/verification', verificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/job-applications', jobApplicationRoutes);
 app.use('/api/contact', contactRoutes);
 
 // Basic route

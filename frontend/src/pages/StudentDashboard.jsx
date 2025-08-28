@@ -765,22 +765,9 @@ function StudentDashboard() {
     }
   };
 
-  const [applications] = useState([
-    {
-      id: 1,
-      postId: 1,
-      postTitle: "Website Redesign for E-commerce",
-      status: "Pending",
-      appliedDate: "2024-01-16"
-    },
-    {
-      id: 2,
-      postId: 2,
-      postTitle: "Logo Design for Startup",
-      status: "Shortlisted",
-      appliedDate: "2024-01-11"
-    }
-  ]);
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState(null);
 
   // Application form state
   const [applicationForm, setApplicationForm] = useState({
@@ -794,6 +781,36 @@ function StudentDashboard() {
     availability: "",
     expectedGraduation: ""
   });
+
+  // Function to fetch applications for the freelancer
+  const fetchApplications = async () => {
+    try {
+      setApplicationsLoading(true);
+      setApplicationsError(null);
+      
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('/api/job-applications/my-applications', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setApplications(result.data || []);
+      } else {
+        const errorData = await response.json();
+        setApplicationsError(errorData.message || 'Failed to fetch applications');
+      }
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      setApplicationsError('Network error. Please try again.');
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
 
   // Function to fetch complete profile data from backend
   const fetchCompleteProfile = async () => {
@@ -839,6 +856,39 @@ function StudentDashboard() {
   // Function to refresh user data (can be called manually if needed)
   const refreshUserData = () => {
     fetchCompleteProfile();
+  };
+
+  // Fetch applications when applications tab is active
+  useEffect(() => {
+    if (activeTab === 'applications' && studentData?._id) {
+      fetchApplications();
+    }
+  }, [activeTab, studentData]);
+
+  // Handle application withdrawal
+  const handleWithdrawApplication = async (applicationId) => {
+    if (window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`/api/job-applications/${applicationId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          // Refresh applications list
+          await fetchApplications();
+        } else {
+          const result = await response.json();
+          alert(result.message || 'Failed to withdraw application');
+        }
+      } catch (error) {
+        console.error('Error withdrawing application:', error);
+        alert('Network error. Please try again.');
+      }
+    }
   };
 
   // Helper function to check if CV data is valid
@@ -3129,17 +3179,136 @@ function StudentDashboard() {
             {activeTab === "opportunities" && renderBrowseOpportunities()}
             {activeTab === "bookmarks" && renderBookmarks()}
             {activeTab === "applications" && (
-              <ApplicationTracker
-                applications={applications}
-                onUpdateApplication={(id, status) => {
-                  // Handle application status update
-                  console.log('Update application:', id, status);
-                }}
-                onWithdrawApplication={(id) => {
-                  // Handle application withdrawal
-                  console.log('Withdraw application:', id);
-                }}
-              />
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">My Applications</h2>
+                  <button
+                    onClick={fetchApplications}
+                    disabled={applicationsLoading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    {applicationsLoading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span>Refreshing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Refresh</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {applicationsLoading && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading your applications...</p>
+                  </div>
+                )}
+
+                {applicationsError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                    {applicationsError}
+                  </div>
+                )}
+
+                {!applicationsLoading && !applicationsError && applications.length === 0 && (
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No applications found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      You haven't submitted any job applications yet.
+                    </p>
+                    <div className="mt-6">
+                      <button
+                        onClick={() => setActiveTab('opportunities')}
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        Browse Job Opportunities
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!applicationsLoading && !applicationsError && applications.length > 0 && (
+                  <div className="bg-white rounded-lg shadow overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-200">
+                      <h3 className="text-lg font-medium text-gray-900">Application Summary</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Post</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {applications.map(app => (
+                            <tr key={app._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {app.postId?.title || 'Job Post'}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {app.postId?.type || 'N/A'} • ${app.postId?.budget || 'N/A'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                                  app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                                  app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
+                                  app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
+                                  app.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {app.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {new Date(app.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button
+                                  onClick={() => window.open(`/post/${app.postId?._id}`, '_blank')}
+                                  className="text-blue-600 hover:text-blue-900 mr-3"
+                                >
+                                  View Job
+                                </button>
+                                {app.status === 'Pending' && (
+                                  <button
+                                    onClick={() => handleWithdrawApplication(app._id)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Withdraw
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {activeTab === "gigs" && (
               <GigManagement user={studentData} />

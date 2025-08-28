@@ -24,6 +24,8 @@ import OrderCancelPage from "./pages/OrderCancelPage";
 import StaffDashboard from "./pages/StaffDashboard";
 import FreelancerDashboard from "./pages/StudentDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
+import MyApplicationsPage from "./pages/MyApplicationsPage";
+import ClientApplicationsPage from "./pages/ClientApplicationsPage";
 import Footer from "./components/Footer";
 
 // Wrapper component to conditionally render Header
@@ -57,6 +59,8 @@ function AppContent() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/success" element={<OrderSuccessPage />} />
         <Route path="/orders/cancel" element={<OrderCancelPage />} />
+        <Route path="/my-applications" element={<MyApplicationsPage />} />
+        <Route path="/client/applications" element={<ClientApplicationsPage />} />
         <Route path="/service/:id" element={<ServiceDetailsPage />} />
         <Route path="/resource/:id" element={<ResourceDetailPage />} />
         <Route path="/" element={<HomePage />} />
