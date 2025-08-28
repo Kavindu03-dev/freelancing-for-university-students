@@ -5,6 +5,7 @@ import OnboardingWizard from "../components/OnboardingWizard";
 import ApplicationTracker from "../components/ApplicationTracker";
 import EnhancedRecommendations from "../components/EnhancedRecommendations";
 import GigManagement from "../components/GigManagement";
+import MessagesPage from "./MessagesPage";
 
 function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -3588,23 +3589,15 @@ function StudentDashboard() {
                 )}
               </div>
             )}
-            {activeTab === "gigs" && (
-              <GigManagement user={studentData} />
-            )}
-            {activeTab === "messages" && (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-4xl mb-4">💬</div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
-                <p className="text-gray-600 mb-6">Connect with clients and manage your conversations.</p>
-                <a
-                  href="/messages"
-                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black rounded-lg font-medium hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300"
-                >
-                  Open Messages
-                </a>
-              </div>
-            )}
-            {activeTab === "profile" && renderProfile()}
+                         {activeTab === "gigs" && (
+               <GigManagement user={studentData} />
+             )}
+
+             {activeTab === "messages" && (
+               <MessagesPage />
+             )}
+
+             {activeTab === "profile" && renderProfile()}
           </div>
         </div>
 
