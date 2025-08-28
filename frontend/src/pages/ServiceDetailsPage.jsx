@@ -13,11 +13,14 @@ function ServiceDetailsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [contactForm, setContactForm] = useState({
-    message: '',
-    budget: '',
-    deadline: ''
-  });
+     const [contactForm, setContactForm] = useState({
+     message: '',
+     budget: '',
+     deadline: ''
+   });
+   const [activeImageIndex, setActiveImageIndex] = useState(0);
+   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+   const [galleryView, setGalleryView] = useState('slideshow'); // 'slideshow', 'grid', 'masonry'
 
   // Fetch service data from backend
   useEffect(() => {
@@ -45,8 +48,19 @@ function ServiceDetailsPage() {
       }
     };
 
-    fetchService();
-  }, [id]);
+         fetchService();
+   }, [id]);
+
+   // Auto-play slideshow effect
+   useEffect(() => {
+     if (!isAutoPlaying || !service?.images || service.images.length <= 1) return;
+
+     const interval = setInterval(() => {
+       setActiveImageIndex(prev => (prev + 1) % service.images.length);
+     }, 3000); // Change image every 3 seconds
+
+     return () => clearInterval(interval);
+   }, [isAutoPlaying, service?.images]);
 
   const handleContactSubmit = (e) => {
     e.preventDefault();
@@ -223,19 +237,173 @@ function ServiceDetailsPage() {
                 )}
               </div>
 
-              {/* Gallery */}
-              {service.images && service.images.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {service.images.map((image, index) => (
-                    <img
-                      key={index}
-                      src={image.url}
-                      alt={image.caption || `Service preview ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  ))}
-                </div>
-              )}
+                             {/* Gallery */}
+               {service.images && service.images.length > 0 && (
+                 <div className="mb-6">
+                   {/* Gallery View Selector */}
+                   {service.images.length > 1 && (
+                     <div className="flex justify-center mb-4 space-x-2">
+                       <button
+                         onClick={() => setGalleryView('slideshow')}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                           galleryView === 'slideshow'
+                             ? 'bg-yellow-500 text-black'
+                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                         }`}
+                       >
+                         Slideshow
+                       </button>
+                       <button
+                         onClick={() => setGalleryView('grid')}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                           galleryView === 'grid'
+                             ? 'bg-yellow-500 text-black'
+                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                         }`}
+                       >
+                         Grid View
+                       </button>
+                       <button
+                         onClick={() => setGalleryView('masonry')}
+                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                           galleryView === 'masonry'
+                             ? 'bg-yellow-500 text-black'
+                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                         }`}
+                       >
+                         Masonry
+                       </button>
+                     </div>
+                   )}
+                                                             {service.images.length === 1 ? (
+                       // Single image display
+                       <div className="w-full">
+                         <img
+                           src={service.images[0].url}
+                           alt={service.images[0].caption || 'Service preview'}
+                           className="w-full h-96 object-contain rounded-lg bg-gray-50"
+                         />
+                       </div>
+                     ) : (
+                       // Multiple images - different view modes
+                       <>
+                         {galleryView === 'slideshow' && (
+                           <div className="relative w-full bg-gray-50 rounded-lg overflow-hidden">
+                             {/* Current Image Container */}
+                             <div className="relative flex justify-center items-center min-h-96 p-4">
+                               <img
+                                 src={service.images[activeImageIndex].url}
+                                 alt={service.images[activeImageIndex].caption || `Service preview ${activeImageIndex + 1}`}
+                                 className="max-w-full max-h-96 object-contain"
+                               />
+                               
+                               {/* Navigation Arrows - positioned relative to image */}
+                               <button
+                                 onClick={() => {
+                                   setActiveImageIndex(prev => prev === 0 ? service.images.length - 1 : prev - 1);
+                                   setIsAutoPlaying(false);
+                                 }}
+                                 className="absolute left-6 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all duration-200 z-10"
+                               >
+                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                 </svg>
+                               </button>
+                               
+                               <button
+                                 onClick={() => {
+                                   setActiveImageIndex(prev => prev === service.images.length - 1 ? 0 : prev + 1);
+                                   setIsAutoPlaying(false);
+                                 }}
+                                 className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all duration-200 z-10"
+                               >
+                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                               </svg>
+                               </button>
+                               
+                               {/* Image Counter - positioned at bottom of image area */}
+                               <div className="absolute bottom-6 right-6 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
+                                 {activeImageIndex + 1} / {service.images.length}
+                               </div>
+                               
+                               {/* Auto-play Toggle Button - positioned at bottom of image area */}
+                               <button
+                                 onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+                                 className="absolute bottom-6 left-6 bg-black bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-70 transition-all duration-200 z-10"
+                                 title={isAutoPlaying ? 'Pause slideshow' : 'Play slideshow'}
+                               >
+                                 {isAutoPlaying ? (
+                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                   </svg>
+                                 ) : (
+                                   <svg className="w-4 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 0118 0z" />
+                                   </svg>
+                                 )}
+                               </button>
+                             </div>
+                           </div>
+                         )}
+
+                         {galleryView === 'grid' && (
+                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                             {service.images.map((image, index) => (
+                               <div key={index} className="aspect-square bg-gray-50 rounded-lg overflow-hidden">
+                                 <img
+                                   src={image.url}
+                                   alt={image.caption || `Service preview ${index + 1}`}
+                                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                 />
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         {galleryView === 'masonry' && (
+                           <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
+                             {service.images.map((image, index) => (
+                               <div key={index} className="break-inside-avoid mb-4">
+                                 <img
+                                   src={image.url}
+                                   alt={image.caption || `Service preview ${index + 1}`}
+                                   className="w-full rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                                 />
+                               </div>
+                             ))}
+                           </div>
+                         )}
+
+                         {/* Thumbnail Navigation for Slideshow */}
+                         {galleryView === 'slideshow' && (
+                           <div className="flex justify-center mt-3 space-x-2">
+                             {service.images.map((image, index) => (
+                               <button
+                                 key={index}
+                                 onClick={() => {
+                                   setActiveImageIndex(index);
+                                   setIsAutoPlaying(false);
+                                 }}
+                                 className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                                   index === activeImageIndex 
+                                     ? 'border-yellow-500 scale-110' 
+                                     : 'border-gray-300 hover:border-gray-400'
+                                 }`}
+                               >
+                                 <img
+                                   src={image.url}
+                                   alt={image.caption || `Thumbnail ${index + 1}`}
+                                   className="w-full h-full object-cover"
+                                 />
+                               </button>
+                             ))}
+                           </div>
+                         )}
+                       </>
+                     )}
+                 </div>
+               )}
 
               {/* Portfolio */}
               {service.portfolio && service.portfolio.length > 0 && (
@@ -577,13 +745,66 @@ function ServiceDetailsPage() {
                   </div>
                 )}
 
-                {service.gpa && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">GPA:</span>
-                    <span className="font-medium">{service.gpa}</span>
-                  </div>
-                )}
               </div>
+
+                             {/* Profile Details Section */}
+               <div className="mt-6 pt-6 border-t border-gray-200">
+                 <div className="space-y-4">
+                   {/* Response Time */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Response Time</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.responseTime || 'Usually responds in 1 hour'}
+                     </span>
+                   </div>
+
+                   {/* Last Seen */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Last Seen</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.lastSeen ? new Date(service.lastSeen).toLocaleDateString() : 'Recently'}
+                     </span>
+                   </div>
+
+                   {/* Member Since */}
+                   <div className="flex items-center justify-between">
+                     <span className="text-gray-600 text-sm">Member Since</span>
+                     <span className="text-sm font-medium text-gray-800">
+                       {service.memberSince ? new Date(service.memberSince).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : '2024'}
+                     </span>
+                   </div>
+
+                                                            {/* Languages */}
+                     <div className="flex items-center justify-between">
+                       <span className="text-gray-600 text-sm">Languages</span>
+                       <div className="flex gap-2 justify-end">
+                         {service.languages && service.languages.length > 0 ? (
+                           <>
+                             {service.languages.slice(0, 3).map((language, index) => (
+                               <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                 {language}
+                               </span>
+                             ))}
+                             {service.languages.length > 3 && (
+                               <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                 +{service.languages.length - 3}
+                               </span>
+                             )}
+                           </>
+                         ) : (
+                           <>
+                             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                               English
+                             </span>
+                             <span className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                               Sinhala
+                             </span>
+                           </>
+                         )}
+                       </div>
+                     </div>
+                 </div>
+               </div>
 
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <Link
