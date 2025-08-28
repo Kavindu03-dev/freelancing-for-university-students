@@ -430,7 +430,7 @@ function MessagesPage() {
                           </p>
                           
                           <p className="text-sm text-gray-600 truncate">
-                            {conversation.lastMessage.senderId === (currentUser?.id || 1) ? 'You: ' : ''}
+                            {conversation.lastMessage.senderId === (currentUser?._id || currentUser?.id) ? 'You: ' : ''}
                             {conversation.lastMessage.text}
                           </p>
                         </div>
@@ -502,22 +502,22 @@ function MessagesPage() {
                     {messages.map((message) => (
                       <div key={message.id}>
                         {message.type === 'text' ? (
-                          <div className={`flex ${message.senderId === (currentUser?.id || 1) ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`flex ${message.senderId === (currentUser?._id || currentUser?.id) ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                              message.senderId === (currentUser?.id || 1)
+                              message.senderId === (currentUser?._id || currentUser?.id)
                                 ? 'bg-yellow-500 text-black'
                                 : 'bg-gray-200 text-gray-800'
                             }`}>
                               <p className="text-sm">{message.text}</p>
                               <p className={`text-xs mt-1 ${
-                                message.senderId === (currentUser?.id || 1) ? 'text-black/70' : 'text-gray-500'
+                                message.senderId === (currentUser?._id || currentUser?.id) ? 'text-black/70' : 'text-gray-500'
                               }`}>
                                 {formatTime(message.timestamp)}
                               </p>
                             </div>
                           </div>
                         ) : message.type === 'offer' ? (
-                          <div className={`flex ${message.senderId === (currentUser?.id || 1) ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`flex ${message.senderId === (currentUser?._id || currentUser?.id) ? 'justify-end' : 'justify-start'}`}>
                             <div className="max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg p-4">
                               <div className="flex items-center mb-3">
                                 <div className="bg-yellow-100 p-2 rounded-full mr-3">
@@ -549,7 +549,7 @@ function MessagesPage() {
                                 </div>
                               </div>
                               
-                              {message.senderId !== (currentUser?.id || 1) && (
+                              {message.senderId !== (currentUser?._id || currentUser?.id) && (
                                 <div className="flex space-x-2">
                                   <button className="flex-1 bg-yellow-500 hover:bg-yellow-400 text-black py-2 px-4 rounded-lg font-medium text-sm transition-colors">
                                     Accept
