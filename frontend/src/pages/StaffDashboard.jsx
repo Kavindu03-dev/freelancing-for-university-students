@@ -32,23 +32,18 @@ function StaffDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Mock data for student analytics
-  const [studentStats] = useState({
-    totalStudents: 1247,
-    verifiedStudents: 1189,
-    pendingVerification: 58,
-    activeProjects: 234,
-    completedProjects: 1890,
-    totalRevenue: 45678
+  // Student analytics state
+  const [studentStats, setStudentStats] = useState({
+    totalStudents: 0,
+    verifiedStudents: 0,
+    pendingVerification: 0,
+    activeProjects: 0,
+    completedProjects: 0,
+    totalRevenue: 0
   });
 
-  const [students] = useState([
-    { id: 1, name: "John Doe", email: "john@mit.edu", university: "MIT", degreeProgram: "Computer Science", gpa: "3.8", status: "Verified", projects: 5, revenue: 2500 },
-    { id: 2, name: "Jane Smith", email: "jane@stanford.edu", university: "Stanford", degreeProgram: "Engineering", gpa: "3.9", status: "Verified", projects: 8, revenue: 4200 },
-    { id: 3, name: "Mike Johnson", email: "mike@harvard.edu", university: "Harvard", degreeProgram: "Business", gpa: "3.7", status: "Pending", projects: 0, revenue: 0 },
-    { id: 4, name: "Sarah Wilson", email: "sarah@berkeley.edu", university: "UC Berkeley", degreeProgram: "Design", gpa: "3.6", status: "Verified", projects: 12, revenue: 6800 },
-    { id: 5, name: "Alex Chen", email: "alex@cmu.edu", university: "CMU", degreeProgram: "Computer Science", gpa: "3.9", status: "Verified", projects: 15, revenue: 8900 }
-  ]);
+  const [students, setStudents] = useState([]);
+  const [loadingStudentAnalytics, setLoadingStudentAnalytics] = useState(false);
 
   const [verificationRequests, setVerificationRequests] = useState([]);
   const [loadingVerificationRequests, setLoadingVerificationRequests] = useState(false);
@@ -95,6 +90,77 @@ function StaffDashboard() {
     'Business Guide'
   ]);
 
+  // Fetch student analytics data
+  const fetchStudentAnalytics = async () => {
+    try {
+      setLoadingStudentAnalytics(true);
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('http://localhost:5000/api/staff/student-analytics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch student analytics');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setStudentStats(result.data.stats);
+        setStudents(result.data.students);
+      } else {
+        console.error('Error fetching student analytics:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching student analytics:', error);
+    } finally {
+      setLoadingStudentAnalytics(false);
+    }
+  };
+
+  // Fetch verification requests
+  const fetchVerificationRequests = async () => {
+    try {
+      setLoadingVerificationRequests(true);
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('http://localhost:5000/api/staff/verification-requests', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch verification requests');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setVerificationRequests(result.data);
+      } else {
+        console.error('Error fetching verification requests:', result.message);
+      }
+    } catch (error) {
+      console.error('Error fetching verification requests:', error);
+    } finally {
+      setLoadingVerificationRequests(false);
+    }
+  };
+
   useEffect(() => {
     // Check if staff is logged in
     const userData = localStorage.getItem('userData');
@@ -132,6 +198,7 @@ function StaffDashboard() {
   // Fetch verification requests when component mounts
   useEffect(() => {
     if (staffData) {
+      fetchStudentAnalytics();
       fetchVerificationRequests();
       fetchResources();
     }
@@ -413,58 +480,94 @@ function StaffDashboard() {
     // In real implementation, this would update the database
   };
 
-  // Verification request functions
-  const fetchVerificationRequests = async () => {
+  const respondToVerificationRequest = async (requestId, status, response) => {
     try {
-      setLoadingVerificationRequests(true);
       const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:5000/api/verification/staff/requests', {
+      
+      if (status === 'approved') {
+        const apiResponse = await fetch(`http://localhost:5000/api/staff/verify-student/${requestId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await apiResponse.json();
+
+        if (result.success) {
+          // Refresh the data
+          fetchStudentAnalytics();
+          fetchVerificationRequests();
+          alert('Student verified successfully!');
+        } else {
+          alert(`Failed to verify student: ${result.message}`);
+        }
+      } else {
+        // Handle rejection if needed
+        console.log(`Rejecting verification request ${requestId}`);
+        alert('Rejection functionality not implemented yet');
+      }
+    } catch (error) {
+      console.error('Error responding to verification request:', error);
+      alert('Failed to respond to verification request');
+    }
+  };
+
+  // Handle PDF export
+  const handleExportPDF = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      
+      if (!token) {
+        alert('Authentication token not found. Please log in again.');
+        return;
+      }
+
+      // Show loading state
+      const exportButton = document.querySelector('[data-export-pdf]');
+      if (exportButton) {
+        exportButton.disabled = true;
+        exportButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Generating PDF...';
+      }
+
+      const response = await fetch('http://localhost:5000/api/staff/export-analytics', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        setVerificationRequests(result.data);
+      if (response.ok) {
+        // Create blob from response
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create download link
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `student-analytics-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Clean up
+        window.URL.revokeObjectURL(url);
+        
+        alert('PDF report downloaded successfully!');
       } else {
-        console.error('Failed to fetch verification requests:', result.message);
+        const errorData = await response.json();
+        alert(`Failed to export PDF: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Error fetching verification requests:', error);
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF report');
     } finally {
-      setLoadingVerificationRequests(false);
-    }
-  };
-
-  const respondToVerificationRequest = async (requestId, status, response) => {
-    try {
-      const token = localStorage.getItem('userToken');
-      const apiResponse = await fetch(`http://localhost:5000/api/verification/request/${requestId}/respond`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          status,
-          staffResponse: response
-        })
-      });
-
-      const result = await apiResponse.json();
-
-      if (result.success) {
-        // Refresh the verification requests
-        fetchVerificationRequests();
-        alert(`Verification request ${status} successfully`);
-      } else {
-        alert(`Failed to ${status} request: ${result.message}`);
+      // Reset button state
+      const exportButton = document.querySelector('[data-export-pdf]');
+      if (exportButton) {
+        exportButton.disabled = false;
+        exportButton.innerHTML = '<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><span>Export PDF</span>';
       }
-    } catch (error) {
-      console.error('Error responding to verification request:', error);
-      alert('Failed to respond to verification request');
     }
   };
 
@@ -927,55 +1030,75 @@ function StaffDashboard() {
             <h3 className="text-2xl font-bold text-gray-900">Student Analytics</h3>
             <p className="text-gray-600 mt-1">Comprehensive overview of student performance and engagement</p>
           </div>
-          <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300">
-            Export Report
+          <button 
+            onClick={handleExportPDF}
+            data-export-pdf
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Export PDF</span>
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GPA</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {students.map(student => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-white font-bold text-sm">{student.name.split(' ').map(n => n[0]).join('')}</span>
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                        <div className="text-sm text-gray-500">{student.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.university}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.degreeProgram}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.gpa}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      student.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {student.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.projects}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.revenue.toLocaleString()}</td>
+        {loadingStudentAnalytics ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading student analytics...</p>
+          </div>
+        ) : students.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">📊</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Student Data Available</h3>
+            <p className="text-gray-600">No student analytics data found at the moment.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GPA</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {students.map(student => (
+                  <tr key={student.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white font-bold text-sm">{student.name.split(' ').map(n => n[0]).join('')}</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                          <div className="text-sm text-gray-500">{student.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.university}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.degreeProgram}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.gpa}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        student.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {student.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.projects}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.revenue.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1018,15 +1141,11 @@ function StaffDashboard() {
                       </div>
                       <div>
                         <h4 className="text-xl font-bold text-gray-900">
-                          {request.freelancerId?.firstName} {request.freelancerId?.lastName}
+                          {request.firstName} {request.lastName}
                         </h4>
-                        <p className="text-yellow-600 font-medium">{request.freelancerId?.email}</p>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        <p className="text-yellow-600 font-medium">{request.email}</p>
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          Pending Verification
                         </span>
                       </div>
                     </div>
@@ -1036,66 +1155,52 @@ function StaffDashboard() {
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-                        <span className="text-gray-600">University: <span className="font-medium">{request.freelancerId?.university || 'Not specified'}</span></span>
+                        <span className="text-gray-600">University: <span className="font-medium">{request.university || 'Not specified'}</span></span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                         </svg>
-                        <span className="text-gray-600">Program: <span className="font-medium">{request.freelancerId?.degreeProgram || 'Not specified'}</span></span>
+                        <span className="text-gray-600">Program: <span className="font-medium">{request.degreeProgram || 'Not specified'}</span></span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        <span className="text-gray-600">GPA: <span className="font-medium">{request.freelancerId?.gpa || 'Not specified'}</span></span>
+                        <span className="text-gray-600">GPA: <span className="font-medium">{request.gpa || 'Not specified'}</span></span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
-                        <span className="text-gray-600">Submitted: <span className="font-medium">{new Date(request.submittedAt).toLocaleDateString()}</span></span>
+                        <span className="text-gray-600">Joined: <span className="font-medium">{new Date(request.createdAt).toLocaleDateString()}</span></span>
                       </div>
                     </div>
 
-                    {request.requestMessage && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Request Message:</p>
-                        <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">{request.requestMessage}</p>
-                      </div>
-                    )}
 
-                    {request.staffResponse && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Your Response:</p>
-                        <p className="text-gray-600 text-sm bg-blue-50 p-3 rounded-lg">{request.staffResponse}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
                 
-                {request.status === 'pending' && (
-                  <div className="flex space-x-4">
-                    <button 
-                      onClick={() => respondToVerificationRequest(request._id, 'approved', 'Verification approved. Welcome to the platform!')}
-                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>Approve</span>
-                    </button>
-                    <button 
-                      onClick={() => respondToVerificationRequest(request._id, 'rejected', 'Verification rejected. Please provide additional documentation.')}
-                      className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                )}
+                <div className="flex space-x-4">
+                  <button 
+                    onClick={() => respondToVerificationRequest(request._id, 'approved', 'Verification approved. Welcome to the platform!')}
+                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Approve</span>
+                  </button>
+                  <button 
+                    onClick={() => respondToVerificationRequest(request._id, 'rejected', 'Verification rejected. Please provide additional documentation.')}
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Reject</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>

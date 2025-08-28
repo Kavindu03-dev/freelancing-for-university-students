@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { isAuthenticated, getUserData } from '../utils/auth';
 
 function ContactPage() {
@@ -21,6 +21,7 @@ function ContactPage() {
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  const [searchParams] = useSearchParams();
 
   // Check if user is authenticated
   const isUserAuthenticated = isAuthenticated();
@@ -59,6 +60,14 @@ function ContactPage() {
           name: fullName,
           email: userData.email || ''
         }));
+        
+        // Scroll to contact form if user just signed in
+        const contactForm = document.getElementById('contact-form');
+        if (contactForm) {
+          setTimeout(() => {
+            contactForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 500);
+        }
       }
     };
 
@@ -159,6 +168,12 @@ function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent submission if user is not authenticated
+    if (!isUserAuthenticated) {
+      alert('Please sign in to send a message');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -303,33 +318,33 @@ function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
-            <div>
+            <div id="contact-form">
               <h2 className="text-3xl font-bold text-gray-800 mb-8">Send us a Message</h2>
               
               {!isUserAuthenticated && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-lg font-medium text-blue-800 mb-2">
-                        Guest Message
+                      <h3 className="text-lg font-medium text-red-800 mb-2">
+                        Sign In Required
                       </h3>
-                      <p className="text-blue-700 mb-4">
-                        You can send us a message as a guest, or sign in for better support and message tracking.
+                      <p className="text-red-700 mb-4">
+                        You must be signed in to send us a message. Please sign in or create an account to continue.
                       </p>
                       <div className="flex space-x-3">
                         <Link
-                          to="/signin"
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                          to="/signin?redirect=/contact"
+                          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
                         >
                           Sign In
                         </Link>
                         <Link
-                          to="/signup"
+                          to="/join"
                           className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
                         >
                           Create Account
@@ -375,8 +390,10 @@ function ContactPage() {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
+                      disabled={!isUserAuthenticated}
                       readOnly={isUserAuthenticated}
                       className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : 
                         isUserAuthenticated ? 'bg-gray-50 cursor-not-allowed' : ''
                       }`}
                       placeholder="Your full name"
@@ -394,8 +411,10 @@ function ContactPage() {
                       required
                       value={formData.email}
                       onChange={handleInputChange}
+                      disabled={!isUserAuthenticated}
                       readOnly={isUserAuthenticated}
                       className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : 
                         isUserAuthenticated ? 'bg-gray-50 cursor-not-allowed' : ''
                       }`}
                       placeholder="your@email.com"
@@ -414,7 +433,10 @@ function ContactPage() {
                       required
                       value={formData.category}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      disabled={!isUserAuthenticated}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''
+                      }`}
                     >
                       <option value="">Select a category</option>
                       {categories.map((category) => (
@@ -432,7 +454,10 @@ function ContactPage() {
                       name="priority"
                       value={formData.priority}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      disabled={!isUserAuthenticated}
+                      className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                        !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''
+                      }`}
                     >
                       <option value="low">Low</option>
                       <option value="normal">Normal</option>
@@ -453,7 +478,10 @@ function ContactPage() {
                     required
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    disabled={!isUserAuthenticated}
+                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent ${
+                      !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''
+                    }`}
                     placeholder="Brief description of your inquiry"
                   />
                 </div>
@@ -469,16 +497,19 @@ function ContactPage() {
                     rows={6}
                     value={formData.message}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none"
+                    disabled={!isUserAuthenticated}
+                    className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent resize-none ${
+                      !isUserAuthenticated ? 'bg-gray-100 cursor-not-allowed opacity-50' : ''
+                    }`}
                     placeholder="Please provide detailed information about your inquiry..."
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isUserAuthenticated}
                   className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 ${
-                    isSubmitting
+                    isSubmitting || !isUserAuthenticated
                       ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                       : 'bg-yellow-500 hover:bg-yellow-400 text-black hover:shadow-lg transform hover:-translate-y-0.5'
                   }`}
@@ -491,6 +522,8 @@ function ContactPage() {
                       </svg>
                       Sending Message...
                     </div>
+                  ) : !isUserAuthenticated ? (
+                    'Sign In to Send Message'
                   ) : (
                     'Send Message'
                   )}
