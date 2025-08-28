@@ -92,6 +92,7 @@ const createService = async (req, res) => {
       degreeProgram: req.user.degreeProgram || '',
       gpa: req.user.gpa || '',
       experience: req.user.experience || '',
+      isActive: true, // Explicitly set to true
       status: 'pending' // Set initial status
     };
 
@@ -232,10 +233,17 @@ const getServiceById = async (req, res) => {
 
     if (service) {
       // This is a gig (freelancer service)
+      const serviceData = service.toObject();
+      
+      // Ensure isActive is set to true if not explicitly false
+      if (serviceData.isActive === undefined) {
+        serviceData.isActive = true;
+      }
+      
       return res.json({
         success: true,
         data: {
-          ...service.toObject(),
+          ...serviceData,
           type: 'gig',
           source: 'freelancer'
         }
@@ -464,6 +472,7 @@ const updateService = async (req, res) => {
       portfolio: typeof portfolio === 'string' && portfolio.trim() ? [{ title: 'Portfolio Item', description: portfolio, imageUrl: '', projectUrl: '' }] : portfolio,
       images: images || [],
       packages: validatedPackages,
+      isActive: true, // Preserve active status
       status: 'pending' // Reset to pending for admin review
     };
     
