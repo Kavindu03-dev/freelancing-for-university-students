@@ -30,6 +30,11 @@ router.post('/profile-image', protect, imgbbUpload.single('profileImage'), userC
 // @access  Private
 router.delete('/profile-image', protect, userController.removeProfileImage);
 
+// @route   GET /api/users/dashboard/stats
+// @desc    Get client dashboard statistics
+// @access  Private
+router.get('/dashboard/stats', protect, userController.getClientDashboardStats);
+
 // @route   GET /api/users/admin/all
 // @desc    Get all users (admin only)
 // @access  Private (Admin only)
