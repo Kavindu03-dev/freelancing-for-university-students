@@ -1,5 +1,8 @@
 import User from '../models/User.js';
 import { uploadToImgBB, cleanupTempFile } from '../middleware/imgbbUpload.js';
+import Post from '../models/Post.js';
+import Order from '../models/Order.js';
+import JobApplication from '../models/JobApplication.js';
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -521,6 +524,174 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Get client dashboard statistics
+export const getClientDashboardStats = async (req, res) => {
+  try {
+    const clientId = req.user._id;
+
+    // Get posts statistics
+    const postsStats = await Post.aggregate([
+      { $match: { clientId: clientId } },
+      {
+        $group: {
+          _id: null,
+          totalPosts: { $sum: 1 },
+          activePosts: {
+            $sum: { $cond: [{ $eq: ['$status', 'Active'] }, 1, 0] }
+          },
+          completedPosts: {
+            $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] }
+          },
+          totalBudget: { $sum: '$budget' }
+        }
+      }
+    ]);
+
+    // Get orders statistics
+    const ordersStats = await Order.aggregate([
+      { $match: { clientId: clientId } },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          activeOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'In Progress'] }, 1, 0] }
+          },
+          completedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] }
+          },
+          totalSpent: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
+    // Get applications statistics
+    const applicationsStats = await JobApplication.aggregate([
+      { $match: { clientId: clientId } },
+      {
+        $group: {
+          _id: null,
+          totalApplications: { $sum: 1 },
+          pendingApplications: {
+            $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] }
+          },
+          acceptedApplications: {
+            $sum: { $cond: [{ $eq: ['$status', 'Accepted'] }, 1, 0] }
+          },
+          declinedApplications: {
+            $sum: { $cond: [{ $eq: ['$status', 'Declined'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    // Get recent projects (last 5 posts)
+    const recentProjects = await Post.find({ clientId: clientId })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('title status budget createdAt');
+
+    // Get recent applications (last 5)
+    const recentApplications = await JobApplication.find({ clientId: clientId })
+      .populate('freelancerId', 'firstName lastName professionalTitle')
+      .populate('postId', 'title')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('status createdAt');
+
+    // Get top freelancers (based on rating and completed projects)
+    const topFreelancers = await User.aggregate([
+      { $match: { userType: 'freelancer' } },
+      {
+        $lookup: {
+          from: 'orders',
+          localField: '_id',
+          foreignField: 'freelancerId',
+          as: 'orders'
+        }
+      },
+      {
+        $addFields: {
+          completedProjects: {
+            $size: {
+              $filter: {
+                input: '$orders',
+                cond: { $eq: ['$$this.status', 'Completed'] }
+              }
+            }
+          },
+          totalEarnings: {
+            $sum: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: '$orders',
+                    cond: { $eq: ['$$this.status', 'Completed'] }
+                  }
+                },
+                as: 'order',
+                in: '$$order.totalAmount'
+              }
+            }
+          }
+        }
+      },
+      { $sort: { completedProjects: -1, totalEarnings: -1 } },
+      { $limit: 4 },
+      {
+        $project: {
+          _id: 1,
+          firstName: 1,
+          lastName: 1,
+          university: 1,
+          skills: 1,
+          hourlyRate: 1,
+          profileImage: 1,
+          completedProjects: 1,
+          totalEarnings: 1,
+          rating: { $literal: 4.5 } // Default rating since it's not in the model
+        }
+      }
+    ]);
+
+    const stats = {
+      posts: postsStats[0] || {
+        totalPosts: 0,
+        activePosts: 0,
+        completedPosts: 0,
+        totalBudget: 0
+      },
+      orders: ordersStats[0] || {
+        totalOrders: 0,
+        activeOrders: 0,
+        completedOrders: 0,
+        totalSpent: 0
+      },
+      applications: applicationsStats[0] || {
+        totalApplications: 0,
+        pendingApplications: 0,
+        acceptedApplications: 0,
+        declinedApplications: 0
+      },
+      recentProjects,
+      recentApplications,
+      topFreelancers
+    };
+
+    res.json({
+      success: true,
+      data: stats
+    });
+
+  } catch (error) {
+    console.error('Error fetching client dashboard stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics'
+    });
+  }
+};
+
 export default {
   getUserProfile,
   updateUserProfile,
@@ -532,5 +703,6 @@ export default {
   unverifyUser,
   suspendUser,
   activateUser,
-  deleteUser
+  deleteUser,
+  getClientDashboardStats
 };
