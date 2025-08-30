@@ -24,18 +24,21 @@ function ClientDashboard() {
     totalSpent: 0,
     totalOrders: 0,
     activeOrders: 0,
-    completedOrders: 0
+    completedOrders: 0,
+    totalApplications: 0,
+    pendingApplications: 0,
+    acceptedApplications: 0,
+    declinedApplications: 0
   });
 
-  // Projects derived from posts
-  const projects = jobPosts.slice(0, 3).map(post => ({
-    id: post._id,
-    title: post.title,
-    freelancer: "Pending Assignment",
-    status: post.status,
-    budget: post.budget,
-    progress: post.status === 'Completed' ? 100 : post.status === 'In Progress' ? 60 : 0
-  }));
+  // Dashboard data state
+  const [dashboardData, setDashboardData] = useState({
+    recentProjects: [],
+    recentApplications: [],
+    topFreelancers: []
+  });
+  const [loadingDashboard, setLoadingDashboard] = useState(false);
+  const [dashboardError, setDashboardError] = useState(null);
 
   const [applications, setApplications] = useState([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
@@ -344,6 +347,58 @@ function ClientDashboard() {
     }
   };
 
+  // Function to fetch dashboard statistics
+  const fetchDashboardStats = async () => {
+    try {
+      setLoadingDashboard(true);
+      setDashboardError(null);
+      
+      const token = localStorage.getItem('userToken');
+      const response = await fetch('http://localhost:5000/api/users/dashboard/stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          const data = result.data;
+          
+          // Update stats
+          setStats({
+            postedProjects: data.posts.totalPosts || 0,
+            activeProjects: data.posts.activePosts || 0,
+            completedProjects: data.posts.completedPosts || 0,
+            totalSpent: data.orders.totalSpent || 0,
+            totalOrders: data.orders.totalOrders || 0,
+            activeOrders: data.orders.activeOrders || 0,
+            completedOrders: data.orders.completedOrders || 0,
+            totalApplications: data.applications.totalApplications || 0,
+            pendingApplications: data.applications.pendingApplications || 0,
+            acceptedApplications: data.applications.acceptedApplications || 0,
+            declinedApplications: data.applications.declinedApplications || 0
+          });
+
+          // Update dashboard data
+          setDashboardData({
+            recentProjects: data.recentProjects || [],
+            recentApplications: data.recentApplications || [],
+            topFreelancers: data.topFreelancers || []
+          });
+        }
+      } else {
+        const errorData = await response.json();
+        setDashboardError(errorData.message || 'Failed to fetch dashboard statistics');
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      setDashboardError('Network error. Please try again.');
+    } finally {
+      setLoadingDashboard(false);
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     if (userData) {
@@ -360,40 +415,14 @@ function ClientDashboard() {
     }
   }, [navigate]);
 
-  // Calculate stats from posts and orders
-  const calculateStats = (posts, ordersList = []) => {
-    const totalPosts = posts.length;
-    const activePosts = posts.filter(post => post.status === 'Active').length;
-    const completedPosts = posts.filter(post => post.status === 'Completed').length;
-    const totalSpent = posts.reduce((sum, post) => sum + (post.budget || 0), 0);
-    
-    const totalOrders = ordersList.length;
-    const activeOrders = ordersList.filter(order => order.status === 'In Progress').length;
-    const completedOrders = ordersList.filter(order => order.status === 'Completed').length;
-    
-    setStats({
-      postedProjects: totalPosts,
-      activeProjects: activePosts,
-      completedProjects: completedPosts,
-      totalSpent,
-      totalOrders,
-      activeOrders,
-      completedOrders
-    });
-  };
-
   // Fetch posts when client data is available
   useEffect(() => {
     if (clientData?._id) {
       fetchPosts();
       fetchOrders();
+      fetchDashboardStats();
     }
   }, [clientData]);
-
-  // Update stats when posts change
-  useEffect(() => {
-    calculateStats(jobPosts);
-  }, [jobPosts]);
 
   // Handle URL query parameter for tab
   useEffect(() => {
@@ -806,92 +835,348 @@ function ClientDashboard() {
 
   const renderOverview = () => (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.postedProjects}</h3>
-          <p className="text-gray-600">Posted Projects</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-green-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.activeProjects}</h3>
-          <p className="text-gray-600">Active Projects</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-purple-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.completedProjects}</h3>
-          <p className="text-gray-600">Completed</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-xl p-6 border border-orange-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">${stats.totalSpent}</h3>
-          <p className="text-gray-600">Total Spent</p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">Recent Projects</h3>
-        <div className="space-y-4">
-          {projects.map(project => (
-            <div key={project.id} className="border border-gray-200 rounded-xl p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h4 className="font-bold text-gray-900">{project.title}</h4>
-                  <p className="text-gray-600">{project.freelancer}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-green-600">${project.budget}</p>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    project.status === 'Completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {project.status}
-                  </span>
-                </div>
-              </div>
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-3xl p-8 text-white shadow-2xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, {clientData?.firstName || 'Client'}! 👋</h1>
+            <p className="text-gray-300 text-lg">Here's what's happening with your projects today</p>
+          </div>
+          <div className="hidden lg:block">
+            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Recent Applications */}
-      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">Recent Applications</h3>
+      {/* Main Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.postedProjects}</div>
+              <div className="text-gray-600 text-sm">Posted Projects</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-blue-500 rounded-full h-2" style={{ width: `${Math.min((stats.postedProjects / 10) * 100, 100)}%` }}></div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.activeProjects}</div>
+              <div className="text-gray-600 text-sm">Active Projects</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-green-500 rounded-full h-2" style={{ width: `${Math.min((stats.activeProjects / 10) * 100, 100)}%` }}></div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.completedProjects}</div>
+              <div className="text-gray-600 text-sm">Completed</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-purple-500 rounded-full h-2" style={{ width: `${Math.min((stats.completedProjects / 10) * 100, 100)}%` }}></div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">${stats.totalSpent.toLocaleString()}</div>
+              <div className="text-gray-600 text-sm">Total Spent</div>
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-orange-500 rounded-full h-2" style={{ width: `${Math.min((stats.totalSpent / 10000) * 100, 100)}%` }}></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.totalApplications}</div>
+              <div className="text-gray-600 text-sm">Total Applications</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.pendingApplications}</div>
+              <div className="text-gray-600 text-sm">Pending Applications</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.acceptedApplications}</div>
+              <div className="text-gray-600 text-sm">Accepted Applications</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 transform hover:scale-105 transition-all duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-900">{stats.totalOrders}</div>
+              <div className="text-gray-600 text-sm">Total Orders</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+            {/* Recent Projects Section */}
+      <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Recent Projects</h3>
+              <p className="text-gray-600">Your latest project activities</p>
+            </div>
+          </div>
           <button
-            onClick={() => setActiveTab("applications")}
-            className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
+            onClick={() => setActiveTab("posts")}
+            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
-            View All →
+            View All Projects
           </button>
         </div>
+        
         <div className="space-y-4">
-          {applicationsLoading ? (
+          {loadingDashboard ? (
             // Loading skeleton
             Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="border border-gray-200 rounded-xl p-4 animate-pulse">
-                <div className="h-4 bg-gray-300 rounded mb-2"></div>
-                <div className="h-3 bg-gray-300 rounded mb-1"></div>
-                <div className="h-3 bg-gray-300 rounded w-20"></div>
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-5 bg-gray-300 rounded mb-3"></div>
+                    <div className="h-4 bg-gray-300 rounded w-32"></div>
+                  </div>
+                  <div className="text-right">
+                    <div className="h-5 bg-gray-300 rounded mb-2 w-20"></div>
+                    <div className="h-6 bg-gray-300 rounded w-16"></div>
+                  </div>
+                </div>
               </div>
             ))
-          ) : applicationsError ? (
+          ) : dashboardError ? (
             // Error state
-            <div className="text-center py-4">
-              <p className="text-red-500 text-sm">Failed to load applications</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-500 text-lg font-medium">Failed to load projects</p>
+              <button 
+                onClick={() => fetchDashboardStats()} 
+                className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Try Again
+              </button>
             </div>
-          ) : applications.length === 0 ? (
+          ) : dashboardData.recentProjects.length === 0 ? (
             // Empty state
-            <div className="text-center py-4">
-              <p className="text-gray-500 text-sm">No applications yet</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg font-medium">No projects yet</p>
+              <p className="text-gray-400 text-sm mt-2">Start by creating your first project</p>
+              <button 
+                onClick={() => setActiveTab("posts")} 
+                className="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Create Project
+              </button>
+            </div>
+          ) : (
+            // Recent projects
+            dashboardData.recentProjects.map(project => (
+              <div key={project._id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 text-lg mb-2">{project.title}</h4>
+                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="flex items-center space-x-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{new Date(project.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600 mb-2">${project.budget?.toLocaleString()}</div>
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                      project.status === 'Completed' ? 'bg-green-100 text-green-800' : 
+                      project.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                      project.status === 'Active' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {project.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Recent Applications Section */}
+      <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Recent Applications</h3>
+              <p className="text-gray-600">Latest applications from freelancers</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveTab("applications")}
+            className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+          >
+            View All Applications
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          {loadingDashboard ? (
+            // Loading skeleton
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="h-5 bg-gray-300 rounded mb-3"></div>
+                    <div className="h-4 bg-gray-300 rounded mb-2 w-40"></div>
+                    <div className="h-4 bg-gray-300 rounded w-32"></div>
+                  </div>
+                  <div className="text-right">
+                    <div className="h-6 bg-gray-300 rounded mb-2 w-20"></div>
+                    <div className="h-4 bg-gray-300 rounded w-16"></div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : dashboardError ? (
+            // Error state
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-500 text-lg font-medium">Failed to load applications</p>
+              <button 
+                onClick={() => fetchDashboardStats()} 
+                className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : dashboardData.recentApplications.length === 0 ? (
+            // Empty state
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg font-medium">No applications yet</p>
+              <p className="text-gray-400 text-sm mt-2">Applications will appear here when freelancers apply to your projects</p>
             </div>
           ) : (
             // Recent applications
-            applications.slice(0, 3).map(app => (
-              <div key={app._id} className="border border-gray-200 rounded-xl p-4">
+            dashboardData.recentApplications.map(app => (
+              <div key={app._id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
                 <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-gray-900">{app.fullName}</h4>
-                    <p className="text-gray-600">{app.professionalTitle}</p>
-                    <p className="text-sm text-gray-500">{app.postId?.title || 'Job Post'}</p>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-gray-900 text-lg mb-2">
+                      {app.freelancerId ? `${app.freelancerId.firstName} ${app.freelancerId.lastName}` : 'Unknown Freelancer'}
+                    </h4>
+                    <p className="text-gray-600 text-sm mb-1">
+                      {app.freelancerId?.professionalTitle || 'No title'}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Applied for: {app.postId?.title || 'Job Post'}
+                    </p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                       app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
                       app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
                       app.status === 'Declined' ? 'bg-red-100 text-red-800' :
@@ -899,7 +1184,7 @@ function ClientDashboard() {
                     }`}>
                       {app.status}
                     </span>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-2">
                       {new Date(app.createdAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric'
@@ -913,81 +1198,119 @@ function ClientDashboard() {
         </div>
       </div>
 
-      {/* Top Recommended Freelancers */}
-      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">Top Recommended Freelancers</h3>
+      {/* Top Recommended Freelancers Section */}
+      <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Top Recommended Freelancers</h3>
+              <p className="text-gray-600">Best performing freelancers for your projects</p>
+            </div>
+          </div>
           <button
             onClick={() => setActiveTab("recommendations")}
-            className="px-4 py-2 text-blue-600 hover:text-blue-800 font-medium"
+            className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
           >
-            View All →
+            View All Freelancers
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {loadingFreelancers ? (
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {loadingDashboard ? (
             // Loading skeleton
             Array.from({ length: 4 }).map((_, index) => (
-              <div key={index} className="border border-gray-200 rounded-xl p-4 animate-pulse">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+              <div key={index} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
                   <div className="w-8 h-4 bg-gray-300 rounded"></div>
                 </div>
-                <div className="h-4 bg-gray-300 rounded mb-1"></div>
-                <div className="h-3 bg-gray-300 rounded mb-2"></div>
-                <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                <div className="h-5 bg-gray-300 rounded mb-3"></div>
+                <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 bg-gray-300 rounded mb-4"></div>
                 <div className="flex justify-between items-center">
-                  <div className="h-3 bg-gray-300 rounded w-16"></div>
-                  <div className="h-3 bg-gray-300 rounded w-20"></div>
+                  <div className="h-4 bg-gray-300 rounded w-20"></div>
+                  <div className="h-4 bg-gray-300 rounded w-24"></div>
                 </div>
               </div>
             ))
-          ) : freelancersError ? (
+          ) : dashboardError ? (
             // Error state
-            <div className="col-span-full text-center py-8">
-              <div className="text-red-500 mb-2">⚠️</div>
-              <p className="text-gray-600 mb-4">Failed to load freelancers</p>
+            <div className="col-span-full text-center py-12">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-red-500 text-lg font-medium">Failed to load freelancers</p>
               <button 
-                onClick={() => window.location.reload()} 
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                onClick={() => fetchDashboardStats()} 
+                className="mt-4 px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
               >
                 Try Again
               </button>
             </div>
-          ) : recommendedFreelancers.length === 0 ? (
+          ) : dashboardData.topFreelancers.length === 0 ? (
             // Empty state
-            <div className="col-span-full text-center py-8">
-              <div className="text-gray-400 mb-2">👥</div>
-              <p className="text-gray-600">No freelancers available at the moment</p>
+            <div className="col-span-full text-center py-12">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <p className="text-gray-500 text-lg font-medium">No freelancers available</p>
+              <p className="text-gray-400 text-sm mt-2">Check back later for top freelancers</p>
             </div>
           ) : (
             // Freelancer cards
-            getRecommendedFreelancers().slice(0, 4).map(freelancer => (
-              <div key={freelancer.id} className="border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors duration-300">
-                <div className="flex justify-between items-start mb-2">
-                  {freelancer.profileImage ? (
+            dashboardData.topFreelancers.map((freelancer, index) => (
+              <div key={freelancer._id} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group">
+                <div className="flex justify-between items-start mb-4">
+                  {freelancer.profileImage?.url ? (
                     <img 
-                      src={freelancer.profileImage} 
-                      alt={freelancer.name}
-                      className="w-10 h-10 rounded-full object-cover"
+                      src={freelancer.profileImage.url} 
+                      alt={`${freelancer.firstName} ${freelancer.lastName}`}
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all duration-300"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{freelancer.name.charAt(0)}</span>
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center ring-2 ring-gray-200 group-hover:ring-blue-300 transition-all duration-300">
+                      <span className="text-white font-bold text-sm">{freelancer.firstName?.charAt(0) || 'F'}</span>
                     </div>
                   )}
-                  <span className="text-xs font-bold text-green-600">{freelancer.rating}★</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-sm font-bold text-yellow-500">{freelancer.rating}★</span>
+                    {index < 3 && (
+                      <span className="text-xs font-bold text-gray-500">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <h4 className="font-bold text-gray-900 text-sm mb-1">{freelancer.name}</h4>
-                <p className="text-gray-600 text-xs mb-2">{freelancer.university}</p>
-                <div className="text-xs text-gray-500 mb-2">
-                  {freelancer.skills.slice(0, 2).join(', ')}
-                  {freelancer.skills.length > 2 && '...'}
+                <h4 className="font-bold text-gray-900 text-lg mb-2">
+                  {freelancer.firstName} {freelancer.lastName}
+                </h4>
+                <p className="text-gray-600 text-sm mb-3">{freelancer.university || 'Not specified'}</p>
+                <div className="text-sm text-gray-500 mb-4">
+                  {freelancer.skills?.slice(0, 2).join(', ') || 'No skills listed'}
+                  {freelancer.skills?.length > 2 && '...'}
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-green-600 font-semibold">${freelancer.hourlyRate}/hr</span>
-                  <span className="text-gray-500">{freelancer.completedProjects} projects</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-green-600 font-semibold text-sm">${freelancer.hourlyRate || 25}/hr</span>
+                  <span className="text-gray-500 text-sm">{freelancer.completedProjects || 0} projects</span>
                 </div>
+                                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gray-600 h-2 rounded-full transition-all duration-300" 
+                        style={{ width: `${Math.min((freelancer.completedProjects || 0) * 10, 100)}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Experience level</p>
+                  </div>
               </div>
             ))
           )}

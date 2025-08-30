@@ -620,21 +620,21 @@ function StaffDashboard() {
       
       if (status === 'approved') {
         const apiResponse = await fetch(`http://localhost:5000/api/staff/verify-student/${requestId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
           }
-        });
+      });
 
-        const result = await apiResponse.json();
+      const result = await apiResponse.json();
 
-        if (result.success) {
+      if (result.success) {
           // Refresh the data
           fetchStudentAnalytics();
-          fetchVerificationRequests();
+        fetchVerificationRequests();
           alert('Student verified successfully!');
-        } else {
+      } else {
           alert(`Failed to verify student: ${result.message}`);
         }
       } else {
@@ -1314,50 +1314,50 @@ function StaffDashboard() {
             <p className="text-gray-600">No student analytics data found at the moment.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GPA</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {students.map(student => (
-                  <tr key={student.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-white font-bold text-sm">{student.name.split(' ').map(n => n[0]).join('')}</span>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{student.name}</div>
-                          <div className="text-sm text-gray-500">{student.email}</div>
-                        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Program</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GPA</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {students.map(student => (
+                <tr key={student.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mr-3">
+                        <span className="text-white font-bold text-sm">{student.name.split(' ').map(n => n[0]).join('')}</span>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.university}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.degreeProgram}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.gpa}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        student.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.projects}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.revenue.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                        <div className="text-sm text-gray-500">{student.email}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.university}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.degreeProgram}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.gpa}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      student.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {student.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.projects}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${student.revenue.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )}
       </div>
     </div>
@@ -1441,26 +1441,26 @@ function StaffDashboard() {
                   </div>
                 </div>
                 
-                <div className="flex space-x-4">
-                  <button 
-                    onClick={() => respondToVerificationRequest(request._id, 'approved', 'Verification approved. Welcome to the platform!')}
-                    className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Approve</span>
-                  </button>
-                  <button 
-                    onClick={() => respondToVerificationRequest(request._id, 'rejected', 'Verification rejected. Please provide additional documentation.')}
-                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Reject</span>
-                  </button>
-                </div>
+                  <div className="flex space-x-4">
+                    <button 
+                      onClick={() => respondToVerificationRequest(request._id, 'approved', 'Verification approved. Welcome to the platform!')}
+                      className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span>Approve</span>
+                    </button>
+                    <button 
+                      onClick={() => respondToVerificationRequest(request._id, 'rejected', 'Verification rejected. Please provide additional documentation.')}
+                      className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span>Reject</span>
+                    </button>
+                  </div>
               </div>
             ))}
           </div>
@@ -1477,7 +1477,7 @@ function StaffDashboard() {
           {/* Profile Picture */}
           <div className="relative group profile-image-container">
             {staffData?.profileImage?.url ? (
-              <div className="relative">
+          <div className="relative">
                 <img
                   src={staffData.profileImage.url}
                   alt="Profile"
@@ -1591,8 +1591,8 @@ function StaffDashboard() {
                   }`}
                   onClick={() => document.getElementById('upload-profile-image-input').click()}
                 >
-                  {staffData?.firstName?.charAt(0)}{staffData?.lastName?.charAt(0)}
-                </div>
+              {staffData?.firstName?.charAt(0)}{staffData?.lastName?.charAt(0)}
+            </div>
                 
                 {/* Hidden file input for uploading photo */}
                 <input
@@ -2034,20 +2034,20 @@ function StaffDashboard() {
               {/* Personal Bio */}
               <div>
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Personal Bio</h4>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                  <textarea
-                    rows="4"
-                    value={editFormData.bio}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                    <textarea
+                      rows="4"
+                      value={editFormData.bio}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, bio: e.target.value }))}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
                     placeholder="Tell us about your role, responsibilities, and what you do to support students..."
-                  />
+                    />
                   <p className="text-sm text-gray-500 mt-2">
                     This bio will be displayed on your profile and helps others understand your role and expertise.
                   </p>
-                </div>
-              </div>
+                  </div>
+                  </div>
 
 
             </div>
