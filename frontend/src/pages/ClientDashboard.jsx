@@ -55,7 +55,8 @@ function ClientDashboard() {
     requiredSkills: "",
     degreeField: "",
     description: "",
-    attachments: []
+    attachments: [],
+    images: []
   });
 
   // Mock data for form options
@@ -233,6 +234,10 @@ function ClientDashboard() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Debug: Log what's being sent to the backend
+      console.log('Sending post data to backend:', postData);
+      console.log('Images being sent:', postData.images);
       
       const token = localStorage.getItem('userToken');
       const response = await fetch('/api/posts', {
@@ -739,7 +744,8 @@ function ClientDashboard() {
         requiredSkills: "",
         degreeField: "",
         description: "",
-        attachments: []
+        attachments: [],
+        images: []
       });
     } catch (error) {
       // Error is already handled in the API functions
@@ -759,7 +765,8 @@ function ClientDashboard() {
       requiredSkills: Array.isArray(post.requiredSkills) ? post.requiredSkills.join(", ") : post.requiredSkills,
       degreeField: post.degreeField,
       description: post.description,
-      attachments: post.attachments || []
+      attachments: post.attachments || [],
+      images: post.images || []
     });
     setShowCreateForm(true);
   };
@@ -781,6 +788,104 @@ function ClientDashboard() {
     setApplications(prev => prev.map(app => 
       app.id === applicationId ? { ...app, status: action } : app
     ));
+  };
+
+  // ImgBB API key - you'll need to get this from https://api.imgbb.com/
+  const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || 'YOUR_IMGBB_API_KEY'; // Replace with your actual ImgBB API key
+  
+  // Debug: Log the API key being used
+  console.log('Environment variable VITE_IMGBB_API_KEY:', import.meta.env.VITE_IMGBB_API_KEY);
+  console.log('Final IMGBB_API_KEY being used:', IMGBB_API_KEY);
+
+  const uploadImageToImgBB = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const uploadUrl = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
+      console.log('Attempting to upload to ImgBB with URL:', uploadUrl);
+      
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image to ImgBB');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        return {
+          url: data.data.url,
+          caption: file.name,
+          uploadedAt: new Date()
+        };
+      } else {
+        throw new Error(data.error?.message || 'ImgBB upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name} is not an image file. Please select only image files.`);
+        return false;
+      }
+      
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} is too large. Maximum file size is 5MB.`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
+    
+    // Check if adding these images would exceed the limit (max 10 images)
+    if (postForm.images.length + validFiles.length > 10) {
+      alert('Maximum 10 images allowed per post. Please remove some existing images first.');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const uploadedImages = [];
+      
+      for (const file of validFiles) {
+        try {
+          const imageData = await uploadImageToImgBB(file);
+          uploadedImages.push(imageData);
+        } catch (error) {
+          console.error(`Failed to upload ${file.name}:`, error);
+          alert(`Failed to upload ${file.name}: ${error.message}`);
+        }
+      }
+      
+      if (uploadedImages.length > 0) {
+        setPostForm(prev => ({
+          ...prev,
+          images: [...prev.images, ...uploadedImages]
+        }));
+        
+        // Show success message
+        alert(`${uploadedImages.length} image(s) uploaded successfully!`);
+      }
+    } catch (error) {
+      console.error('Error in image upload:', error);
+      alert('Failed to upload images: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -1339,7 +1444,8 @@ function ClientDashboard() {
               requiredSkills: "",
               degreeField: "",
               description: "",
-              attachments: []
+              attachments: [],
+              images: []
             });
           }}
           className="text-gray-500 hover:text-gray-700"
@@ -1467,6 +1573,58 @@ function ClientDashboard() {
             placeholder="Describe the job/project requirements, responsibilities, and expectations"
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Project Images</label>
+          <div className="relative">
+            <input
+              type="file"
+              multiple
+              onChange={handleImageUpload}
+              className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-200 focus:border-blue-500"
+              accept="image/*"
+              disabled={loading}
+            />
+            {loading && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-xl">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                  <span className="text-sm text-gray-600">Uploading...</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
+            Upload images to showcase your project requirements or examples (Max 10 images, 5MB each)
+          </p>
+        </div>
+
+        {postForm.images.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Uploaded Images:</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {postForm.images.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={image.url}
+                    alt={image.caption}
+                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPostForm(prev => ({
+                      ...prev,
+                      images: prev.images.filter((_, i) => i !== index)
+                    }))}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Supporting Materials</label>
