@@ -303,6 +303,40 @@ const adminLogin = async (req, res) => {
     // Check if admin user exists in User model
     const adminUser = await User.findOne({ email, userType: 'admin' });
     if (!adminUser) {
+      // If no admin user exists and credentials match default admin, create one
+      if (email === 'admin@gmail.com' && password === 'admin123') {
+        console.log('🔧 Creating default admin user...');
+        
+        // Hash the password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create new admin user
+        const newAdminUser = await User.create({
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@gmail.com',
+          password: hashedPassword,
+          userType: 'admin',
+          agreeToTerms: true,
+          isVerified: true,
+          status: 'active'
+        });
+
+        console.log('✅ Default admin user created successfully!');
+
+        return res.json({
+          success: true,
+          message: 'Admin login successful (default admin created)',
+          data: {
+            _id: newAdminUser._id,
+            email: newAdminUser.email,
+            userType: 'admin',
+            token: generateToken(newAdminUser._id)
+          }
+        });
+      }
+
       return res.status(401).json({ 
         success: false, 
         message: 'Invalid admin credentials' 
