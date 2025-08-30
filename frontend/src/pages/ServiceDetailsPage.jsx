@@ -30,14 +30,19 @@ function ServiceDetailsPage() {
         setLoading(true);
         setError(null);
         
+        console.log('Fetching service with ID:', id);
         const response = await fetch(`/api/services/${id}`);
         if (!response.ok) {
           throw new Error('Service not found');
         }
         
         const result = await response.json();
+        console.log('Service API response:', result);
+        
         if (result.success) {
           setService(result.data);
+          console.log('Service data set:', result.data);
+          console.log('Service images:', result.data.images);
         } else {
           throw new Error(result.message || 'Failed to fetch service');
         }
@@ -221,7 +226,8 @@ function ServiceDetailsPage() {
             </div>
 
             {/* Image Gallery */}
-            {service.images && service.images.length > 0 && (
+            {console.log('Rendering gallery section. Images:', service.images, 'Length:', service.images?.length)}
+            {service.images && service.images.length > 0 ? (
               <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-800">Gallery</h2>
@@ -251,11 +257,14 @@ function ServiceDetailsPage() {
 
                 {galleryView === 'slideshow' ? (
                   <div className="relative">
+                    {console.log('Rendering slideshow. Active image:', activeImageIndex, 'Image URL:', service.images[activeImageIndex])}
                     <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
                       <img
-                        src={service.images[activeImageIndex]}
-                        alt={`${service.title} - Image ${activeImageIndex + 1}`}
+                        src={service.images[activeImageIndex].url}
+                        alt={service.images[activeImageIndex].caption || `${service.title} - Image ${activeImageIndex + 1}`}
                         className="w-full h-full object-cover"
+                        onError={(e) => console.error('Image failed to load:', e.target.src)}
+                        onLoad={() => console.log('Image loaded successfully:', service.images[activeImageIndex].url)}
                       />
                     </div>
                     
@@ -294,12 +303,15 @@ function ServiceDetailsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {console.log('Rendering grid view. Images:', service.images)}
                     {service.images.map((image, index) => (
                       <div key={index} className="aspect-w-1 aspect-h-1 rounded-lg overflow-hidden">
                         <img
-                          src={image}
-                          alt={`${service.title} - Image ${index + 1}`}
+                          src={image.url}
+                          alt={image.caption || `${service.title} - Image ${index + 1}`}
                           className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onError={(e) => console.error('Grid image failed to load:', e.target.src)}
+                          onLoad={() => console.log('Grid image loaded successfully:', image.url)}
                           onClick={() => {
                             setGalleryView('slideshow');
                             setActiveImageIndex(index);
@@ -309,6 +321,15 @@ function ServiceDetailsPage() {
                     ))}
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-4">🖼️</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Images Available</h3>
+                  <p className="text-gray-500">This service doesn't have any images yet.</p>
+                  {console.log('No images found. Service data:', service)}
+                </div>
               </div>
             )}
 
