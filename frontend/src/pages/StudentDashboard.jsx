@@ -2173,9 +2173,6 @@ function StudentDashboard() {
             >
               {isEditingProfile ? 'Cancel Edit' : 'Edit Profile'}
             </button>
-            <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
-              View Portfolio
-            </button>
             {!verificationStatus.isVerified && (
               <button 
                 onClick={handleVerificationRequest}
@@ -2263,36 +2260,7 @@ function StudentDashboard() {
             </div>
           </div>
 
-          {/* Contact & Social Information Section */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">Contact & Social</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.phoneNumber ? 'Phone & Email' : 'Email Only'}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">Within 24 hours</span>
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.linkedinProfile || 'Not specified'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+
 
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2489,22 +2457,7 @@ function StudentDashboard() {
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Programming Languages</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.programmingSkills || 'Not specified'}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Frameworks & Tools</label>
-                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
-                  <span className="text-sm text-gray-600">
-                    {studentData?.frameworks || 'Not specified'}
-                  </span>
-                </div>
-              </div>
+
             </div>
           </div>
 
