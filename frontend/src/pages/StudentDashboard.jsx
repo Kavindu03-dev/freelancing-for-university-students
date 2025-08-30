@@ -2173,6 +2173,9 @@ function StudentDashboard() {
             >
               {isEditingProfile ? 'Cancel Edit' : 'Edit Profile'}
             </button>
+            <button className="bg-white hover:bg-gray-100 text-gray-800 px-6 py-2 rounded-lg font-semibold transition-colors">
+              View Portfolio
+            </button>
             {!verificationStatus.isVerified && (
               <button 
                 onClick={handleVerificationRequest}
@@ -2260,7 +2263,36 @@ function StudentDashboard() {
             </div>
           </div>
 
-
+          {/* Contact & Social Information Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">Contact & Social</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Contact Method</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.phoneNumber ? 'Phone & Email' : 'Email Only'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">Within 24 hours</span>
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn Profile</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.linkedinProfile || 'Not specified'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2457,7 +2489,22 @@ function StudentDashboard() {
                   </div>
                 )}
               </div>
-
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Programming Languages</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.programmingSkills || 'Not specified'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Frameworks & Tools</label>
+                <div className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl bg-gray-50">
+                  <span className="text-sm text-gray-600">
+                    {studentData?.frameworks || 'Not specified'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3217,9 +3264,9 @@ function StudentDashboard() {
                     <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
                       <div className="text-2xl font-bold text-yellow-600">
                         {applications.filter(app => app.status === 'Pending').length}
-                      </div>
+                                </div>
                       <div className="text-sm text-gray-600">Pending Review</div>
-                    </div>
+                                </div>
                     <div className="bg-white rounded-lg shadow p-4 border border-gray-200">
                       <div className="text-2xl font-bold text-green-600">
                         {applications.filter(app => app.status === 'Accepted').length}
@@ -3248,16 +3295,16 @@ function StudentDashboard() {
                                 {app.postId?.title || 'Job Post Title'}
                               </h3>
                               <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                                app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
-                                app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                                app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
-                                app.status === 'Declined' ? 'bg-red-100 text-red-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {app.status}
-                              </span>
+                                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
+                                  app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
+                                  app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
+                                  app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
+                                  app.status === 'Declined' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {app.status}
+                                </span>
                             </div>
                             <p className="text-gray-600 text-lg">
                               {app.postId?.type || 'Job Type'} • ${app.postId?.budget || 'Budget'}
@@ -3331,11 +3378,11 @@ function StudentDashboard() {
                                 <div className="flex justify-between">
                                   <span className="text-gray-600">Applied:</span>
                                   <span className="font-medium text-gray-900">
-                                    {new Date(app.createdAt).toLocaleDateString('en-US', {
-                                      year: 'numeric',
+                                {new Date(app.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
                                       month: 'long',
-                                      day: 'numeric'
-                                    })}
+                                  day: 'numeric'
+                                })}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -3471,15 +3518,15 @@ function StudentDashboard() {
                               Application ID: {app._id}
                             </div>
                             <div className="flex space-x-3">
-                              {app.status === 'Pending' && (
-                                <button
-                                  onClick={() => handleWithdrawApplication(app._id)}
+                                {app.status === 'Pending' && (
+                                  <button
+                                    onClick={() => handleWithdrawApplication(app._id)}
                                   className="px-4 py-2 text-red-600 hover:text-red-800 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                                >
+                                  >
                                   Withdraw Application
-                                </button>
-                              )}
-                            </div>
+                                  </button>
+                                )}
+                    </div>
                           </div>
                         </div>
                       </div>
@@ -3488,15 +3535,15 @@ function StudentDashboard() {
                 )}
               </div>
             )}
-                         {activeTab === "gigs" && (
-               <GigManagement user={studentData} />
-             )}
+            {activeTab === "gigs" && (
+              <GigManagement user={studentData} />
+            )}
 
-             {activeTab === "messages" && (
+            {activeTab === "messages" && (
                <MessagesPage />
              )}
 
-             {activeTab === "profile" && renderProfile()}
+            {activeTab === "profile" && renderProfile()}
           </div>
         </div>
 
