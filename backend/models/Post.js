@@ -47,6 +47,17 @@ const postSchema = new mongoose.Schema({
   attachments: [{
     type: String
   }],
+  images: [{
+    url: {
+      type: String,
+      required: true
+    },
+    caption: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   status: {
     type: String,
     default: 'Active',

@@ -5,6 +5,10 @@ import mongoose from 'mongoose';
 // Create a new post
 export const createPost = async (req, res) => {
   try {
+    // Debug: Log what's being received from frontend
+    console.log('Received post data from frontend:', req.body);
+    console.log('Images received:', req.body.images);
+    
     const {
       title,
       type,
@@ -15,7 +19,8 @@ export const createPost = async (req, res) => {
       requiredSkills,
       degreeField,
       description,
-      attachments
+      attachments,
+      images
     } = req.body;
 
     // Get client information from authenticated user
@@ -42,13 +47,22 @@ export const createPost = async (req, res) => {
       degreeField,
       description,
       attachments: attachments || [],
+      images: images || [],
       clientId,
       clientName: `${client.firstName} ${client.lastName}`,
       clientOrganization: client.organization || '',
       approvalStatus: 'Pending' // New posts start as pending
     });
 
+    // Debug: Log what's being saved to database
+    console.log('Post object being saved:', newPost);
+    console.log('Images being saved:', newPost.images);
+
     const savedPost = await newPost.save();
+    
+    // Debug: Log what was actually saved
+    console.log('Post saved to database:', savedPost);
+    console.log('Images saved to database:', savedPost.images);
     
     res.status(201).json({
       success: true,
