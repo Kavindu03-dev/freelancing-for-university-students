@@ -2349,90 +2349,133 @@ function AdminDashboard() {
           <p className="text-gray-600">No orders match your current filters.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {order.serviceId?.title || 'Service Title'}
-                    </h4>
-                  </div>
-                  
-                  {/* Status Display */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                      order.paymentStatus === 'Failed' ? 'bg-red-100 text-red-800' :
-                      order.paymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      Buyer: {order.paymentStatus === 'Paid' ? 'paid' : 'not paid'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.clientStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
-                      order.clientStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      Client: {order.clientStatus || 'Pending'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      order.freelancerStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.freelancerStatus === 'In Progress' ? 'bg-purple-100 text-purple-800' :
-                      order.freelancerStatus === 'Completed' ? 'bg-green-100 text-green-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      Freelancer: {order.freelancerStatus || 'Pending'}
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
-                    <div>
-                      <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
-                      <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
-                      <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+        <div className="space-y-8">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Current Orders</h3>
+            <div className="space-y-4">
+              {orders.filter(o => !Boolean(o?.paymentDetails?.paidAt)).map((order) => (
+                <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {order.serviceId?.title || 'Service Title'}
+                        </h4>
+                      </div>
+                      {/* Status Display */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                          order.paymentStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                          order.paymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Buyer: {order.paymentStatus === 'Paid' ? 'paid' : 'not paid'}
+                        </span>
+                        {(() => {
+                          const hasAdminPayout = Boolean(order?.paymentDetails?.paidAt);
+                          const freelancerPaymentStatus = hasAdminPayout ? 'Paid' : 'Pending';
+                          const badgeClass =
+                            freelancerPaymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            freelancerPaymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800';
+                          return (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                              Freelancer Payment: {freelancerPaymentStatus}
+                            </span>
+                          );
+                        })()}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.clientStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                          order.clientStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Client: {order.clientStatus || 'Pending'}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.freelancerStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.freelancerStatus === 'In Progress' ? 'bg-purple-100 text-purple-800' :
+                          order.freelancerStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Freelancer: {order.freelancerStatus || 'Pending'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                        <div>
+                          <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
+                          <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
+                          <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+                        </div>
+                        <div>
+                          <p><strong>Amount:</strong> ${order.totalAmount}</p>
+                          <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+                          <p><strong>Deadline:</strong> {new Date(order.deadline).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      {order.requirements && (
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-700">
+                            <strong>Requirements:</strong> {order.requirements}
+                          </p>
+                        </div>
+                      )}
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-end space-x-3 pt-3 border-t border-gray-200">
+                        {order.clientStatus === 'Delivered' && order.freelancerStatus === 'Completed' && !Boolean(order?.paymentDetails?.paidAt) && (
+                          <button
+                            onClick={() => handleSendMoneyToFreelancer(order._id, order.totalAmount)}
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                          >
+                            Send Money to Freelancer (10% fee)
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p><strong>Amount:</strong> ${order.totalAmount}</p>
-                      <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-                      <p><strong>Deadline:</strong> {new Date(order.deadline).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  
-                  {order.requirements && (
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-700">
-                        <strong>Requirements:</strong> {order.requirements}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-end space-x-3 pt-3 border-t border-gray-200">
-                    {order.clientStatus === 'Delivered' && order.freelancerStatus === 'Completed' && order.paymentStatus !== 'Paid' && (
-                      <button
-                        onClick={() => handleSendMoneyToFreelancer(order._id, order.totalAmount)}
-                        className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
-                      >
-                        Send Money to Freelancer (10% fee)
-                      </button>
-                    )}
-                    {order.paymentStatus === 'Paid' && (
-                      <button
-                        onClick={() => handleSendMoneyToFreelancer(order._id, order.totalAmount)}
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-                      >
-                        Send Money to Freelancer (10% fee)
-                      </button>
-                    )}
                   </div>
                 </div>
-              </div>
+              ))}
+              {orders.filter(o => !Boolean(o?.paymentDetails?.paidAt)).length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-600">No current orders</div>
+              )}
             </div>
-          ))}
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Past Orders</h3>
+            <div className="space-y-4">
+              {orders.filter(o => Boolean(o?.paymentDetails?.paidAt)).map((order) => (
+                <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {order.serviceId?.title || 'Service Title'}
+                        </h4>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Freelancer Payment: Paid</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                        <div>
+                          <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
+                          <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
+                          <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+                        </div>
+                        <div>
+                          <p><strong>Amount:</strong> ${order.totalAmount}</p>
+                          <p><strong>Paid To Freelancer:</strong> ${order?.paymentDetails?.freelancerAmount ?? 0}</p>
+                          <p><strong>Paid At:</strong> {order?.paymentDetails?.paidAt ? new Date(order.paymentDetails.paidAt).toLocaleString() : '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {orders.filter(o => Boolean(o?.paymentDetails?.paidAt)).length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-600">No past orders</div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

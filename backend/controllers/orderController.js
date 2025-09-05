@@ -585,8 +585,8 @@ const sendMoneyToFreelancer = async (req, res) => {
             });
         }
 
-        // Prevent double payout
-        if (order.paymentStatus === 'Paid') {
+        // Prevent double payout (use payout timestamp, not buyer payment status)
+        if (order?.paymentDetails?.paidAt) {
             return res.status(400).json({
                 success: false,
                 message: 'Order already paid out to freelancer'
