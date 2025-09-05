@@ -629,11 +629,8 @@ function AdminDashboard() {
   const [ordersError, setOrdersError] = useState(null);
   const [orderFilters, setOrderFilters] = useState({
     status: 'all',
-    search: '',
-    paymentStatus: 'all'
+    search: ''
   });
-  const [activeOrders, setActiveOrders] = useState([]);
-  const [completedOrders, setCompletedOrders] = useState([]);
 
 
 
@@ -874,11 +871,7 @@ function AdminDashboard() {
       const result = await response.json();
       
       if (result.success) {
-        const allOrders = result.orders || [];
-        setOrders(allOrders);
-        // Separate active orders (not paid) from completed orders (paid)
-        setActiveOrders(allOrders.filter(order => order.paymentStatus !== 'Paid'));
-        setCompletedOrders(allOrders.filter(order => order.paymentStatus === 'Paid'));
+        setOrders(result.orders || []);
       } else {
         setOrdersError(result.message || 'Failed to fetch orders');
       }
@@ -987,9 +980,6 @@ function AdminDashboard() {
 
         // Show success message
         alert(`Money sent successfully!\n\nTotal Order Amount (110%): $${totalAmount.toFixed(2)}\nWebsite Fee (10%): $${websiteFee.toFixed(2)}\nFreelancer Received (100%): $${freelancerAmount.toFixed(2)}`);
-        
-        // Refresh orders to update the display
-        fetchOrders();
       } else {
         const errorData = await response.json();
         console.error('Failed to send money to freelancer:', errorData);
@@ -1002,32 +992,15 @@ function AdminDashboard() {
   };
 
   const applyOrderFilters = (filters) => {
-    let filteredActiveOrders = activeOrders;
-    let filteredCompletedOrders = completedOrders;
+    let filteredOrders = orders;
     
-    // Apply status filter
     if (filters.status !== 'all') {
-      filteredActiveOrders = filteredActiveOrders.filter(order => order.status === filters.status);
-      filteredCompletedOrders = filteredCompletedOrders.filter(order => order.status === filters.status);
+      filteredOrders = filteredOrders.filter(order => order.status === filters.status);
     }
     
-    // Apply payment status filter
-    if (filters.paymentStatus !== 'all') {
-      filteredActiveOrders = filteredActiveOrders.filter(order => order.paymentStatus === filters.paymentStatus);
-      filteredCompletedOrders = filteredCompletedOrders.filter(order => order.paymentStatus === filters.paymentStatus);
-    }
-    
-    // Apply search filter
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
-      filteredActiveOrders = filteredActiveOrders.filter(order => 
-        order.serviceId?.title?.toLowerCase().includes(searchTerm) ||
-        order.clientId?.firstName?.toLowerCase().includes(searchTerm) ||
-        order.clientId?.lastName?.toLowerCase().includes(searchTerm) ||
-        order.freelancerId?.firstName?.toLowerCase().includes(searchTerm) ||
-        order.freelancerId?.lastName?.toLowerCase().includes(searchTerm)
-      );
-      filteredCompletedOrders = filteredCompletedOrders.filter(order => 
+      filteredOrders = filteredOrders.filter(order => 
         order.serviceId?.title?.toLowerCase().includes(searchTerm) ||
         order.clientId?.firstName?.toLowerCase().includes(searchTerm) ||
         order.clientId?.lastName?.toLowerCase().includes(searchTerm) ||
@@ -1036,9 +1009,7 @@ function AdminDashboard() {
       );
     }
     
-    // Update the filtered orders for display
-    setActiveOrders(filteredActiveOrders);
-    setCompletedOrders(filteredCompletedOrders);
+    setOrders(filteredOrders);
   };
 
 
@@ -2240,8 +2211,8 @@ function AdminDashboard() {
             </div>
             ) : null}
           </div>
-        </div>
-      </div>
+              </div>
+              </div>
     );
   };
 
@@ -2283,8 +2254,8 @@ function AdminDashboard() {
           <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-yellow-100 text-sm">Active Orders</p>
-                <p className="text-2xl font-bold">{activeOrders.length}</p>
+                <p className="text-yellow-100 text-sm">Pending</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Pending').length}</p>
               </div>
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2298,7 +2269,7 @@ function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm">In Progress</p>
-                <p className="text-2xl font-bold">{activeOrders.filter(o => o.freelancerStatus === 'In Progress').length}</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'In Progress').length}</p>
               </div>
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2312,7 +2283,7 @@ function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-sm">Completed</p>
-                <p className="text-2xl font-bold">{completedOrders.length}</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Completed').length}</p>
               </div>
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2324,7 +2295,7 @@ function AdminDashboard() {
         </div>
 
         {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <select
             value={orderFilters.status}
             onChange={(e) => handleOrderFilterChange('status', e.target.value)}
@@ -2340,18 +2311,6 @@ function AdminDashboard() {
             <option value="Cancelled">Cancelled</option>
           </select>
           
-          <select
-            value={orderFilters.paymentStatus}
-            onChange={(e) => handleOrderFilterChange('paymentStatus', e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
-          >
-            <option value="all">All Payment Status</option>
-            <option value="Pending">Not Paid</option>
-            <option value="Paid">Paid</option>
-            <option value="Failed">Failed</option>
-            <option value="Refunded">Refunded</option>
-          </select>
-          
           <input
             type="text"
             placeholder="Search orders..."
@@ -2362,38 +2321,36 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Active Orders List */}
-      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-        <h4 className="text-xl font-semibold text-gray-900 mb-4">Active Orders</h4>
-        {ordersLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading orders...</p>
-          </div>
-        ) : ordersError ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{ordersError}</p>
-              </div>
+      {/* Orders List */}
+      {ordersLoading ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      ) : ordersError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{ordersError}</p>
             </div>
           </div>
-        ) : activeOrders.length === 0 ? (
-          <div className="text-center py-8">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No active orders</h3>
-            <p className="text-gray-600">No active orders match your current filters.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {activeOrders.map((order) => (
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+          <p className="text-gray-600">No orders match your current filters.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
             <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -2478,108 +2435,6 @@ function AdminDashboard() {
           ))}
         </div>
       )}
-      
-      {/* Completed Orders List */}
-      <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
-        <h4 className="text-xl font-semibold text-gray-900 mb-4">Completed Orders</h4>
-        {ordersLoading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading orders...</p>
-          </div>
-        ) : ordersError ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-800">{ordersError}</p>
-              </div>
-            </div>
-          </div>
-        ) : completedOrders.length === 0 ? (
-          <div className="text-center py-8">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No completed orders</h3>
-            <p className="text-gray-600">No completed orders found.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {completedOrders.map((order) => (
-              <div key={order._id} className="bg-gray-50 rounded-2xl shadow-lg p-6 border border-gray-200">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        {order.serviceId?.title || 'Service Title'}
-                      </h4>
-                    </div>
-                    
-                    {/* Status Display */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        Buyer: {order.paymentStatus === 'Paid' ? 'paid' : 'not paid'}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
-                        order.clientStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        Client: {order.clientStatus || 'Pending'}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.freelancerStatus === 'Completed' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        Freelancer: {order.freelancerStatus || 'Pending'}
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
-                      <div>
-                        <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
-                        <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
-                        <p><strong>Package:</strong> {order.packageDetails?.name}</p>
-                      </div>
-                      <div>
-                        <p><strong>Amount:</strong> ${order.totalAmount}</p>
-                        <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-                        <p><strong>Deadline:</strong> {new Date(order.deadline).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    
-                    {order.requirements && (
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-700">
-                          <strong>Requirements:</strong> {order.requirements}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {order.paymentDetails && (
-                      <div className="mb-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                        <p className="text-sm text-green-800">
-                          <strong>Payment Details:</strong> Freelancer received ${order.paymentDetails.freelancerAmount?.toFixed(2) || '0.00'} 
-                          (Website fee: ${order.paymentDetails.websiteFee?.toFixed(2) || '0.00'})
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      </div>
     </div>
   );
 
