@@ -1,5 +1,6 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
+import { getWalletBalance } from '../controllers/userController.js';
 import { protect, authenticateAdmin } from '../middleware/auth.js';
 import imgbbUpload from '../middleware/imgbbUpload.js';
 
@@ -34,6 +35,11 @@ router.delete('/profile-image', protect, userController.removeProfileImage);
 // @desc    Get client dashboard statistics
 // @access  Private
 router.get('/dashboard/stats', protect, userController.getClientDashboardStats);
+
+// @route   GET /api/users/wallet/balance
+// @desc    Get authenticated user's wallet balance
+// @access  Private
+router.get('/wallet/balance', protect, getWalletBalance);
 
 // @route   GET /api/users/admin/all
 // @desc    Get all users (admin only)

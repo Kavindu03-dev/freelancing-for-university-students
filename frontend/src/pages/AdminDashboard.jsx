@@ -973,7 +973,7 @@ function AdminDashboard() {
         setOrders(prevOrders =>
           prevOrders.map(order =>
             order._id === orderId
-              ? { ...order, paymentStatus: 'Paid' }
+              ? { ...order, paymentStatus: 'Paid', status: 'Completed' }
               : order
           )
         );

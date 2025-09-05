@@ -570,7 +570,7 @@ const sendMoneyToFreelancer = async (req, res) => {
         }
 
         // Validate amounts
-        if (!freelancerAmount || !websiteFee || !totalAmount) {
+        if (freelancerAmount == null || websiteFee == null || totalAmount == null) {
             return res.status(400).json({
                 success: false,
                 message: 'Missing amount information'
@@ -585,11 +585,31 @@ const sendMoneyToFreelancer = async (req, res) => {
             });
         }
 
-        // TODO: Here you would integrate with your actual payment system
-        // For now, we'll just mark the order as paid and log the transaction
-        
-        // Mark order as paid
+        // Prevent double payout
+        if (order.paymentStatus === 'Paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order already paid out to freelancer'
+            });
+        }
+
+        // Credit freelancer wallet
+        const freelancer = await User.findById(order.freelancerId);
+        if (!freelancer) {
+            return res.status(404).json({
+                success: false,
+                message: 'Freelancer not found'
+            });
+        }
+
+        const currentBalance = Number(freelancer.walletBalance || 0);
+        const creditedAmount = Number(freelancerAmount);
+        freelancer.walletBalance = currentBalance + creditedAmount;
+        await freelancer.save();
+
+        // Mark order as paid and completed
         order.paymentStatus = 'Paid';
+        order.status = 'Completed';
         order.paymentDetails = {
             freelancerAmount,
             websiteFee,
@@ -598,13 +618,6 @@ const sendMoneyToFreelancer = async (req, res) => {
             transactionId: `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
         };
         await order.save();
-
-        // TODO: Add actual wallet integration here
-        // This would typically involve:
-        // 1. Adding money to freelancer's wallet
-        // 2. Recording the transaction in a separate transactions collection
-        // 3. Updating platform revenue records
-        // 4. Sending confirmation emails/notifications
 
         console.log(`Money sent to freelancer:`, {
             orderId,

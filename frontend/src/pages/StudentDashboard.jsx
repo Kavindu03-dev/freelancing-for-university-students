@@ -3060,12 +3060,38 @@ function StudentDashboard() {
   );
 
 
+  const [walletBalance, setWalletBalance] = useState(0);
+
+  const fetchWalletBalance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const response = await fetch('/api/users/wallet/balance', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setWalletBalance(Number(data.walletBalance || 0));
+      }
+    } catch (e) {
+      // noop
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'wallet') {
+      fetchWalletBalance();
+    }
+  }, [activeTab]);
+
   const renderWallet = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-gray-900">Wallet</h3>
         <button
-          onClick={() => {/* TODO: Implement refresh wallet */}}
+          onClick={fetchWalletBalance}
           className="px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-all duration-300"
         >
           Refresh
@@ -3078,7 +3104,7 @@ function StudentDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100 text-sm">Total Earnings</p>
-              <p className="text-2xl font-bold">$0.00</p>
+              <p className="text-2xl font-bold">${walletBalance.toFixed(2)}</p>
             </div>
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
