@@ -524,6 +524,15 @@ const deleteUser = async (req, res) => {
   }
 };
 
+export const getWalletBalance = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    res.json({ walletBalance: user.walletBalance || 0 });
+  } catch (error) {
+    res.status(500).json({ walletBalance: 0 });
+  }
+};
+
 // Get client dashboard statistics
 export const getClientDashboardStats = async (req, res) => {
   try {
@@ -704,5 +713,6 @@ export default {
   suspendUser,
   activateUser,
   deleteUser,
-  getClientDashboardStats
+  getClientDashboardStats,
+  getWalletBalance
 };

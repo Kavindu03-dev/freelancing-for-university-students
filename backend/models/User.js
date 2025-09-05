@@ -234,6 +234,13 @@ const userSchema = new mongoose.Schema({
     enum: ['Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing', 'Data Analysis', 'Other']
   },
   
+  // Wallet
+  walletBalance: {
+    type: Number,
+    min: 0,
+    default: 0
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now

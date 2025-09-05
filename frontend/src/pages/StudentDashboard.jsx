@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import VerificationRequestPopup from "../components/VerificationRequestPopup";
 import OnboardingWizard from "../components/OnboardingWizard";
@@ -6,7 +6,6 @@ import ApplicationTracker from "../components/ApplicationTracker";
 import EnhancedRecommendations from "../components/EnhancedRecommendations";
 import GigManagement from "../components/GigManagement";
 import MessagesPage from "./MessagesPage";
-
 function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [studentData, setStudentData] = useState(null);
@@ -32,20 +31,16 @@ function StudentDashboard() {
   const [isSavingSummary, setIsSavingSummary] = useState(false);
   const [summarySaveMessage, setSummarySaveMessage] = useState('');
   const [showOnboardingWizard, setShowOnboardingWizard] = useState(false);
-  
   // Notification state
   const [bookmarkNotification, setBookmarkNotification] = useState({ show: false, message: '', type: '' });
-  
   // Verification state
   const [showVerificationPopup, setShowVerificationPopup] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState({
     isVerified: false,
     verificationRequest: null
   });
-  
   const navigate = useNavigate();
   const location = useLocation();
-
   // Close profile image menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -53,13 +48,11 @@ function StudentDashboard() {
         setShowProfileImageMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showProfileImageMenu]);
-
   // Mock data
   const [stats] = useState({
     completedProjects: 12,
@@ -67,43 +60,36 @@ function StudentDashboard() {
     totalEarnings: 2800,
     skillsCount: 8
   });
-
   const [activeProjects] = useState([
     { id: 1, title: "Website Redesign", client: "Tech Corp", status: "In Progress", earnings: 800, progress: 60 },
     { id: 2, title: "Logo Design", client: "Startup Inc", status: "In Progress", earnings: 300, progress: 80 },
     { id: 3, title: "Mobile App Development", client: "Innovation Labs", status: "In Progress", earnings: 1500, progress: 30 }
   ]);
-
   const [recentProjects] = useState([
     { id: 4, title: "Content Writing", client: "Marketing Pro", status: "Completed", earnings: 200, completedDate: "2024-01-10" },
     { id: 5, title: "Data Analysis", client: "Research Corp", status: "Completed", earnings: 400, completedDate: "2024-01-05" }
   ]);
-
   const [skills] = useState([
     { name: "React", level: "Advanced", projects: 5 },
     { name: "Node.js", level: "Intermediate", projects: 3 },
     { name: "Python", level: "Advanced", projects: 4 },
     { name: "UI/UX Design", level: "Intermediate", projects: 2 }
   ]);
-
   // Posts from database
   const [availableOpportunities, setAvailableOpportunities] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [postsError, setPostsError] = useState(null);
-
   // Function to fetch posts from database
   const fetchPosts = async () => {
     try {
       setPostsLoading(true);
       setPostsError(null);
-      
-      const response = await fetch('http://localhost:5000/api/posts', {
+              const response = await fetch('/api/posts', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.posts) {
@@ -142,7 +128,10 @@ function StudentDashboard() {
       setPostsLoading(false);
     }
   };
-
+  // Orders state
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
   // Filter and search state
   const [filters, setFilters] = useState({
     searchQuery: "",
@@ -154,14 +143,11 @@ function StudentDashboard() {
     maxBudget: "",
     selectedTags: []
   });
-
   // Bookmarked opportunities
   const [bookmarkedOpportunities, setBookmarkedOpportunities] = useState([]);
-
   // Recommendations state
   const [recommendations, setRecommendations] = useState([]);
   const [profileCompleteness, setProfileCompleteness] = useState(0);
-
   // Filter options
   const filterOptions = {
     types: ["All", "Project", "Internship", "Freelance", "Part-time Job"],
@@ -170,15 +156,12 @@ function StudentDashboard() {
     locations: ["All", "Remote", "On-site", "Hybrid"],
     tags: ["web development", "e-commerce", "UI/UX", "frontend", "graphic design", "logo", "branding", "creative", "data analysis", "python", "research", "analytics", "content writing", "tech", "SEO", "blogging", "mobile", "design", "fitness", "marketing", "social media", "part-time"]
   };
-
   // Helper functions
   const toggleBookmark = (opportunityId) => {
     // Find the opportunity in available opportunities
     const opportunity = availableOpportunities.find(opp => opp.id === opportunityId);
     if (!opportunity) return;
-
     const isCurrentlyBookmarked = opportunity.isBookmarked;
-
     // Update available opportunities
     setAvailableOpportunities(prev => {
       if (!prev || !Array.isArray(prev)) return prev;
@@ -186,7 +169,6 @@ function StudentDashboard() {
         opp.id === opportunityId ? { ...opp, isBookmarked: !opp.isBookmarked } : opp
       );
     });
-    
     // Update bookmarked opportunities
     setBookmarkedOpportunities(prev => {
       if (isCurrentlyBookmarked) {
@@ -198,24 +180,20 @@ function StudentDashboard() {
         return [...prev, opportunityToAdd];
       }
     });
-
     // Show notification
     const message = isCurrentlyBookmarked 
       ? `Removed "${opportunity.title}" from bookmarks` 
       : `Added "${opportunity.title}" to bookmarks`;
-    
     setBookmarkNotification({
       show: true,
       message,
       type: isCurrentlyBookmarked ? 'removed' : 'added'
     });
-
     // Auto-hide notification after 3 seconds
     setTimeout(() => {
       setBookmarkNotification({ show: false, message: '', type: '' });
     }, 3000);
   };
-
   const getFilteredOpportunities = () => {
     if (!availableOpportunities || !Array.isArray(availableOpportunities)) return [];
     return availableOpportunities.filter(opportunity => {
@@ -225,27 +203,22 @@ function StudentDashboard() {
             opportunity.client && typeof opportunity.client === 'string' && !opportunity.client.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
         return false;
       }
-
       // Type filter
       if (filters.selectedType !== "All" && opportunity.type !== filters.selectedType) {
         return false;
       }
-
       // Category filter
       if (filters.selectedCategory !== "All" && opportunity.category !== filters.selectedCategory) {
         return false;
       }
-
       // Degree field filter
       if (filters.selectedDegreeField !== "All" && opportunity.degreeField !== filters.selectedDegreeField) {
         return false;
       }
-
       // Location filter
       if (filters.selectedLocation !== "All" && opportunity.location !== filters.selectedLocation) {
         return false;
       }
-
       // Budget filter
       if (filters.minBudget && opportunity.budget < (parseInt(filters.minBudget) || 0)) {
         return false;
@@ -253,17 +226,14 @@ function StudentDashboard() {
       if (filters.maxBudget && opportunity.budget > (parseInt(filters.maxBudget) || 0)) {
         return false;
       }
-
       // Tags filter
               if (filters.selectedTags && Array.isArray(filters.selectedTags) && filters.selectedTags.length > 0 && opportunity.tags && Array.isArray(opportunity.tags) && 
             !filters.selectedTags.some(tag => opportunity.tags.includes(tag))) {
         return false;
       }
-
       return true;
     });
   };
-
   const clearFilters = () => {
     setFilters({
       searchQuery: "",
@@ -276,7 +246,73 @@ function StudentDashboard() {
       selectedTags: []
     });
   };
-
+  // Orders management functions
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      setOrdersError(null);
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      const response = await fetch('/api/orders/all', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      const result = await response.json();
+      if (result.success) {
+        setOrders(result.orders || []);
+      } else {
+        setOrdersError(result.message || 'Failed to fetch orders');
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersError('Failed to fetch orders');
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      const response = await fetch(`/api/orders/status/${orderId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+                 body: JSON.stringify({ status: newStatus, statusType: 'freelancer' })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update order status');
+      }
+      const result = await response.json();
+      if (result.success) {
+        // Update the order in local state
+        setOrders(prevOrders => 
+          prevOrders.map(order => 
+            order._id === orderId 
+                             ? { ...order, status: newStatus, freelancerStatus: newStatus }
+              : order
+          )
+        );
+        return true;
+      } else {
+        throw new Error(result.message || 'Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      throw error;
+    }
+  };
   // Handle profile editing
   const handleEditProfile = () => {
     setShowEditPopup(true);
@@ -298,11 +334,9 @@ function StudentDashboard() {
     });
     setEditErrors({});
   };
-
   const handleSaveProfile = async () => {
     // Validate form
     if (!validateEditForm()) return;
-
     try {
       // Get the auth token
       const token = localStorage.getItem('userToken');
@@ -310,7 +344,6 @@ function StudentDashboard() {
         alert('Authentication token not found. Please log in again.');
         return;
       }
-
       // Prepare the data to send to backend
       const updateData = {
         firstName: editFormData.firstName,
@@ -325,9 +358,8 @@ function StudentDashboard() {
         dateOfBirth: editFormData.dateOfBirth,
         technicalSkills: editFormData.technicalSkills
       };
-
       // Make API call to update profile
-      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+      const response = await fetch('/api/freelancer/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -335,28 +367,21 @@ function StudentDashboard() {
         },
         body: JSON.stringify(updateData)
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Update the student data with edited values
         const updatedData = { 
           ...studentData, 
           ...updateData
         };
-        
         setStudentData(updatedData);
-        
         // Save to localStorage
         localStorage.setItem('userData', JSON.stringify(updatedData));
-        
         // Close popup
         setShowEditPopup(false);
-        
         // Recalculate profile completeness
         const newCompleteness = calculateProfileCompleteness(updatedData);
         setProfileCompleteness(newCompleteness);
-        
         // Show success message
         alert("Profile updated successfully!");
       } else {
@@ -368,19 +393,15 @@ function StudentDashboard() {
       alert('Failed to update profile. Please try again.');
     }
   };
-
   const validateEditForm = () => {
     const errors = {};
-    
     if (!editFormData.firstName.trim()) errors.firstName = "First name is required";
     if (!editFormData.lastName.trim()) errors.lastName = "Last name is required";
     // Email is read-only, so no validation needed
-    
     // Validate technical skills
     if (!editFormData.technicalSkills || editFormData.technicalSkills.length === 0) {
       errors.technicalSkills = "At least one technical skill is required";
     }
-    
     // Password validation (only if trying to change password)
     if (editFormData.newPassword || editFormData.confirmPassword) {
       if (!editFormData.currentPassword) errors.currentPassword = "Current password is required";
@@ -390,17 +411,14 @@ function StudentDashboard() {
         errors.confirmPassword = "Passwords do not match";
       }
     }
-    
     setEditErrors(errors);
     return Object.keys(errors).length === 0;
   };
-
   const handleCancelEdit = () => {
     setShowEditPopup(false);
     setEditFormData({});
     setEditErrors({});
   };
-
   const handleOnboardingComplete = async (formData) => {
     try {
       // Get the auth token
@@ -409,7 +427,6 @@ function StudentDashboard() {
         alert('Authentication token not found. Please log in again.');
         return;
       }
-
       // Prepare the data to send to backend
       const updateData = {
         ...formData,
@@ -417,9 +434,8 @@ function StudentDashboard() {
         technicalSkills: Array.isArray(formData.technicalSkills) ? 
           formData.technicalSkills.join(', ') : formData.technicalSkills
       };
-
       // Make API call to update profile
-      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+      const response = await fetch('/api/freelancer/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -427,28 +443,21 @@ function StudentDashboard() {
         },
         body: JSON.stringify(updateData)
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Update the student data with edited values
         const updatedData = { 
           ...studentData, 
           ...updateData
         };
-        
         setStudentData(updatedData);
-        
         // Save to localStorage
         localStorage.setItem('userData', JSON.stringify(updatedData));
-        
         // Close onboarding wizard
         setShowOnboardingWizard(false);
-        
         // Recalculate profile completeness
         const newCompleteness = calculateProfileCompleteness(updatedData);
         setProfileCompleteness(newCompleteness);
-        
         // Show success message
         alert("Profile completed successfully!");
       } else {
@@ -460,27 +469,23 @@ function StudentDashboard() {
       alert('Failed to complete profile. Please try again.');
     }
   };
-
   const handleSaveProfessionalSummary = async () => {
     try {
       setIsSavingSummary(true);
       setSummarySaveMessage('');
-
       // Get the auth token
       const token = localStorage.getItem('userToken');
       if (!token) {
         setSummarySaveMessage('Authentication token not found. Please log in again.');
         return;
       }
-
       // Prepare the data to send to backend
       const updateData = {
         bio: professionalSummary.bio,
         hourlyRate: parseFloat(professionalSummary.hourlyRate.replace(/[^0-9.]/g, '')) || 0
       };
-
       // Make API call to update profile
-      const response = await fetch('http://localhost:5000/api/users/profile', {
+      const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -488,9 +493,7 @@ function StudentDashboard() {
         },
         body: JSON.stringify(updateData)
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Update the student data with edited values
         const updatedData = { 
@@ -498,12 +501,9 @@ function StudentDashboard() {
           bio: updateData.bio,
           hourlyRate: updateData.hourlyRate
         };
-        
         setStudentData(updatedData);
-        
         // Save to localStorage
         localStorage.setItem('userData', JSON.stringify(updatedData));
-        
         // Show success message
         setSummarySaveMessage('Professional summary saved successfully!');
         setTimeout(() => setSummarySaveMessage(''), 3000);
@@ -518,17 +518,14 @@ function StudentDashboard() {
       setIsSavingSummary(false);
     }
   };
-
   // Calculate profile completeness
   const calculateProfileCompleteness = (studentData) => {
     if (!studentData) return 0;
-    
     const fields = [
       studentData.firstName, studentData.lastName, studentData.email,
       studentData.degreeProgram, studentData.university, studentData.gpa,
       studentData.graduationYear, studentData.technicalSkills, studentData.dateOfBirth
     ];
-    
     const completedFields = fields.filter(field => {
       if (field === null || field === undefined) return false;
       if (typeof field === 'string') return field.trim() !== '';
@@ -536,20 +533,16 @@ function StudentDashboard() {
       if (Array.isArray(field)) return field.length > 0;
       return Boolean(field);
     }).length;
-
     // CV file is optional and doesn't count towards profile completeness
     // Only count it if it's actually uploaded with valid data
     let cvBonus = 0;
     if (isValidCVFile(studentData.cvFile)) {
       cvBonus = 1;
     }
-
     const totalFields = fields.length + cvBonus;
     const totalCompleted = completedFields + cvBonus;
-    
     return Math.round((totalCompleted / totalFields) * 100);
   };
-
   // Calculate initial profile completeness when component mounts
   useEffect(() => {
     if (studentData) {
@@ -557,20 +550,16 @@ function StudentDashboard() {
       setProfileCompleteness(completeness);
     }
   }, [studentData]);
-
   // Generate personalized recommendations
   const generateRecommendations = () => {
     if (!studentData) return [];
-    
     const studentSkills = studentData.technicalSkills && typeof studentData.technicalSkills === 'string' ? 
       studentData.technicalSkills.split(',').map(skill => skill.trim().toLowerCase()) : [];
     const studentDegree = studentData.degreeProgram?.toLowerCase() || '';
-    
     if (!availableOpportunities || !Array.isArray(availableOpportunities)) return [];
     return availableOpportunities
       .map(opportunity => {
         let score = 0;
-        
         // Skills match (40% weight)
         const skillMatches = opportunity.requiredSkills && Array.isArray(opportunity.requiredSkills) ? 
           opportunity.requiredSkills.filter(skill => 
@@ -581,7 +570,6 @@ function StudentDashboard() {
           ).length : 0;
         score += opportunity.requiredSkills && Array.isArray(opportunity.requiredSkills) ? 
           (skillMatches / opportunity.requiredSkills.length) * 40 : 0;
-        
         // Degree relevance (30% weight)
         if (opportunity.degreeField && typeof opportunity.degreeField === 'string' && 
             opportunity.degreeField.toLowerCase() === studentDegree) {
@@ -591,15 +579,12 @@ function StudentDashboard() {
                     (studentDegree && typeof studentDegree === 'string' && studentDegree.includes(opportunity.degreeField.toLowerCase())))) {
           score += 20;
         }
-        
         // Profile completeness bonus (20% weight)
         score += (profileCompleteness / 100) * 20;
-        
         // Activity bonus (10% weight)
         const recentActivity = (stats?.activeProjects || 0) + (stats?.completedProjects || 0);
         if (recentActivity > 10) score += 10;
         else if (recentActivity > 5) score += 5;
-        
         return {
           ...opportunity,
           recommendationScore: Math.round(score),
@@ -612,18 +597,15 @@ function StudentDashboard() {
       .sort((a, b) => (a && b ? b.recommendationScore - a.recommendationScore : 0))
       .slice(0, 6); // Top 6 recommendations
   };
-
   // Update recommendations when student data changes
   useEffect(() => {
     if (studentData) {
       const completeness = calculateProfileCompleteness(studentData);
       setProfileCompleteness(completeness);
-      
       const recs = generateRecommendations();
       setRecommendations(recs);
     }
   }, [studentData, availableOpportunities, stats]);
-
   // Sync bookmarked opportunities when available opportunities are loaded
   useEffect(() => {
     if (availableOpportunities && Array.isArray(availableOpportunities)) {
@@ -631,7 +613,6 @@ function StudentDashboard() {
       setBookmarkedOpportunities(bookmarked);
     }
   }, [availableOpportunities]);
-
   // Initialize professional summary state when student data is loaded
   useEffect(() => {
     if (studentData) {
@@ -641,12 +622,10 @@ function StudentDashboard() {
       });
     }
   }, [studentData]);
-
   // CV Upload Functions
   const handleCVUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     // Validate file type
     const allowedTypes = [
       'application/pdf',
@@ -656,56 +635,45 @@ function StudentDashboard() {
       'image/jpg',
       'image/png'
     ];
-
     if (!allowedTypes.includes(file.type)) {
       alert('Invalid file type. Only PDF, DOC, DOCX, JPEG, JPG, and PNG files are allowed.');
       return;
     }
-
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert('File size too large. Maximum size is 5MB.');
       return;
     }
-
     setCvFile(file);
     setIsUploadingCV(true);
-
     try {
       const token = localStorage.getItem('userToken');
       if (!token) {
         alert('Authentication token not found. Please log in again.');
         return;
       }
-
       const formData = new FormData();
       formData.append('cvFile', file);
-
-      const response = await fetch('http://localhost:5000/api/freelancer/cv', {
+      const response = await fetch('/api/freelancer/cv', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Update student data with CV info
         setStudentData(prev => ({
           ...prev,
           cvFile: result.data.cvFile
         }));
-        
         // Update localStorage
         const updatedData = { ...studentData, cvFile: result.data.cvFile };
         localStorage.setItem('userData', JSON.stringify(updatedData));
-        
         // Recalculate profile completeness
         const newCompleteness = calculateProfileCompleteness(updatedData);
         setProfileCompleteness(newCompleteness);
-        
         alert('CV uploaded successfully!');
       } else {
         alert(`Failed to upload CV: ${result.message}`);
@@ -717,44 +685,35 @@ function StudentDashboard() {
       setIsUploadingCV(false);
     }
   };
-
   const handleCVDelete = async () => {
     if (!studentData?.cvFile) return;
-
     if (!confirm('Are you sure you want to delete your CV?')) return;
-
     try {
       const token = localStorage.getItem('userToken');
       if (!token) {
         alert('Authentication token not found. Please log in again.');
         return;
       }
-
-      const response = await fetch('http://localhost:5000/api/freelancer/cv', {
+      const response = await fetch('/api/freelancer/cv', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Remove CV from student data
         setStudentData(prev => {
           const { cvFile, ...rest } = prev;
           return rest;
         });
-        
         // Update localStorage
         const updatedData = { ...studentData };
         delete updatedData.cvFile;
         localStorage.setItem('userData', JSON.stringify(updatedData));
-        
         // Recalculate profile completeness
         const newCompleteness = calculateProfileCompleteness(updatedData);
         setProfileCompleteness(newCompleteness);
-        
         setCvFile(null);
         alert('CV deleted successfully!');
       } else {
@@ -765,11 +724,9 @@ function StudentDashboard() {
       alert('Failed to delete CV. Please try again.');
     }
   };
-
   const [applications, setApplications] = useState([]);
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [applicationsError, setApplicationsError] = useState(null);
-
   // Application form state
   const [applicationForm, setApplicationForm] = useState({
     coverLetter: "",
@@ -782,22 +739,18 @@ function StudentDashboard() {
     availability: "",
     expectedGraduation: ""
   });
-
   // Function to fetch applications for the freelancer
   const fetchApplications = async () => {
     try {
       setApplicationsLoading(true);
       setApplicationsError(null);
-      
       const token = localStorage.getItem('userToken');
       if (!token) return;
-
       const response = await fetch('/api/job-applications/my-applications', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       if (response.ok) {
         const result = await response.json();
         console.log('Fetched applications:', result.data); // Debug log
@@ -819,34 +772,29 @@ function StudentDashboard() {
       setApplicationsLoading(false);
     }
   };
-
   // Function to fetch complete profile data from backend
   const fetchCompleteProfile = async () => {
     try {
       const token = localStorage.getItem('userToken');
       if (!token) return;
-
-      const response = await fetch('http://localhost:5000/api/freelancer/profile', {
+      const response = await fetch('/api/freelancer/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
           // Debug: Log the data to see what's being received
           console.log('Fetched profile data:', result.data);
           console.log('CV file data:', result.data.cvFile);
-          
           // Clean up invalid CV data if it exists
           let cleanedData = { ...result.data };
           if (cleanedData.cvFile && !isValidCVFile(cleanedData.cvFile)) {
             console.log('Removing invalid CV data:', cleanedData.cvFile);
             delete cleanedData.cvFile;
           }
-          
           // Update student data with complete profile including CV
           setStudentData(cleanedData);
           // Update localStorage with complete data
@@ -860,19 +808,16 @@ function StudentDashboard() {
       console.error('Error fetching complete profile:', error);
     }
   };
-
   // Function to refresh user data (can be called manually if needed)
   const refreshUserData = () => {
     fetchCompleteProfile();
   };
-
   // Fetch applications when applications tab is active
   useEffect(() => {
     if (activeTab === 'applications' && studentData?._id) {
       fetchApplications();
     }
   }, [activeTab, studentData]);
-
   // Handle application withdrawal
   const handleWithdrawApplication = async (applicationId) => {
     if (window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
@@ -884,7 +829,6 @@ function StudentDashboard() {
             'Authorization': `Bearer ${token}`
           }
         });
-
         if (response.ok) {
           // Refresh applications list
           await fetchApplications();
@@ -898,7 +842,6 @@ function StudentDashboard() {
       }
     }
   };
-
   // Helper function to check if CV data is valid
   const isValidCVFile = (cvData) => {
     return cvData && 
@@ -908,29 +851,24 @@ function StudentDashboard() {
            cvData.fileSize &&
            cvData.fileSize > 0;
   };
-
   // Profile Image Upload Functions
   const handleProfileImageUpload = async (file) => {
     try {
       setIsUploadingProfileImage(true);
-      
       const token = localStorage.getItem('userToken');
       if (!token) {
         alert('Please log in to upload profile image');
         return;
       }
-
       const formData = new FormData();
       formData.append('profileImage', file);
-
-      const response = await fetch('http://localhost:5000/api/freelancer/profile-image', {
+      const response = await fetch('/api/freelancer/profile-image', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
         },
         body: formData
       });
-
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -939,7 +877,6 @@ function StudentDashboard() {
             ...prev,
             profileImage: result.data.profileImage
           }));
-          
           // Update localStorage
           const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
           const updatedUserData = {
@@ -947,7 +884,6 @@ function StudentDashboard() {
             profileImage: result.data.profileImage
           };
           localStorage.setItem('userData', JSON.stringify(updatedUserData));
-          
           alert('Profile image uploaded successfully!');
         } else {
           alert(result.message || 'Failed to upload profile image');
@@ -963,34 +899,28 @@ function StudentDashboard() {
       setIsUploadingProfileImage(false);
     }
   };
-
   const handleProfileImageRemove = async () => {
     try {
       setIsRemovingProfileImage(true);
-      
       const token = localStorage.getItem('userToken');
       if (!token) {
         alert('Please log in to remove profile image');
         return;
       }
-
       // Call backend API to remove profile image
-      const response = await fetch('http://localhost:5000/api/freelancer/profile-image', {
+      const response = await fetch('/api/freelancer/profile-image', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       const result = await response.json();
-
       if (result.success) {
         // Update local state
         setStudentData(prev => ({
           ...prev,
           profileImage: null
         }));
-        
         // Update localStorage
         const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
         const updatedUserData = {
@@ -998,7 +928,6 @@ function StudentDashboard() {
           profileImage: null
         };
         localStorage.setItem('userData', JSON.stringify(updatedUserData));
-        
         alert('Profile image removed successfully!');
       } else {
         alert(`Failed to remove profile image: ${result.message}`);
@@ -1010,7 +939,6 @@ function StudentDashboard() {
       setIsRemovingProfileImage(false);
     }
   };
-
   // Function to delete user account
   const handleDeleteAccount = async () => {
     // Show confirmation dialog
@@ -1024,31 +952,25 @@ function StudentDashboard() {
       '• Your account credentials\n\n' +
       'Type "DELETE" to confirm:'
     );
-
     if (!isConfirmed) return;
-
     const userInput = prompt('Please type "DELETE" to confirm account deletion:');
     if (userInput !== 'DELETE') {
       alert('Account deletion cancelled. Your account is safe.');
       return;
     }
-
     try {
       const token = localStorage.getItem('userToken');
       if (!token) {
         alert('Authentication token not found. Please log in again.');
         return;
       }
-
-      const response = await fetch('http://localhost:5000/api/freelancer/account', {
+      const response = await fetch('/api/freelancer/account', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       const result = await response.json();
-
       if (result.success) {
         alert('Account deleted successfully. You will be redirected to the home page.');
         // Clear all local data
@@ -1063,14 +985,12 @@ function StudentDashboard() {
       alert('Failed to delete account. Please try again.');
     }
   };
-
   useEffect(() => {
     const userData = localStorage.getItem('userData');
     if (userData) {
       const parsed = JSON.parse(userData);
       console.log('Initial user data from localStorage:', parsed);
       console.log('CV file from localStorage:', parsed.cvFile);
-      
       if (parsed.userType === 'freelancer') {
         // Clean up invalid CV data if it exists
         let cleanedData = { ...parsed };
@@ -1080,7 +1000,6 @@ function StudentDashboard() {
           // Update localStorage with cleaned data
           localStorage.setItem('userData', JSON.stringify(cleanedData));
         }
-        
         setStudentData(cleanedData);
         // Fetch complete profile data from backend to ensure CV data is up to date
         fetchCompleteProfile();
@@ -1091,7 +1010,6 @@ function StudentDashboard() {
       navigate('/signin');
     }
   }, [navigate]);
-
   // Listen for auth state changes (when user logs in/out)
   useEffect(() => {
     const handleAuthChange = () => {
@@ -1105,14 +1023,17 @@ function StudentDashboard() {
         }
       }
     };
-
     window.addEventListener('authStateChanged', handleAuthChange);
-    
     return () => {
       window.removeEventListener('authStateChanged', handleAuthChange);
     };
   }, []);
-
+  // Fetch orders when orders tab is active
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]);
   // Handle URL query parameter for tab
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -1126,44 +1047,37 @@ function StudentDashboard() {
       }
     }
   }, [location.search, profileCompleteness]);
-
   // Fetch verification status when component mounts
   useEffect(() => {
     if (studentData) {
       fetchVerificationStatus();
     }
   }, [studentData]);
-
   // Fetch posts when component mounts
   useEffect(() => {
     fetchPosts();
   }, []);
-
   // Fetch applications when component mounts
   useEffect(() => {
     if (studentData) {
       fetchApplications();
     }
   }, [studentData]);
-
   const handleLogout = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('userToken');
     navigate('/');
   };
-
   // Verification functions
   const fetchVerificationStatus = async () => {
     try {
       const token = localStorage.getItem('userToken');
-      const response = await fetch('http://localhost:5000/api/verification/status', {
+      const response = await fetch('/api/verification/status', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       const result = await response.json();
-
       if (result.success) {
         setVerificationStatus(result.data);
       }
@@ -1171,23 +1085,18 @@ function StudentDashboard() {
       console.error('Error fetching verification status:', error);
     }
   };
-
   const handleVerificationRequest = () => {
     setShowVerificationPopup(true);
   };
-
   const handleVerificationRequestSubmitted = () => {
     fetchVerificationStatus();
   };
-
   const handleApply = (post) => {
     setSelectedPost(post);
     setShowApplicationForm(true);
   };
-
   const handleSubmitApplication = () => {
     if (!selectedPost) return;
-    
     const newApplication = {
       id: Date.now(),
       postId: selectedPost.id,
@@ -1195,10 +1104,8 @@ function StudentDashboard() {
       status: "Pending",
       appliedDate: new Date().toISOString().split('T')[0]
     };
-    
     // In a real app, this would be sent to the backend
     console.log("Application submitted:", { post: selectedPost, form: applicationForm });
-    
     setShowApplicationForm(false);
     setSelectedPost(null);
     setApplicationForm({
@@ -1212,11 +1119,9 @@ function StudentDashboard() {
       availability: "",
       expectedGraduation: ""
     });
-    
     // Show success message
     alert("Application submitted successfully!");
   };
-
   const renderOverview = () => (
     <div className="space-y-8">
       {/* Profile Completion Notification */}
@@ -1241,7 +1146,6 @@ function StudentDashboard() {
           </div>
         </div>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.completedProjects}</h3>
@@ -1268,7 +1172,6 @@ function StudentDashboard() {
           )}
         </div>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Active Projects</h3>
@@ -1304,7 +1207,6 @@ function StudentDashboard() {
             )}
           </div>
         </div>
-
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Recent Projects</h3>
           <div className="space-y-4">
@@ -1332,7 +1234,6 @@ function StudentDashboard() {
           </div>
         </div>
       </div>
-
       {/* Top Recommendations */}
       <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
         <div className="flex justify-between items-center mb-6">
@@ -1344,7 +1245,6 @@ function StudentDashboard() {
             View All →
           </button>
         </div>
-        
         {postsLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -1394,7 +1294,335 @@ function StudentDashboard() {
       </div>
     </div>
   );
-
+  const renderOrders = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">My Orders</h3>
+        <button
+          onClick={fetchOrders}
+          className="px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-all duration-300"
+        >
+          Refresh Orders
+        </button>
+      </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm">Total Orders</p>
+              <p className="text-2xl font-bold">{orders.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm">Pending</p>
+              <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Pending').length}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm">In Progress</p>
+              <p className="text-2xl font-bold">{orders.filter(o => o.status === 'In Progress').length}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm">Completed</p>
+              <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Completed').length}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Orders List */}
+      {ordersLoading ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      ) : ordersError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{ordersError}</p>
+            </div>
+          </div>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+          <p className="text-gray-600">You haven't received any orders yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h4 className="text-lg font-semibold text-gray-900">
+                      {order.serviceId?.title || 'Service Title'}
+                    </h4>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      (order.freelancerStatus || order.status) === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      (order.freelancerStatus || order.status) === 'In Progress' ? 'bg-purple-100 text-purple-800' :
+                      (order.freelancerStatus || order.status) === 'Completed' ? 'bg-green-100 text-green-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {order.freelancerStatus || order.status}
+                    </span>
+                    {(() => {
+                      const hasAdminPayout = Boolean(order?.paymentDetails?.paidAt);
+                      const effectivePaymentStatus = (order.paymentStatus === 'Paid' && !hasAdminPayout)
+                        ? 'Pending'
+                        : (order.paymentStatus || 'Pending');
+                      const badgeClass =
+                        effectivePaymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                        effectivePaymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                        effectivePaymentStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                        effectivePaymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' :
+                        'bg-gray-100 text-gray-800';
+                      return (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                          {effectivePaymentStatus}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                    <div>
+                      <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
+                      <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+                      <p><strong>Amount:</strong> ${order.totalAmount}</p>
+                    </div>
+                    <div>
+                      <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+                      <p><strong>Deadline:</strong> {new Date(order.deadline).toLocaleDateString()}</p>
+                      <p><strong>Requirements:</strong> {order.requirements}</p>
+                    </div>
+                  </div>
+                  {/* Status Update Section for Freelancers */}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Update Project Status:</label>
+                        <select
+                          value={order.freelancerStatus || order.status}
+                          onChange={async (e) => {
+                            try {
+                              const newStatus = e.target.value;
+                              await updateOrderStatus(order._id, newStatus);
+                              // Show success message
+                              alert('Order status updated successfully!');
+                            } catch (error) {
+                              alert('Failed to update order status: ' + error.message);
+                            }
+                          }}
+                          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                        </select>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Last updated: {new Date(order.updatedAt).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+  const [walletBalance, setWalletBalance] = useState(0);
+  const fetchWalletBalance = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) return;
+      const response = await fetch('/api/users/wallet/balance', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setWalletBalance(Number(data.walletBalance || 0));
+      }
+    } catch (e) {
+      // noop
+    }
+  };
+  useEffect(() => {
+    if (activeTab === 'wallet') {
+      fetchWalletBalance();
+      fetchOrders();
+    }
+  }, [activeTab]);
+  const [walletSearch, setWalletSearch] = useState("");
+  const renderWallet = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-bold text-gray-900">Wallet</h3>
+        
+      </div>
+      {/* Wallet Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm">Total Earnings</p>
+              <p className="text-2xl font-bold">${walletBalance.toFixed(2)}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm">Available Balance</p>
+              <p className="text-2xl font-bold">${walletBalance.toFixed(2)}</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm">Pending Payments</p>
+              <p className="text-2xl font-bold">$0.00</p>
+            </div>
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Transaction History */}
+      <div className="bg-white rounded-2xl shadow-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-xl font-semibold text-gray-900">Transaction History</h4>
+          <input
+            type="text"
+            value={walletSearch}
+            onChange={(e) => setWalletSearch(e.target.value)}
+            placeholder="Search by title or category..."
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-xs"
+          />
+        </div>
+        {(() => {
+          const paidOrders = (orders || []).filter(o => Boolean(o?.paymentDetails?.paidAt));
+          const transactions = paidOrders.map(o => ({
+            id: o._id,
+            title: o.serviceId?.title || 'Service',
+            category: o.serviceId?.category || 'Other',
+            amount: Number(o?.paymentDetails?.freelancerAmount || 0),
+            date: o?.paymentDetails?.paidAt ? new Date(o.paymentDetails.paidAt) : null
+          }));
+          const filtered = transactions.filter(t => {
+            const q = walletSearch.trim().toLowerCase();
+            if (!q) return true;
+            return t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
+          });
+          const categoryTotals = filtered.reduce((acc, t) => {
+            const key = t.category;
+            acc[key] = (acc[key] || 0) + t.amount;
+            return acc;
+          }, {});
+          return (
+            <div className="space-y-6">
+              <div>
+                <h5 className="text-sm font-semibold text-gray-700 mb-2">Category-wise Earnings</h5>
+                {Object.keys(categoryTotals).length === 0 ? (
+                  <p className="text-gray-500 text-sm">No earnings yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {Object.entries(categoryTotals).map(([cat, total]) => (
+                      <div key={cat} className="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+                        <span className="text-gray-700 text-sm">{cat}</span>
+                        <span className="text-gray-900 font-semibold">${total.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h5 className="text-sm font-semibold text-gray-700 mb-2">Transactions</h5>
+                {filtered.length === 0 ? (
+                  <div className="text-center py-10">
+                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    <p className="text-gray-500">No matching transactions.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {filtered.map(t => (
+                      <div key={t.id} className="py-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-900 font-medium">{t.title}</p>
+                          <p className="text-gray-500 text-sm">{t.category}{t.date ? ` • ${t.date.toLocaleString()}` : ''}</p>
+                        </div>
+                        <div className="text-green-600 font-semibold">+${t.amount.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+      {/* Removed Withdraw Funds and Payment Methods sections */}
+    </div>
+  );
   const renderBrowseOpportunities = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -1413,7 +1641,6 @@ function StudentDashboard() {
           </button>
         </div>
       </div>
-
       {/* Advanced Filters */}
       <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -1428,7 +1655,6 @@ function StudentDashboard() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           {/* Type Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
@@ -1442,7 +1668,6 @@ function StudentDashboard() {
               )) : null}
             </select>
           </div>
-
           {/* Category Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
@@ -1456,7 +1681,6 @@ function StudentDashboard() {
               )) : null}
             </select>
           </div>
-
           {/* Degree Field Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Degree Field</label>
@@ -1471,7 +1695,6 @@ function StudentDashboard() {
             </select>
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {/* Location Filter */}
           <div>
@@ -1486,7 +1709,6 @@ function StudentDashboard() {
               )) : null}
             </select>
           </div>
-
           {/* Budget Range */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Min Budget ($)</label>
@@ -1498,7 +1720,6 @@ function StudentDashboard() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Max Budget ($)</label>
             <input
@@ -1510,7 +1731,6 @@ function StudentDashboard() {
             />
           </div>
         </div>
-
         {/* Tags Filter */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">Skills/Tags</label>
@@ -1537,7 +1757,6 @@ function StudentDashboard() {
             )) : null}
           </div>
         </div>
-
         {/* Filter Actions */}
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">
@@ -1551,7 +1770,6 @@ function StudentDashboard() {
           </button>
         </div>
       </div>
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {getFilteredOpportunities() && Array.isArray(getFilteredOpportunities()) ? getFilteredOpportunities().map(opportunity => (
           <div key={opportunity.id} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 hover:shadow-2xl transition-shadow duration-300">
@@ -1586,10 +1804,8 @@ function StudentDashboard() {
                 <span className="text-sm text-gray-500">{opportunity.postedDate}</span>
               </div>
             </div>
-            
             <h4 className="text-lg font-bold text-gray-900 mb-2">{opportunity.title}</h4>
             <p className="text-gray-600 text-sm mb-3">{opportunity.client}</p>
-            
             <div className="space-y-3 mb-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Budget:</span>
@@ -1604,7 +1820,6 @@ function StudentDashboard() {
                 <span className="font-semibold">{opportunity.location}</span>
               </div>
             </div>
-            
             <div className="mb-4">
               <p className="text-sm text-gray-500 mb-2">Required Skills:</p>
               <div className="flex flex-wrap gap-1">
@@ -1617,7 +1832,6 @@ function StudentDashboard() {
                 }
               </div>
             </div>
-
             <div className="mb-4">
               <p className="text-sm text-gray-500 mb-2">Tags:</p>
               <div className="flex flex-wrap gap-1">
@@ -1630,9 +1844,7 @@ function StudentDashboard() {
                 }
               </div>
             </div>
-            
             <p className="text-sm text-gray-600 mb-4 line-clamp-3">{opportunity.description}</p>
-            
             <button
               onClick={() => handleApply(opportunity)}
               className="w-full px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-xl font-medium hover:from-blue-500 hover:to-blue-600 transition-all duration-300"
@@ -1648,7 +1860,6 @@ function StudentDashboard() {
       </div>
     </div>
   );
-
   const renderApplicationForm = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -1665,7 +1876,6 @@ function StudentDashboard() {
               ✕
             </button>
           </div>
-
           <form onSubmit={(e) => { e.preventDefault(); handleSubmitApplication(); }} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter *</label>
@@ -1678,7 +1888,6 @@ function StudentDashboard() {
                 placeholder="Explain why you're the best fit for this opportunity..."
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Proposed Timeline *</label>
               <input
@@ -1690,7 +1899,6 @@ function StudentDashboard() {
                 placeholder="e.g., 2 weeks, 1 month"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Relevant Experience *</label>
               <textarea
@@ -1702,7 +1910,6 @@ function StudentDashboard() {
                 placeholder="Describe your relevant experience and projects..."
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio Link</label>
               <input
@@ -1713,7 +1920,6 @@ function StudentDashboard() {
                 placeholder="https://your-portfolio.com"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">CV/Resume Upload *</label>
               <input
@@ -1725,7 +1931,6 @@ function StudentDashboard() {
               />
               <p className="text-sm text-gray-500 mt-1">Upload your CV/Resume (PDF, DOC, DOCX)</p>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Academic Qualifications *</label>
               <textarea
@@ -1737,7 +1942,6 @@ function StudentDashboard() {
                 placeholder="List your academic achievements, certifications, relevant courses..."
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Availability *</label>
               <input
@@ -1749,7 +1953,6 @@ function StudentDashboard() {
                 placeholder="e.g., 20 hours/week, flexible schedule, weekends only"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Expected Graduation</label>
               <input
@@ -1760,7 +1963,6 @@ function StudentDashboard() {
                 placeholder="e.g., May 2025, December 2024"
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
               <textarea
@@ -1771,7 +1973,6 @@ function StudentDashboard() {
                 placeholder="Any additional information you'd like to share..."
               />
             </div>
-
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
@@ -1795,15 +1996,6 @@ function StudentDashboard() {
       </div>
     </div>
   );
-
-
-
-
-
-
-
-
-
   const renderBookmarks = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -1815,7 +2007,6 @@ function StudentDashboard() {
           ← Back to Browse
         </button>
         </div>
-      
       {bookmarkedOpportunities && Array.isArray(bookmarkedOpportunities) && bookmarkedOpportunities.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-200">
           <div className="text-6xl mb-4">📚</div>
@@ -1861,10 +2052,8 @@ function StudentDashboard() {
                   <span className="text-sm text-gray-500">{opportunity.postedDate}</span>
                 </div>
               </div>
-              
               <h4 className="text-lg font-bold text-gray-900 mb-2">{opportunity.title}</h4>
               <p className="text-gray-600 text-sm mb-3">{opportunity.client}</p>
-              
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Budget:</span>
@@ -1879,7 +2068,6 @@ function StudentDashboard() {
                   <span className="font-semibold">{opportunity.location}</span>
                 </div>
               </div>
-              
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-2">Required Skills:</p>
                 <div className="flex flex-wrap gap-1">
@@ -1892,7 +2080,6 @@ function StudentDashboard() {
                   }
                 </div>
               </div>
-
               <div className="mb-4">
                 <p className="text-sm text-gray-500 mb-2">Tags:</p>
                 <div className="flex flex-wrap gap-1">
@@ -1905,9 +2092,7 @@ function StudentDashboard() {
                   }
                 </div>
               </div>
-              
               <p className="text-sm text-gray-600 mb-4 line-clamp-3">{opportunity.description}</p>
-              
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleApply(opportunity)}
@@ -1932,13 +2117,6 @@ function StudentDashboard() {
       )}
     </div>
   );
-
-
-
-
-
-
-
   const renderProfile = () => (
     <div className="space-y-8">
       {/* Profile Header */}
@@ -1962,20 +2140,17 @@ function StudentDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                
                 {/* Click indicator */}
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
-                
                 {/* Profile Image Options Menu */}
                 {showProfileImageMenu && (
                   <>
                     {/* Backdrop */}
                     <div className="fixed inset-0 z-40" onClick={() => setShowProfileImageMenu(false)} />
-                    
                     {/* Menu */}
                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
                       <div className="py-1">
@@ -2024,7 +2199,6 @@ function StudentDashboard() {
                     </div>
                   </>
                 )}
-                
                 {/* Hidden file input for changing photo */}
                 <input
                   id="change-profile-image-input"
@@ -2039,13 +2213,11 @@ function StudentDashboard() {
                         alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
                         return;
                       }
-
                       // Validate file size (5MB)
                       if (file.size > 5 * 1024 * 1024) {
                         alert('File size must be less than 5MB');
                         return;
                       }
-
                       handleProfileImageUpload(file);
                     }
                   }}
@@ -2063,7 +2235,6 @@ function StudentDashboard() {
                 >
                   {studentData?.firstName && typeof studentData.firstName === 'string' ? studentData.firstName.charAt(0) : 'S'}{studentData?.lastName && typeof studentData.lastName === 'string' ? studentData.lastName.charAt(0) : 'T'}
                 </div>
-                
                 {/* Hidden file input for uploading photo */}
                 <input
                   id="upload-profile-image-input"
@@ -2078,13 +2249,11 @@ function StudentDashboard() {
                         alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
                         return;
                       }
-
                       // Validate file size (5MB)
                       if (file.size > 5 * 1024 * 1024) {
                         alert('File size must be less than 5MB');
                         return;
                       }
-
                       handleProfileImageUpload(file);
                     }
                   }}
@@ -2093,7 +2262,6 @@ function StudentDashboard() {
                 />
               </div>
             )}
-            
             {/* Upload progress indicator */}
             {isUploadingProfileImage && (
               <div className="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
@@ -2106,16 +2274,13 @@ function StudentDashboard() {
                 </div>
               </div>
             )}
-            
             {/* Upload instruction */}
             <div className="text-center mt-2">
               <p className="text-xs text-gray-300 opacity-75">
                 {studentData?.profileImage?.url ? 'Click for options' : 'Click to upload photo'}
               </p>
-
             </div>
           </div>
-
           {/* Profile Info */}
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-4xl font-bold mb-2">
@@ -2124,7 +2289,6 @@ function StudentDashboard() {
             <p className="text-xl text-gray-300 mb-4">
               Student Freelancer • {studentData?.degreeProgram || 'Student'}
             </p>
-            
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-6">
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -2132,7 +2296,6 @@ function StudentDashboard() {
                 </svg>
                 <span>4.9 (12 reviews)</span>
               </div>
-              
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-gray-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -2140,13 +2303,11 @@ function StudentDashboard() {
                 </svg>
                 <span>{studentData?.university || 'University'}</span>
               </div>
-
               <div className="flex items-center px-3 py-1 rounded-full bg-green-500">
                 <div className="w-2 h-2 bg-white rounded-full mr-2"></div>
                 <span className="text-sm font-medium">Available Now</span>
               </div>
             </div>
-
             <p className="text-gray-300 max-w-2xl">
               {studentData?.bio || `Passionate ${studentData?.degreeProgram || 'student'} with expertise in web development and design. Looking for freelance opportunities to gain real-world experience and build a strong portfolio.`}
               {studentData?.profileImage?.url && (
@@ -2156,7 +2317,6 @@ function StudentDashboard() {
               )}
             </p>
           </div>
-
           {/* Action Buttons */}
           <div className="flex flex-col space-y-3">
             {profileCompleteness < 100 && (
@@ -2192,7 +2352,6 @@ function StudentDashboard() {
           </div>
         </div>
       </div>
-
       {/* Profile Details */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Profile Info */}
@@ -2262,7 +2421,6 @@ function StudentDashboard() {
               </div>
             </div>
           </div>
-
           {/* Contact & Social Information Section */}
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2293,7 +2451,6 @@ function StudentDashboard() {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-2xl font-bold text-gray-800">Academic Information</h3>
@@ -2429,7 +2586,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
             {/* Edit Mode Action Buttons */}
             {isEditingProfile && (
               <div className="flex justify-end space-x-4 mt-6 pt-6 border-t border-gray-200">
@@ -2448,7 +2604,6 @@ function StudentDashboard() {
               </div>
             )}
           </div>
-
           {/* Skills & Expertise Section */}
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2507,7 +2662,6 @@ function StudentDashboard() {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-4">Professional Summary</h3>
             <div className="space-y-4">
@@ -2531,7 +2685,6 @@ function StudentDashboard() {
                   onChange={(e) => setProfessionalSummary(prev => ({ ...prev, hourlyRate: e.target.value }))}
                 />
               </div>
-              
               {/* Save Message */}
               {summarySaveMessage && (
                 <div className={`p-3 rounded-lg text-sm font-medium ${
@@ -2542,7 +2695,6 @@ function StudentDashboard() {
                   {summarySaveMessage}
                 </div>
               )}
-              
               {/* Save Button */}
               <div className="flex justify-end pt-2">
                 <button
@@ -2570,7 +2722,6 @@ function StudentDashboard() {
             </div>
           </div>
         </div>
-
         {/* Sidebar */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -2594,7 +2745,6 @@ function StudentDashboard() {
               </div>
             </div>
           </div>
-
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Skills</h3>
             <div className="flex flex-wrap gap-2">
@@ -2612,7 +2762,6 @@ function StudentDashboard() {
               )}
             </div>
           </div>
-
           {/* CV/Resume Upload Section */}
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <div className="flex justify-between items-center mb-4">
@@ -2627,7 +2776,6 @@ function StudentDashboard() {
                 </svg>
               </button>
             </div>
-            
             {/* Debug info - remove this after testing */}
             {process.env.NODE_ENV === 'development' && (
               <div className="mb-4 p-2 bg-gray-100 rounded text-xs text-gray-600">
@@ -2636,7 +2784,6 @@ function StudentDashboard() {
                 <strong>Is Valid CV:</strong> {isValidCVFile(studentData?.cvFile) ? 'Yes' : 'No'}
               </div>
             )}
-            
             <div className="space-y-4">
               {isValidCVFile(studentData?.cvFile) ? (
                 <div className="border-2 border-green-200 bg-green-50 rounded-xl p-4">
@@ -2657,7 +2804,7 @@ function StudentDashboard() {
                     </div>
                     <div className="flex space-x-2">
                       <a
-                        href={`http://localhost:5000/${studentData.cvFile.filePath}`}
+                                                  href={`/${studentData.cvFile.filePath}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
@@ -2712,7 +2859,6 @@ function StudentDashboard() {
               )}
             </div>
           </div>
-
           {/* Danger Zone - Account Deletion */}
           <div className="bg-red-50 border-2 border-red-200 rounded-2xl shadow-xl p-6">
             <div className="flex items-center space-x-3 mb-4">
@@ -2723,7 +2869,6 @@ function StudentDashboard() {
               </div>
               <h3 className="text-xl font-bold text-red-800">Danger Zone</h3>
             </div>
-            
             <div className="space-y-4">
               <div>
                 <p className="text-red-700 mb-3">
@@ -2740,7 +2885,6 @@ function StudentDashboard() {
                   </ul>
                 </div>
               </div>
-              
               <button
                 onClick={handleDeleteAccount}
                 className="px-6 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors duration-200 border-2 border-red-600 hover:border-red-700"
@@ -2753,11 +2897,9 @@ function StudentDashboard() {
       </div>
     </div>
   );
-
   // Edit Profile Popup Form
   const renderEditProfilePopup = () => {
     if (!showEditPopup) return null;
-    
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -2776,7 +2918,6 @@ function StudentDashboard() {
               </button>
             </div>
           </div>
-          
           {/* Form */}
           <div className="p-6 space-y-6">
             {/* Information Notice */}
@@ -2800,7 +2941,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-
             {/* Personal Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Personal Information</h3>
@@ -2820,7 +2960,6 @@ function StudentDashboard() {
                     <p className="text-red-500 text-sm mt-1">{editErrors.firstName}</p>
                   )}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
                   <input
@@ -2836,7 +2975,6 @@ function StudentDashboard() {
                     <p className="text-red-500 text-sm mt-1">{editErrors.lastName}</p>
                   )}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email * 
@@ -2856,7 +2994,6 @@ function StudentDashboard() {
                   />
                   <p className="text-xs text-gray-500 mt-1">Email cannot be changed for security reasons</p>
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                   <input
@@ -2867,7 +3004,6 @@ function StudentDashboard() {
                     placeholder="Enter phone number"
                   />
                 </div>
-                
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                   <input
@@ -2880,7 +3016,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
             {/* Academic Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Academic Information</h3>
@@ -2895,7 +3030,6 @@ function StudentDashboard() {
                     placeholder="Enter degree program"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
                   <input
@@ -2906,7 +3040,6 @@ function StudentDashboard() {
                     placeholder="Enter university"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">GPA</label>
                   <input
@@ -2917,7 +3050,6 @@ function StudentDashboard() {
                     placeholder="Enter GPA (e.g., 3.8)"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
                   <input
@@ -2928,7 +3060,6 @@ function StudentDashboard() {
                     placeholder="Enter graduation year (e.g., 2025)"
                   />
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                   <input
@@ -2940,7 +3071,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
             {/* Skills & Expertise */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Skills & Expertise</h3>
@@ -2969,7 +3099,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
             {/* Password Change */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Change Password (Optional)</h3>
@@ -3007,7 +3136,6 @@ function StudentDashboard() {
                     <p className="text-red-500 text-sm mt-1">{editErrors.currentPassword}</p>
                   )}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                   <div className="relative">
@@ -3041,7 +3169,6 @@ function StudentDashboard() {
                     <p className="text-red-500 text-sm mt-1">{editErrors.newPassword}</p>
                   )}
                 </div>
-                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
                   <div className="relative">
@@ -3077,7 +3204,6 @@ function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
             {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
               <button
@@ -3098,9 +3224,7 @@ function StudentDashboard() {
       </div>
     );
   };
-
   if (!studentData) return <div>Loading...</div>;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Left Sidebar - Fixed width, full height, positioned below header */}
@@ -3117,7 +3241,6 @@ function StudentDashboard() {
             </div>
           </div>
         </div>
-        
         {/* Navigation Menu */}
         <div className="p-4">
           <nav className="flex flex-col space-y-1">
@@ -3128,6 +3251,8 @@ function StudentDashboard() {
               { id: "bookmarks", name: "Bookmarks", icon: "📚", count: bookmarkedOpportunities.length },
               { id: "applications", name: "My Applications", icon: "📝" },
               { id: "gigs", name: "My Gigs", icon: "💼" },
+              { id: "orders", name: "My Orders", icon: "📦" },
+              { id: "wallet", name: "Wallet", icon: "💰" },
               { id: "messages", name: "Messages", icon: "💬" },
               { id: "profile", name: "Profile", icon: "👤" }
             ].map(tab => (
@@ -3152,7 +3277,6 @@ function StudentDashboard() {
           </nav>
         </div>
       </div>
-
               {/* Main Content Area */}
         <div className="flex-1 p-8 pt-8 overflow-y-auto mt-20">
           {/* Bookmark Notification */}
@@ -3176,7 +3300,6 @@ function StudentDashboard() {
               </div>
             </div>
           )}
-          
           <div className="max-w-7xl mx-auto">
             {activeTab === "overview" && renderOverview()}
             {activeTab === "recommendations" && (
@@ -3193,6 +3316,8 @@ function StudentDashboard() {
             )}
             {activeTab === "opportunities" && renderBrowseOpportunities()}
             {activeTab === "bookmarks" && renderBookmarks()}
+            {activeTab === "orders" && renderOrders()}
+            {activeTab === "wallet" && renderWallet()}
             {activeTab === "applications" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -3220,20 +3345,17 @@ function StudentDashboard() {
                     )}
                   </button>
                 </div>
-
                 {applicationsLoading && (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">Loading your applications...</p>
                   </div>
                 )}
-
                 {applicationsError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
                     {applicationsError}
                   </div>
                 )}
-
                 {!applicationsLoading && !applicationsError && applications.length === 0 && (
                   <div className="text-center py-12">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3253,7 +3375,6 @@ function StudentDashboard() {
                     </div>
                   </div>
                 )}
-
                 {/* Applications Summary Cards */}
                 {!applicationsLoading && !applicationsError && applications && applications.length > 0 && (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -3281,7 +3402,6 @@ function StudentDashboard() {
                     </div>
                   </div>
                 )}
-
                 {/* Detailed Applications View */}
                 {!applicationsLoading && !applicationsError && applications && applications.length > 0 && (
                   <div className="space-y-6">
@@ -3321,7 +3441,6 @@ function StudentDashboard() {
                             )}
                           </div>
                         </div>
-
                         {/* Application Details Grid */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                           {/* Left Column - Applicant & Job Info */}
@@ -3362,7 +3481,6 @@ function StudentDashboard() {
                                 </div>
                               </div>
                             </div>
-
                             {/* Cover Letter */}
                             <div className="bg-gray-50 rounded-xl p-4">
                               <h4 className="font-semibold text-gray-900 mb-3">Cover Letter</h4>
@@ -3370,7 +3488,6 @@ function StudentDashboard() {
                                 {app.coverLetter || 'No cover letter provided'}
                               </p>
                             </div>
-
                             {/* Application & Job Details */}
                             <div className="bg-gray-50 rounded-xl p-4">
                               <h4 className="font-semibold text-gray-900 mb-3">Application Details</h4>
@@ -3406,11 +3523,8 @@ function StudentDashboard() {
                               </div>
                             </div>
                           </div>
-
                           {/* Right Column - Interview & Additional Info */}
                           <div className="space-y-6">
-
-                            
                             {/* Interview Details Section */}
                             {app.status === 'Interview Scheduled' ? (
                               app.interviewDetails && typeof app.interviewDetails === 'object' ? (
@@ -3461,9 +3575,6 @@ function StudentDashboard() {
                                 </div>
                               )
                             ) : null}
-
-
-
                             {/* Skills & Qualifications */}
                             <div className="bg-gray-50 rounded-xl p-4">
                               <h4 className="font-semibold text-gray-900 mb-3">Skills & Qualifications</h4>
@@ -3498,7 +3609,6 @@ function StudentDashboard() {
                                 </div>
                               </div>
                             </div>
-
                             {/* Client Feedback - Only show if provided */}
                             {app.clientFeedback && (
                               <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
@@ -3510,7 +3620,6 @@ function StudentDashboard() {
                             )}
                           </div>
                         </div>
-
                         {/* Application Actions */}
                         <div className="mt-6 pt-6 border-t border-gray-200">
                           <div className="flex justify-between items-center">
@@ -3538,18 +3647,14 @@ function StudentDashboard() {
             {activeTab === "gigs" && (
               <GigManagement user={studentData} />
             )}
-
             {activeTab === "messages" && (
                <MessagesPage />
              )}
-
             {activeTab === "profile" && renderProfile()}
           </div>
         </div>
-
       {showApplicationForm && renderApplicationForm()}
       {renderEditProfilePopup()}
-      
       {/* Onboarding Wizard */}
       <OnboardingWizard
         isOpen={showOnboardingWizard}
@@ -3558,7 +3663,6 @@ function StudentDashboard() {
         currentProfileData={studentData}
         profileCompleteness={profileCompleteness}
       />
-
       {/* Verification Request Popup */}
       <VerificationRequestPopup
         isOpen={showVerificationPopup}
@@ -3568,6 +3672,4 @@ function StudentDashboard() {
     </div>
   );
 }
-
 export default StudentDashboard;
-

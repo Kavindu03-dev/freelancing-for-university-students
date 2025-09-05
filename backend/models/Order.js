@@ -46,6 +46,24 @@ const orderSchema = new mongoose.Schema({
     ], 
     default: 'Pending' 
   },
+  clientStatus: {
+    type: String,
+    enum: [
+      'Pending',           // Initial state
+      'Delivered',         // Client marked as delivered
+      'Completed'          // Client completed the order
+    ],
+    default: 'Pending'
+  },
+  freelancerStatus: {
+    type: String,
+    enum: [
+      'Pending',           // Initial state
+      'In Progress',       // Freelancer is working
+      'Completed'          // Freelancer completed the work
+    ],
+    default: 'Pending'
+  },
   requirements: {
     type: String,
     required: true
@@ -66,6 +84,13 @@ const orderSchema = new mongoose.Schema({
   },
   stripeSessionId: String,
   stripePaymentIntentId: String,
+  paymentDetails: {
+    freelancerAmount: Number,
+    websiteFee: Number,
+    totalAmount: Number,
+    paidAt: Date,
+    transactionId: String
+  },
   createdAt: { 
     type: Date, 
     default: Date.now 

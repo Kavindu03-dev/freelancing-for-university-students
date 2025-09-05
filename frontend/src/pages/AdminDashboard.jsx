@@ -623,6 +623,15 @@ function AdminDashboard() {
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // Orders state
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState(null);
+  const [orderFilters, setOrderFilters] = useState({
+    status: 'all',
+    search: ''
+  });
+
 
 
   // Fetch dashboard stats and data when component mounts
@@ -630,6 +639,7 @@ function AdminDashboard() {
     fetchDashboardStats();
     fetchPendingPosts();
     fetchAllServices();
+    fetchOrders();
   }, []);
 
   // Fetch dashboard statistics
@@ -641,7 +651,7 @@ function AdminDashboard() {
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/stats', {
+      const response = await fetch('/api/admin/dashboard/stats', {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
@@ -762,7 +772,7 @@ function AdminDashboard() {
         ...filters
       });
       
-      const response = await fetch(`http://localhost:5000/api/users/admin/all?${params}`, {
+      const response = await fetch(`/api/users/admin/all?${params}`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -803,12 +813,12 @@ function AdminDashboard() {
     try {
       const adminToken = localStorage.getItem('adminToken');
       let method = 'PUT';
-      let url = `http://localhost:5000/api/users/admin/${userId}/${action}`;
+      let url = `/api/users/admin/${userId}/${action}`;
       
       // Use DELETE method for delete action
       if (action === 'delete') {
         method = 'DELETE';
-        url = `http://localhost:5000/api/users/admin/${userId}`;
+        url = `/api/users/admin/${userId}`;
       }
       
       const response = await fetch(url, {
@@ -833,6 +843,173 @@ function AdminDashboard() {
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setShowUserDetailsModal(true);
+  };
+
+  // Orders management functions
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      setOrdersError(null);
+      
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('userToken');
+      
+      if (!adminToken) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('/api/orders/all', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setOrders(result.orders || []);
+      } else {
+        setOrdersError(result.message || 'Failed to fetch orders');
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersError('Failed to fetch orders');
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const handleOrderFilterChange = (filterType, value) => {
+    const newFilters = { ...orderFilters, [filterType]: value };
+    setOrderFilters(newFilters);
+    // Apply filters locally since we already have all orders
+    applyOrderFilters(newFilters);
+  };
+
+  const handleMarkOrderAsPaid = async (orderId) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        console.error('No admin authentication token found');
+        return;
+      }
+
+      const response = await fetch(`/api/orders/${orderId}/mark-paid`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
+
+      if (response.ok) {
+        // Update the local orders state
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order._id === orderId
+              ? { ...order, paymentStatus: 'Paid' }
+              : order
+          )
+        );
+
+        // Show success message
+        alert('Order marked as paid successfully!');
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to mark order as paid:', errorData);
+        alert(`Failed to mark order as paid: ${errorData.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error marking order as paid:', error);
+      alert('Error marking order as paid. Please try again.');
+    }
+  };
+
+  const handleSendMoneyToFreelancer = async (orderId, totalAmount) => {
+    try {
+      const adminToken = localStorage.getItem('adminToken');
+      if (!adminToken) {
+        console.error('No admin authentication token found');
+        return;
+      }
+
+      // Calculate amounts: totalAmount is 110% (including 10% fee)
+      // So freelancerAmount = totalAmount / 1.10, and websiteFee = totalAmount - freelancerAmount
+      const freelancerAmount = totalAmount / 1.10;
+      const websiteFee = totalAmount - freelancerAmount;
+
+      // Show confirmation dialog with fee breakdown
+      const confirmed = window.confirm(
+        `Send money to freelancer?\n\n` +
+        `Total Order Amount (110%): $${totalAmount.toFixed(2)}\n` +
+        `Website Fee (10%): $${websiteFee.toFixed(2)}\n` +
+        `Freelancer Receives (100%): $${freelancerAmount.toFixed(2)}\n\n` +
+        `Do you want to proceed?`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      const response = await fetch(`/api/orders/${orderId}/send-money-to-freelancer`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          freelancerAmount,
+          websiteFee,
+          totalAmount
+        })
+      });
+
+      if (response.ok) {
+        // Update the local orders state
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order._id === orderId
+              ? { ...order, paymentStatus: 'Paid', status: 'Completed' }
+              : order
+          )
+        );
+
+        // Show success message
+        alert(`Money sent successfully!\n\nTotal Order Amount (110%): $${totalAmount.toFixed(2)}\nWebsite Fee (10%): $${websiteFee.toFixed(2)}\nFreelancer Received (100%): $${freelancerAmount.toFixed(2)}`);
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to send money to freelancer:', errorData);
+        alert(`Failed to send money to freelancer: ${errorData.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error sending money to freelancer:', error);
+      alert('Error sending money to freelancer. Please try again.');
+    }
+  };
+
+  const applyOrderFilters = (filters) => {
+    let filteredOrders = orders;
+    
+    if (filters.status !== 'all') {
+      filteredOrders = filteredOrders.filter(order => order.status === filters.status);
+    }
+    
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      filteredOrders = filteredOrders.filter(order => 
+        order.serviceId?.title?.toLowerCase().includes(searchTerm) ||
+        order.clientId?.firstName?.toLowerCase().includes(searchTerm) ||
+        order.clientId?.lastName?.toLowerCase().includes(searchTerm) ||
+        order.freelancerId?.firstName?.toLowerCase().includes(searchTerm) ||
+        order.freelancerId?.lastName?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    setOrders(filteredOrders);
   };
 
 
@@ -2039,9 +2216,270 @@ function AdminDashboard() {
     );
   };
 
+  const renderOrders = () => (
+    <div className="space-y-8">
+      {/* Orders Header */}
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">Orders Management</h3>
+            <p className="text-gray-600 mt-1">Monitor and manage all platform orders</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={fetchOrders}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300"
+            >
+              Refresh Orders
+            </button>
+          </div>
+        </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Total Orders</p>
+                <p className="text-2xl font-bold">{orders.length}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-sm">Pending</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Pending').length}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">In Progress</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'In Progress').length}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-xl p-4 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">Completed</p>
+                <p className="text-2xl font-bold">{orders.filter(o => o.status === 'Completed').length}</p>
+              </div>
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        {/* Filter Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <select
+            value={orderFilters.status}
+            onChange={(e) => handleOrderFilterChange('status', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          >
+            <option value="all">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Payment Confirmed">Payment Confirmed</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Review">Review</option>
+            <option value="Revision">Revision</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          
+          <input
+            type="text"
+            placeholder="Search orders..."
+            value={orderFilters.search}
+            onChange={(e) => handleOrderFilterChange('search', e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500"
+          />
+        </div>
+      </div>
 
+      {/* Orders List */}
+      {ordersLoading ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading orders...</p>
+        </div>
+      ) : ordersError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-800">{ordersError}</p>
+            </div>
+          </div>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+          <p className="text-gray-600">No orders match your current filters.</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Current Orders</h3>
+            <div className="space-y-4">
+              {orders.filter(o => !Boolean(o?.paymentDetails?.paidAt)).map((order) => (
+                <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200 hover:border-yellow-400">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {order.serviceId?.title || 'Service Title'}
+                        </h4>
+                      </div>
+                      {/* Status Display */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                          order.paymentStatus === 'Failed' ? 'bg-red-100 text-red-800' :
+                          order.paymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Buyer: {order.paymentStatus === 'Paid' ? 'paid' : 'not paid'}
+                        </span>
+                        {(() => {
+                          const hasAdminPayout = Boolean(order?.paymentDetails?.paidAt);
+                          const freelancerPaymentStatus = hasAdminPayout ? 'Paid' : 'Pending';
+                          const badgeClass =
+                            freelancerPaymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            freelancerPaymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800';
+                          return (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                              Freelancer Payment: {freelancerPaymentStatus}
+                            </span>
+                          );
+                        })()}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.clientStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
+                          order.clientStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Client: {order.clientStatus || 'Pending'}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          order.freelancerStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                          order.freelancerStatus === 'In Progress' ? 'bg-purple-100 text-purple-800' :
+                          order.freelancerStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          Freelancer: {order.freelancerStatus || 'Pending'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                        <div>
+                          <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
+                          <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
+                          <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+                        </div>
+                        <div>
+                          <p><strong>Amount:</strong> ${order.totalAmount}</p>
+                          <p><strong>Order Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+                          <p><strong>Deadline:</strong> {new Date(order.deadline).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      {order.requirements && (
+                        <div className="mb-3">
+                          <p className="text-sm text-gray-700">
+                            <strong>Requirements:</strong> {order.requirements}
+                          </p>
+                        </div>
+                      )}
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-end space-x-3 pt-3 border-t border-gray-200">
+                        {order.clientStatus === 'Delivered' && order.freelancerStatus === 'Completed' && !Boolean(order?.paymentDetails?.paidAt) && (
+                          <button
+                            onClick={() => handleSendMoneyToFreelancer(order._id, order.totalAmount)}
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                          >
+                            Send Money to Freelancer (10% fee)
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {orders.filter(o => !Boolean(o?.paymentDetails?.paidAt)).length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-600">No current orders</div>
+              )}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">Past Orders</h3>
+            <div className="space-y-4">
+              {orders.filter(o => Boolean(o?.paymentDetails?.paidAt)).map((order) => (
+                <div key={order._id} className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-gray-200">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h4 className="text-lg font-semibold text-gray-900">
+                          {order.serviceId?.title || 'Service Title'}
+                        </h4>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Freelancer Payment: Paid</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
+                        <div>
+                          <p><strong>Client:</strong> {order.clientId?.firstName} {order.clientId?.lastName}</p>
+                          <p><strong>Freelancer:</strong> {order.freelancerId?.firstName} {order.freelancerId?.lastName}</p>
+                          <p><strong>Package:</strong> {order.packageDetails?.name}</p>
+                        </div>
+                        <div>
+                          <p><strong>Amount:</strong> ${order.totalAmount}</p>
+                          <p><strong>Paid To Freelancer:</strong> ${order?.paymentDetails?.freelancerAmount ?? 0}</p>
+                          <p><strong>Paid At:</strong> {order?.paymentDetails?.paidAt ? new Date(order.paymentDetails.paidAt).toLocaleString() : '-'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {orders.filter(o => Boolean(o?.paymentDetails?.paidAt)).length === 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-600">No past orders</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   const renderContactMessages = () => (
     <div className="space-y-8">
@@ -2733,6 +3171,7 @@ function AdminDashboard() {
                 { id: "overview", name: "Overview", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" },
                 { id: "users", name: "Users", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" },
                 { id: "services", name: "Services", icon: "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" },
+                { id: "orders", name: "Orders", icon: "M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" },
                 { id: "posts", name: "Posts Approval", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
                 { id: "contact", name: "Contact Messages", icon: "M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
                 { id: "analytics", name: "Analytics", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" }
@@ -2778,6 +3217,7 @@ function AdminDashboard() {
             {activeTab === "overview" && renderOverview()}
             {activeTab === "users" && renderUsers()}
             {activeTab === "services" && renderServices()}
+            {activeTab === "orders" && renderOrders()}
             {activeTab === "posts" && renderPostsApproval()}
             {activeTab === "contact" && renderContactMessages()}
             {activeTab === "analytics" && renderAnalytics()}
