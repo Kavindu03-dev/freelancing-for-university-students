@@ -336,7 +336,7 @@ const getOrderDetails = async (req, res) => {
 const updateOrderStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
-        const { status } = req.body;
+        const { status, statusType } = req.body; // statusType can be 'client', 'freelancer', or 'overall'
         const userId = req.user.id;
 
         const order = await Order.findById(orderId);
@@ -349,29 +349,60 @@ const updateOrderStatus = async (req, res) => {
         }
 
         // Check if user has permission to update this order
-        if (order.freelancerId.toString() !== userId && req.user.userType !== 'admin') {
+        if (req.user.userType === 'client') {
+            if (statusType !== 'client' || status !== 'Delivered') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Clients can only mark orders as delivered'
+                });
+            }
+            // Check if the client owns this order
+            if (order.clientId.toString() !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
+        } else if (req.user.userType === 'freelancer') {
+            if (statusType !== 'freelancer') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Freelancers can only update their own status'
+                });
+            }
+            // Check if the freelancer owns this order
+            if (order.freelancerId.toString() !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Access denied'
+                });
+            }
+        } else if (req.user.userType !== 'admin') {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied'
             });
         }
 
-        // Validate status transition
-        const validTransitions = {
-            'Payment Confirmed': ['In Progress'],
-            'In Progress': ['Review', 'Revision'],
-            'Review': ['Completed', 'Revision'],
-            'Revision': ['In Progress', 'Review']
-        };
-
-        if (validTransitions[order.status] && !validTransitions[order.status].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: `Invalid status transition from ${order.status} to ${status}`
-            });
+        // Update the appropriate status
+        if (statusType === 'client') {
+            order.clientStatus = status;
+        } else if (statusType === 'freelancer') {
+            order.freelancerStatus = status;
+        } else {
+            // Overall status update (for admins)
+            order.status = status;
         }
 
-        order.status = status;
+        // Update overall status based on client and freelancer statuses
+        if (order.clientStatus === 'Delivered' && order.freelancerStatus === 'Completed') {
+            order.status = 'Completed';
+        } else if (order.freelancerStatus === 'In Progress') {
+            order.status = 'In Progress';
+        } else if (order.clientStatus === 'Pending' && order.freelancerStatus === 'Pending') {
+            order.status = 'Pending';
+        }
+
         await order.save();
 
         res.json({
@@ -451,11 +482,165 @@ const cancelOrder = async (req, res) => {
     }
 };
 
+// Mark order as paid by admin (for completed orders)
+const markOrderAsPaidByAdmin = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        
+        // Check if user is admin
+        if (req.user.userType !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only admins can mark orders as paid'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+        
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if order is completed (both client and freelancer must be complete)
+        if (order.clientStatus !== 'Delivered' || order.freelancerStatus !== 'Completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be delivered by client and completed by freelancer before payment'
+            });
+        }
+
+        // Check if order is already paid
+        if (order.paymentStatus === 'Paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order is already marked as paid'
+            });
+        }
+
+        // Mark order as paid
+        order.paymentStatus = 'Paid';
+        await order.save();
+
+        res.json({
+            success: true,
+            message: 'Order marked as paid successfully',
+            order: order
+        });
+    } catch (error) {
+        console.error("Mark order as paid error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Send money to freelancer's wallet (admin only)
+const sendMoneyToFreelancer = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { freelancerAmount, websiteFee, totalAmount } = req.body;
+        
+        // Check if user is admin
+        if (req.user.userType !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only admins can send money to freelancers'
+            });
+        }
+
+        const order = await Order.findById(orderId);
+        
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if order is completed (both client and freelancer must be complete)
+        if (order.clientStatus !== 'Delivered' || order.freelancerStatus !== 'Completed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be delivered by client and completed by freelancer before payment'
+            });
+        }
+
+        // Validate amounts
+        if (!freelancerAmount || !websiteFee || !totalAmount) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing amount information'
+            });
+        }
+
+        // Verify the amounts add up correctly
+        if (Math.abs((freelancerAmount + websiteFee) - totalAmount) > 0.01) {
+            return res.status(400).json({
+                success: false,
+                message: 'Amount validation failed'
+            });
+        }
+
+        // TODO: Here you would integrate with your actual payment system
+        // For now, we'll just mark the order as paid and log the transaction
+        
+        // Mark order as paid
+        order.paymentStatus = 'Paid';
+        order.paymentDetails = {
+            freelancerAmount,
+            websiteFee,
+            totalAmount,
+            paidAt: new Date(),
+            transactionId: `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        };
+        await order.save();
+
+        // TODO: Add actual wallet integration here
+        // This would typically involve:
+        // 1. Adding money to freelancer's wallet
+        // 2. Recording the transaction in a separate transactions collection
+        // 3. Updating platform revenue records
+        // 4. Sending confirmation emails/notifications
+
+        console.log(`Money sent to freelancer:`, {
+            orderId,
+            freelancerId: order.freelancerId,
+            freelancerAmount,
+            websiteFee,
+            totalAmount,
+            timestamp: new Date()
+        });
+
+        res.json({
+            success: true,
+            message: 'Money sent to freelancer successfully',
+            order: order,
+            paymentDetails: {
+                freelancerAmount,
+                websiteFee,
+                totalAmount
+            }
+        });
+    } catch (error) {
+        console.error("Send money to freelancer error:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 export {
     placeOrderStripe,
     verifyStripePayment,
     getAllOrders,
     getOrderDetails,
     updateOrderStatus,
-    cancelOrder
+    cancelOrder,
+    markOrderAsPaidByAdmin,
+    sendMoneyToFreelancer
 };

@@ -5,7 +5,9 @@ import {
     getAllOrders, 
     getOrderDetails, 
     updateOrderStatus,
-    cancelOrder
+    cancelOrder,
+    markOrderAsPaidByAdmin,
+    sendMoneyToFreelancer
 } from '../controllers/orderController.js';
 import { protect as authUser } from '../middleware/auth.js';
 
@@ -23,5 +25,11 @@ orderRouter.get('/all', getAllOrders);
 orderRouter.get('/details/:orderId', getOrderDetails);
 orderRouter.put('/status/:orderId', updateOrderStatus);
 orderRouter.delete('/:orderId', cancelOrder);
+
+// Admin only - mark completed orders as paid
+orderRouter.put('/:orderId/mark-paid', markOrderAsPaidByAdmin);
+
+// Admin only - send money to freelancer's wallet
+orderRouter.put('/:orderId/send-money-to-freelancer', sendMoneyToFreelancer);
 
 export default orderRouter;
