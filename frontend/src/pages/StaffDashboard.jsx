@@ -833,7 +833,7 @@ function StaffDashboard() {
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
-                  stroke="#f59e0b"
+                  stroke="#22cc9d"
                   strokeWidth="3"
                   strokeDasharray={`${(studentStats.pendingVerification / (studentStats.totalStudents || 1)) * 100} ${100 - (studentStats.pendingVerification / (studentStats.totalStudents || 1)) * 100}`}
                   strokeDashoffset={`-${(studentStats.verifiedStudents / (studentStats.totalStudents || 1)) * 100}`}
