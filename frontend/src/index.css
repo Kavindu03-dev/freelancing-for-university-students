@@ -47,10 +47,10 @@
 
 @keyframes yellowPulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    box-shadow: 0 0 0 0 rgba(34, 204, 157, 0.7);
   }
   50% {
-    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+    box-shadow: 0 0 0 10px rgba(34, 204, 157, 0);
   }
 }
 
@@ -191,6 +191,40 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
 }
+
+/* Color palette overrides: map old yellow/black to new theme */
+:root {
+  --color-primary: #22cc9d; /* teal-green */
+  --color-bg: #010101; /* near-black */
+  --color-text: #ffffff; /* white */
+  --color-muted: #919191; /* gray */
+  --color-elevated: #434443; /* dark gray */
+}
+
+/* Utility overrides for Tailwind-like classes used in the project */
+.text-yellow-400, .text-yellow-500, .text-yellow-600, .text-yellow-700, .text-yellow-800 { color: var(--color-primary) !important; }
+.hover\:text-yellow-400:hover, .hover\:text-yellow-500:hover, .hover\:text-yellow-600:hover, .hover\:text-yellow-700:hover { color: var(--color-primary) !important; }
+.group:hover .group-hover\:text-yellow-400, .group:hover .group-hover\:text-yellow-500 { color: var(--color-primary) !important; }
+.bg-yellow-50, .bg-yellow-100, .bg-yellow-200, .bg-yellow-400, .bg-yellow-500, .bg-yellow-600, .bg-yellow-700 { background-color: var(--color-primary) !important; }
+.from-yellow-50, .from-yellow-100, .from-yellow-200, .from-yellow-400, .from-yellow-500, .from-yellow-600, .from-yellow-700 { --tw-gradient-from: var(--color-primary) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgb(34 204 157 / 0)); }
+.to-yellow-50, .to-yellow-100, .to-yellow-200, .to-yellow-400, .to-yellow-500, .to-yellow-600, .to-yellow-700 { --tw-gradient-to: var(--color-primary) !important; }
+.border-yellow-200, .border-yellow-300, .border-yellow-400, .border-yellow-500 { border-color: var(--color-primary) !important; }
+.focus\:ring-yellow-400:focus, .focus\:ring-yellow-500:focus { --tw-ring-color: var(--color-primary) !important; box-shadow: 0 0 0 2px var(--color-primary) !important; }
+.focus\:border-yellow-500:focus { border-color: var(--color-primary) !important; }
+.stroke-yellow-400, .stroke-yellow-500, .stroke-yellow-600 { stroke: var(--color-primary) !important; }
+.fill-yellow-400, .fill-yellow-500, .fill-yellow-600 { fill: var(--color-primary) !important; }
+
+/* Opacity variants used in header */
+.bg-yellow-400\/10 { background-color: rgb(34 204 157 / 0.10) !important; }
+.bg-yellow-500\/20 { background-color: rgb(34 204 157 / 0.20) !important; }
+.hover\:bg-yellow-500\/20:hover { background-color: rgb(34 204 157 / 0.20) !important; }
+
+.text-black { color: var(--color-bg) !important; }
+.bg-black { background-color: var(--color-bg) !important; }
+.border-black { border-color: var(--color-bg) !important; }
+
+/* Optional: adjust generic grays to new muted where appropriate */
+/* Intentionally only mapping yellow and black as requested */
 
 .line-clamp-2 {
   overflow: hidden;

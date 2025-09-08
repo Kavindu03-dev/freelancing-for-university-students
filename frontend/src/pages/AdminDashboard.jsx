@@ -33,7 +33,7 @@ const exportToPDF = (analyticsData, filters) => {
         }
         .header {
           text-align: center;
-          border-bottom: 2px solid #f59e0b;
+          border-bottom: 2px solid #22cc9d;
           padding-bottom: 20px;
           margin-bottom: 30px;
         }
@@ -72,7 +72,7 @@ const exportToPDF = (analyticsData, filters) => {
           margin-bottom: 30px;
         }
         .summary-card {
-          background: linear-gradient(135deg, #f59e0b, #d97706);
+          background: linear-gradient(135deg, #22cc9d, #22cc9d);
           color: white;
           padding: 20px;
           border-radius: 12px;
