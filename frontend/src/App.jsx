@@ -28,14 +28,23 @@ import ClientDashboard from "./pages/ClientDashboard";
 import MyApplicationsPage from "./pages/MyApplicationsPage";
 import ClientApplicationsPage from "./pages/ClientApplicationsPage";
 import Footer from "./components/Footer";
+import ChatbotWidget from "./components/ChatbotWidget";
 
 // Wrapper component to conditionally render Header
 function AppContent() {
   const location = useLocation();
   
   // Don't show Header and Footer on admin dashboard
-  const shouldShowHeader = !location.pathname.includes('/admin/dashboard');
-  const shouldShowFooter = !location.pathname.includes('/admin/dashboard');
+  const isAdminDash = location.pathname.includes('/admin/dashboard');
+  const shouldShowHeader = !isAdminDash;
+  const shouldShowFooter = !isAdminDash;
+
+  // Show chatbot only on public/home pages (exclude dashboards, messages, orders, auth)
+  const hideChatbotOn = [
+    '/admin', '/staff', '/freelancer', '/client',
+    '/messages', '/orders', '/signin', '/join'
+  ];
+  const shouldShowChatbot = !hideChatbotOn.some(p => location.pathname.startsWith(p));
   
   return (
     <>
@@ -68,6 +77,7 @@ function AppContent() {
         <Route path="/" element={<HomePage />} />
       </Routes>
       {shouldShowFooter && <Footer />}
+      {shouldShowChatbot && <ChatbotWidget />}
     </>
   );
 }
