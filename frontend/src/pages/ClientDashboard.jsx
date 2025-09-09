@@ -83,12 +83,73 @@ function ClientDashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   
+  // State for review modal
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [reviewForm, setReviewForm] = useState({
+    rating: 5,
+    comment: ''
+  });
+  
   // Edit profile state
   
   // Handle viewing order details
   const handleViewOrderDetails = (order) => {
     setSelectedOrder(order);
     setShowOrderDetailsModal(true);
+  };
+
+  // Handle opening review modal
+  const handleOpenReview = (order) => {
+    setReviewingOrder(order);
+    setReviewForm({ rating: 5, comment: '' });
+    setShowReviewModal(true);
+  };
+
+  // Handle submitting review
+  const handleSubmitReview = async () => {
+    if (!reviewingOrder || !reviewForm.comment.trim()) {
+      alert('Please provide a review comment');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        console.error('No authentication token found');
+        return;
+      }
+
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          freelancerId: reviewingOrder.freelancerId?._id || reviewingOrder.freelancerId,
+          orderId: reviewingOrder._id,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment.trim()
+        })
+      });
+
+      if (response.ok) {
+        alert('Review submitted successfully!');
+        setShowReviewModal(false);
+        setReviewingOrder(null);
+        setReviewForm({ rating: 5, comment: '' });
+        // Refresh orders to show updated review count
+        fetchOrders();
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to submit review:', errorData);
+        alert(`Failed to submit review: ${errorData.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Error submitting review. Please try again.');
+    }
   };
 
   // Handle marking order as delivered
@@ -2644,9 +2705,14 @@ function ClientDashboard() {
                       <h3 className="text-lg font-semibold text-gray-900">
                         {order.serviceId?.title || 'Service Order'}
                       </h3>
-                      <p className="text-sm text-gray-600 mr-4">
-                        Freelancer: {order.freelancerId ? `${order.freelancerId.firstName} ${order.freelancerId.lastName}` : 'N/A'}
-                      </p>
+                      <div className="text-sm text-gray-600 mr-4">
+                        <p>Freelancer: {order.freelancerId ? `${order.freelancerId.firstName} ${order.freelancerId.lastName}` : 'N/A'}</p>
+                        {order.freelancerId?.reviewCount > 0 && (
+                          <p className="text-xs text-gray-500">
+                            ⭐ {order.freelancerId.averageRating?.toFixed(1) || 'N/A'} ({order.freelancerId.reviewCount} reviews)
+                          </p>
+                        )}
+                      </div>
                       <div className="flex flex-col space-y-1">
                       <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                           order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
@@ -2723,6 +2789,14 @@ function ClientDashboard() {
                         className="px-4 py-2 text-green-600 hover:text-green-800 font-medium text-sm border border-green-200 rounded-lg hover:bg-green-50"
                       >
                         Delivered
+                      </button>
+                    )}
+                    {order.clientStatus === 'Delivered' && !order.hasReview && (
+                      <button
+                        onClick={() => handleOpenReview(order)}
+                        className="px-4 py-2 text-yellow-600 hover:text-yellow-800 font-medium text-sm border border-yellow-200 rounded-lg hover:bg-yellow-50"
+                      >
+                        Add Review
                       </button>
                     )}
                   </div>
@@ -3323,6 +3397,92 @@ function ClientDashboard() {
             </div>
           </div>
         )}
+
+      {/* Review Modal */}
+      {showReviewModal && reviewingOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Add Review</h3>
+                <button
+                  onClick={() => setShowReviewModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    {reviewingOrder.serviceId?.title || 'Service Order'}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    Freelancer: {reviewingOrder.freelancerId ? `${reviewingOrder.freelancerId.firstName} ${reviewingOrder.freelancerId.lastName}` : 'N/A'}
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating
+                  </label>
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                        className={`text-2xl transition-colors ${
+                          star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {reviewForm.rating === 1 && 'Poor'}
+                    {reviewForm.rating === 2 && 'Fair'}
+                    {reviewForm.rating === 3 && 'Good'}
+                    {reviewForm.rating === 4 && 'Very Good'}
+                    {reviewForm.rating === 5 && 'Excellent'}
+                  </p>
+                </div>
+
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Review Comment
+                  </label>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                    placeholder="Share your experience with this freelancer..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-500 resize-none"
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setShowReviewModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitReview}
+                    className="flex-1 px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors font-medium"
+                  >
+                    Submit Review
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

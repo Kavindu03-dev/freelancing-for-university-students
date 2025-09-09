@@ -98,6 +98,10 @@ const orderSchema = new mongoose.Schema({
   updatedAt: { 
     type: Date, 
     default: Date.now 
+  },
+  hasReview: {
+    type: Boolean,
+    default: false
   }
 });
 

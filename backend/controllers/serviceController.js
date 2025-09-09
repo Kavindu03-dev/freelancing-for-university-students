@@ -162,7 +162,8 @@ const getServices = async (req, res) => {
 
     // Get gigs (services)
     const gigs = await Service.find(gigFilter)
-      .populate('freelancerId', 'firstName lastName email university degreeProgram profileImage')
+      // include cached averageRating and reviewCount from User if present
+      .populate('freelancerId', 'firstName lastName email university degreeProgram profileImage averageRating reviewCount')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -228,7 +229,7 @@ const getServiceById = async (req, res) => {
   try {
     // First try to find in Service model (gigs)
     let service = await Service.findById(req.params.id)
-      .populate('freelancerId', 'firstName lastName email skills bio hourlyRate profileImage')
+      .populate('freelancerId', 'firstName lastName email skills bio hourlyRate profileImage averageRating reviewCount')
       .populate('reviews.client', 'firstName lastName profileImage');
 
     if (service) {
@@ -325,7 +326,7 @@ const getServicesByFreelancer = async (req, res) => {
     const services = await Service.find({
       freelancerId: req.params.id,
       isActive: true
-    }).populate('freelancerId', 'firstName lastName email');
+    }).populate('freelancerId', 'firstName lastName email averageRating reviewCount');
 
     res.json({
       success: true,

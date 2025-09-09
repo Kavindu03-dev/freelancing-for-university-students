@@ -14,6 +14,9 @@ function ServiceDetailsPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [contactForm, setContactForm] = useState({
     message: '',
     budget: '',
@@ -43,6 +46,34 @@ function ServiceDetailsPage() {
           setService(result.data);
           console.log('Service data set:', result.data);
           console.log('Service images:', result.data.images);
+          // decide reviews source: prefer service.reviews (populated), otherwise fetch by freelancer
+          try {
+            if (result.data.reviews && result.data.reviews.length > 0) {
+              setReviews(result.data.reviews.map(r => ({
+                _id: r._id,
+                rating: r.rating,
+                comment: r.comment,
+                client: r.client ? { firstName: r.client.firstName, lastName: r.client.lastName, profileImage: r.client.profileImage } : null,
+                createdAt: r.createdAt
+              })));
+              setReviewsTotal(result.data.reviews.length);
+            } else if (result.data.freelancerId?._id) {
+              // fetch reviews from central Reviews collection
+              setReviewsLoading(true);
+              const revRes = await fetch(`/api/reviews/freelancer/${result.data.freelancerId._id}`);
+              if (revRes.ok) {
+                const revJson = await revRes.json();
+                if (revJson.success) {
+                  setReviews(revJson.reviews || revJson.data || []);
+                  setReviewsTotal(revJson.total || (revJson.reviews ? revJson.reviews.length : 0));
+                }
+              }
+              setReviewsLoading(false);
+            }
+          } catch (err) {
+            console.error('Error fetching reviews for service:', err);
+            setReviewsLoading(false);
+          }
         } else {
           throw new Error(result.message || 'Failed to fetch service');
         }
@@ -159,7 +190,34 @@ function ServiceDetailsPage() {
           <div className="lg:col-span-2">
             {/* Service Header */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 mb-4">{service.title}</h1>
+              <div className="flex items-center space-x-4 mb-4">
+                <h1 className="text-3xl font-bold text-gray-800">{service.title}</h1>
+                {/* Average rating next to title */}
+                {(() => {
+                  const fromService = service.rating || 0;
+                  const fromFreelancer = service.freelancerId?.averageRating || 0;
+                  const fromReviews = (reviews && reviews.length > 0) ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) : 0;
+                  const avg = fromService || fromReviews || fromFreelancer || 0;
+                  const rounded = Math.round(avg * 10) / 10;
+                  const count = service.totalReviews || service.freelancerId?.reviewCount || reviewsTotal || 0;
+
+                  return (
+                    <div className="flex items-center text-sm text-gray-600">
+                      <div className="flex text-yellow-400 mr-2">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className={`w-4 h-4 ${i < Math.floor(avg) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <div className="text-gray-700">
+                        <span className="font-semibold">{rounded.toFixed(1)}</span>
+                        <span className="ml-2 text-sm text-gray-500">· {count} {count === 1 ? 'review' : 'reviews'}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Freelancer/Client Info */}
               <div className="flex items-center mb-6">
@@ -178,7 +236,7 @@ function ServiceDetailsPage() {
                       {service.type === 'gig' ? service.freelancerName : `${service.clientId?.firstName} ${service.clientId?.lastName}`}
                     </h3>
                     {service.university && (
-                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium">
+                      <span className="bg-yellow-100/30 text-yellow-800 px-2 py-1 rounded text-sm font-medium backdrop-blur-sm">
                         {service.university}
                       </span>
                     )}
@@ -187,14 +245,28 @@ function ServiceDetailsPage() {
                     {service.type === 'gig' ? (
                       <>
                         <div className="flex items-center mr-4">
-                          <div className="flex text-yellow-400 mr-1">
-                            {[...Array(5)].map((_, i) => (
-                              <svg key={i} className={`w-4 h-4 ${i < Math.floor(service.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                          <span>{service.rating || 0} ({service.totalReviews || 0})</span>
+                          {(() => {
+                            const fromService = service.rating || 0;
+                            const fromFreelancer = service.freelancerId?.averageRating || 0;
+                            const fromReviews = (reviews && reviews.length > 0) ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length) : 0;
+                            const avg = fromService || fromReviews || fromFreelancer || 0;
+                            const roundedAvg = Math.round(avg * 10) / 10;
+                            const fullStars = Math.floor(avg);
+                            const count = service.totalReviews || service.freelancerId?.reviewCount || reviewsTotal || 0;
+
+                            return (
+                              <>
+                                <div className="flex text-yellow-400 mr-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <svg key={i} className={`w-4 h-4 ${i < fullStars ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                    </svg>
+                                  ))}
+                                </div>
+                                <span>{roundedAvg.toFixed(1)} ({count})</span>
+                              </>
+                            );
+                          })()}
                         </div>
                         {service.experience && (
                           <span>{service.experience} experience</span>
@@ -442,10 +514,68 @@ function ServiceDetailsPage() {
                 )}
 
                 {activeTab === 'reviews' && (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 text-4xl mb-4">⭐</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Reviews</h3>
-                    <p className="text-gray-500">Reviews will be displayed here when available.</p>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Reviews</h3>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <div className="flex text-yellow-400 mr-2">
+                            {[...Array(5)].map((_, i) => (
+                              <svg key={i} className={`w-4 h-4 ${i < Math.floor(service.rating || service.freelancerId?.averageRating || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <div className="text-gray-700">
+                            <span className="font-semibold">{(service.rating || service.freelancerId?.averageRating || 0).toFixed(1)}</span>
+                            <span className="ml-2 text-sm text-gray-500">· {service.totalReviews || service.freelancerId?.reviewCount || reviewsTotal} {((service.totalReviews || service.freelancerId?.reviewCount || reviewsTotal) === 1) ? 'review' : 'reviews'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      {reviewsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-500 mx-auto mb-4"></div>
+                          <p className="text-gray-600">Loading reviews...</p>
+                        </div>
+                      ) : reviews && reviews.length > 0 ? (
+                        <div className="space-y-4">
+                          {reviews.map((rev) => (
+                            <div key={rev._id || rev.id} className="border border-gray-100 rounded-lg p-4 flex items-start gap-4">
+                              <img
+                                src={rev.client?.profileImage?.url || rev.client?.profileImage || rev.client?.profileImage?.url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'}
+                                alt={rev.client ? `${rev.client.firstName} ${rev.client.lastName}` : 'Client'}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium text-gray-800">{rev.client ? `${rev.client.firstName} ${rev.client.lastName}` : (rev.clientName || 'Client')}</div>
+                                    <div className="flex items-center text-sm text-yellow-400">
+                                      {[...Array(5)].map((_, i) => (
+                                        <svg key={i} className={`w-4 h-4 ${i < Math.floor(rev.rating || 0) ? 'text-yellow-400' : 'text-gray-300'}`} fill="currentColor" viewBox="0 0 20 20">
+                                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                      ))}
+                                      <span className="text-gray-500 text-sm ml-2">{rev.rating}</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-gray-400">{new Date(rev.createdAt || rev.createdAtDate || rev.createdAt).toLocaleDateString()}</div>
+                                </div>
+                                <p className="text-gray-700 mt-2">{rev.comment}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-gray-400 text-4xl mb-4">💬</div>
+                          <p className="text-gray-600">No reviews yet. Be the first to leave a review.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
