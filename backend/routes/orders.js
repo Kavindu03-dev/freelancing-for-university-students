@@ -7,7 +7,8 @@ import {
     updateOrderStatus,
     cancelOrder,
     markOrderAsPaidByAdmin,
-    sendMoneyToFreelancer
+    sendMoneyToFreelancer,
+    addOrderReview
 } from '../controllers/orderController.js';
 import { protect as authUser } from '../middleware/auth.js';
 
@@ -31,5 +32,8 @@ orderRouter.put('/:orderId/mark-paid', markOrderAsPaidByAdmin);
 
 // Admin only - send money to freelancer's wallet
 orderRouter.put('/:orderId/send-money-to-freelancer', sendMoneyToFreelancer);
+
+// Client adds review for order (service)
+orderRouter.post('/:orderId/review', addOrderReview);
 
 export default orderRouter;

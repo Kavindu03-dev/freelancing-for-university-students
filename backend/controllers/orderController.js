@@ -647,6 +647,74 @@ const sendMoneyToFreelancer = async (req, res) => {
     }
 };
 
+// Add review for an order (client -> service)
+// POST /api/orders/:orderId/review { rating, comment }
+const addOrderReview = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { rating, comment } = req.body;
+        const userId = req.user.id;
+
+        if (req.user.userType !== 'client') {
+            return res.status(403).json({ success: false, message: 'Only clients can add reviews' });
+        }
+
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+        if (!comment || comment.trim().length < 5) {
+            return res.status(400).json({ success: false, message: 'Comment must be at least 5 characters' });
+        }
+        if (comment.length > 500) {
+            return res.status(400).json({ success: false, message: 'Comment must be 500 characters or less' });
+        }
+
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (order.clientId.toString() !== userId) {
+            return res.status(403).json({ success: false, message: 'You are not the owner of this order' });
+        }
+
+        // Allow review only after client marked Delivered OR overall order completed
+        if (order.clientStatus !== 'Delivered' && order.status !== 'Completed') {
+            return res.status(400).json({ success: false, message: 'You can review only after marking as delivered or order completed' });
+        }
+
+        if (order.reviewSubmitted) {
+            return res.status(400).json({ success: false, message: 'Review already submitted for this order' });
+        }
+
+        const service = await Service.findById(order.serviceId);
+        if (!service) {
+            return res.status(404).json({ success: false, message: 'Related service not found' });
+        }
+
+        // Only prevent duplicate review for the same order
+        const existingOrderReview = service.reviews.find(r => r.order && r.order.toString() === orderId);
+        if (existingOrderReview) {
+            return res.status(400).json({ success: false, message: 'This order already has a review' });
+        }
+
+        service.reviews.push({ client: userId, order: orderId, rating, comment });
+        service.calculateAverageRating();
+        await service.save();
+
+        order.reviewSubmitted = true;
+        order.review = { rating, comment, createdAt: new Date() };
+        await order.save();
+
+        await service.populate('reviews.client', 'firstName lastName profileImage');
+
+        res.json({ success: true, message: 'Review submitted', service, order });
+    } catch (error) {
+        console.error('Add order review error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 export {
     placeOrderStripe,
     verifyStripePayment,
@@ -657,3 +725,5 @@ export {
     markOrderAsPaidByAdmin,
     sendMoneyToFreelancer
 };
+
+export { addOrderReview };

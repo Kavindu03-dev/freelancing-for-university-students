@@ -74,6 +74,11 @@ function ClientDashboard() {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
+  // Review feature state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewOrderId, setReviewOrderId] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
   
   // State for freelancer profile popup
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
@@ -129,6 +134,37 @@ function ClientDashboard() {
     } catch (error) {
       console.error('Error marking order as delivered:', error);
       alert('Error marking order as delivered. Please try again.');
+    }
+  };
+
+  // Open review modal
+  const openReviewModal = (orderId) => {
+    setReviewOrderId(orderId);
+    setReviewRating(5);
+    setReviewComment('');
+    setShowReviewModal(true);
+  };
+
+  // Submit review
+  const submitReview = async () => {
+    if (!reviewOrderId) return;
+    try {
+      const token = localStorage.getItem('userToken');
+      const res = await fetch(`/api/orders/${reviewOrderId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ rating: reviewRating, comment: reviewComment })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || 'Failed to submit review');
+        return;
+      }
+      setOrders(prev => prev.map(o => o._id === reviewOrderId ? { ...o, reviewSubmitted: true, review: { rating: reviewRating, comment: reviewComment, createdAt: new Date().toISOString() } } : o));
+      setShowReviewModal(false);
+    } catch (e) {
+      console.error('Submit review error', e);
+      alert('Error submitting review');
     }
   };
   
@@ -2725,6 +2761,20 @@ function ClientDashboard() {
                         Delivered
                       </button>
                     )}
+                    {order.clientStatus === 'Delivered' && !order.reviewSubmitted && (
+                      <button
+                        onClick={() => openReviewModal(order._id)}
+                        className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 font-medium text-sm rounded-lg"
+                      >
+                        Rate & Review
+                      </button>
+                    )}
+                    {order.reviewSubmitted && order.review && (
+                      <div className="text-xs text-gray-600 flex flex-col items-end">
+                        <span className="font-semibold text-yellow-600">Your Rating: {order.review.rating}★</span>
+                        <span className="max-w-[180px] truncate">{order.review.comment}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2739,6 +2789,41 @@ function ClientDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      {showReviewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Rate & Review</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+              <div className="flex items-center space-x-2">
+                {[1,2,3,4,5].map(star => (
+                  <button key={star} type="button" onClick={() => setReviewRating(star)} className={`w-8 h-8 rounded-full flex items-center justify-center ${star <= reviewRating ? 'bg-yellow-400 text-black' : 'bg-gray-200 text-gray-600'}`}>{star}</button>
+                ))}
+                <span className="text-sm text-gray-600">{reviewRating} / 5</span>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+              <textarea 
+                value={reviewComment}
+                onChange={e => {
+                  const val = e.target.value.slice(0,500);
+                  setReviewComment(val);
+                }}
+                maxLength={500}
+                rows={4} 
+                className="w-full border rounded-md p-2 focus:ring-yellow-500 focus:border-yellow-500 text-sm" 
+                placeholder="Share your experience (5 - 500 characters)" 
+              />
+              <div className="text-right text-xs text-gray-500 mt-1">{reviewComment.length}/500</div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button onClick={() => setShowReviewModal(false)} className="px-4 py-2 text-sm rounded-md border">Cancel</button>
+              <button onClick={submitReview} disabled={reviewComment.trim().length < 5} className="px-4 py-2 text-sm rounded-md bg-yellow-500 text-black hover:bg-yellow-400 disabled:opacity-50">Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Left Sidebar - Fixed width, full height, positioned below header */}
       <div className="w-64 bg-white shadow-2xl border-r border-gray-200 flex-shrink-0 mt-20">
         {/* Sidebar Header */}
