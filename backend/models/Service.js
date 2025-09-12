@@ -134,6 +134,10 @@ const serviceSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    order: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Order'
+    },
     rating: {
       type: Number,
       required: true,
@@ -142,7 +146,8 @@ const serviceSchema = new mongoose.Schema({
     },
     comment: {
       type: String,
-      required: true
+      required: true,
+      maxlength: 500
     },
     createdAt: {
       type: Date,

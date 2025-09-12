@@ -99,6 +99,17 @@ const orderSchema = new mongoose.Schema({
     type: Date, 
     default: Date.now 
   }
+  ,
+  // Review info (set after client marks delivered and submits a review for the related service)
+  reviewSubmitted: {
+    type: Boolean,
+    default: false
+  },
+  review: {
+    rating: { type: Number, min: 1, max: 5 },
+    comment: { type: String, trim: true },
+    createdAt: { type: Date }
+  }
 });
 
 // Update the updatedAt field before saving
