@@ -132,6 +132,8 @@ function StudentDashboard() {
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
+  // Aggregated rating for student's services (gigs)
+  const [serviceRating, setServiceRating] = useState({ avg: null, total: 0, loading: true, error: null });
   // Filter and search state
   const [filters, setFilters] = useState({
     searchQuery: "",
@@ -143,6 +145,33 @@ function StudentDashboard() {
     maxBudget: "",
     selectedTags: []
   });
+
+  // Fetch services to compute rating whenever studentData is available
+  useEffect(() => {
+    const fetchServiceRating = async () => {
+      if (!studentData?._id) return;
+      try {
+        setServiceRating(prev => ({ ...prev, loading: true, error: null }));
+        const res = await fetch(`/api/services?freelancerId=${studentData._id}`);
+        const json = await res.json();
+        if (!json.success || !Array.isArray(json.data)) throw new Error(json.message || 'Failed');
+        const services = json.data;
+        const rated = services.filter(s => typeof s.rating === 'number' && (s.totalReviews || 0) > 0);
+        if (rated.length === 0) {
+          setServiceRating({ avg: 0, total: 0, loading: false, error: null });
+          return;
+        }
+        const total = rated.reduce((sum, s) => sum + (s.totalReviews || 0), 0);
+        const weighted = rated.reduce((sum, s) => sum + (s.rating * (s.totalReviews || 0)), 0);
+        const avg = weighted / total;
+        setServiceRating({ avg: Number(avg.toFixed(2)), total, loading: false, error: null });
+      } catch (e) {
+        console.error('Service rating fetch error', e);
+        setServiceRating({ avg: 0, total: 0, loading: false, error: 'N/A' });
+      }
+    };
+    fetchServiceRating();
+  }, [studentData?._id]);
   // Bookmarked opportunities
   const [bookmarkedOpportunities, setBookmarkedOpportunities] = useState([]);
   // Recommendations state
@@ -2291,10 +2320,20 @@ function StudentDashboard() {
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-6">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                <span>4.9 (12 reviews)</span>
+                <div className="flex items-center mr-2">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className={`w-5 h-5 ${serviceRating.avg && i < Math.round(serviceRating.avg) ? 'text-yellow-400' : 'text-gray-600'} transition-colors`} fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                {serviceRating.loading ? (
+                  <span className="text-sm text-gray-400">Loading...</span>
+                ) : serviceRating.error ? (
+                  <span className="text-sm text-gray-400">N/A</span>
+                ) : (
+                  <span className="text-sm text-gray-200 font-medium">{serviceRating.avg} ({serviceRating.total} review{serviceRating.total !== 1 ? 's' : ''})</span>
+                )}
               </div>
               <div className="flex items-center">
                 <svg className="w-5 h-5 text-gray-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2633,7 +2672,7 @@ function StudentDashboard() {
                     {studentData?.technicalSkills && studentData.technicalSkills.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {studentData.technicalSkills.map((skill, index) => (
-                          <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                          <span key={index} className="px-3 py-1 border border-blue-300 text-blue-600 rounded-full text-sm font-medium bg-transparent">
                             {skill}
                           </span>
                         ))}
