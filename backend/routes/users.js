@@ -1,6 +1,6 @@
 import express from 'express';
 import userController from '../controllers/userController.js';
-import { getWalletBalance } from '../controllers/userController.js';
+import { getWalletBalance, exportWalletStatement } from '../controllers/userController.js';
 import { protect, authenticateAdmin } from '../middleware/auth.js';
 import imgbbUpload from '../middleware/imgbbUpload.js';
 
@@ -40,6 +40,11 @@ router.get('/dashboard/stats', protect, userController.getClientDashboardStats);
 // @desc    Get authenticated user's wallet balance
 // @access  Private
 router.get('/wallet/balance', protect, getWalletBalance);
+
+// @route   GET /api/users/wallet/statement
+// @desc    Export freelancer wallet statement PDF (optional ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD)
+// @access  Private (Freelancer)
+router.get('/wallet/statement', protect, exportWalletStatement);
 
 // @route   GET /api/users/admin/all
 // @desc    Get all users (admin only)

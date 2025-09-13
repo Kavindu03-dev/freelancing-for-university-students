@@ -533,6 +533,124 @@ export const getWalletBalance = async (req, res) => {
   }
 };
 
+// @desc    Export freelancer wallet statement as PDF
+// @route   GET /api/users/wallet/statement
+// @access  Private (Freelancer)
+export const exportWalletStatement = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select('firstName lastName userType walletBalance');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (user.userType !== 'freelancer') {
+      return res.status(403).json({ success: false, message: 'Only freelancers can export wallet statements' });
+    }
+
+    // Optional date range filtering via query params
+    const { startDate, endDate } = req.query;
+    const dateFilter = { freelancerId: userId, paymentStatus: 'Paid' };
+    if (startDate || endDate) {
+      dateFilter['paymentDetails.paidAt'] = {};
+      if (startDate) dateFilter['paymentDetails.paidAt'].$gte = new Date(startDate);
+      if (endDate) {
+        // include entire end day
+        const end = new Date(endDate);
+        end.setHours(23,59,59,999);
+        dateFilter['paymentDetails.paidAt'].$lte = end;
+      }
+    }
+
+    const orders = await Order.find(dateFilter)
+      .populate('serviceId', 'title')
+      .sort({ 'paymentDetails.paidAt': 1 });
+
+    // Aggregate totals per service category (if service has category field) & overall
+    let totalEarnings = 0;
+    const rows = orders.map(o => {
+      const paidAt = o.paymentDetails?.paidAt ? new Date(o.paymentDetails.paidAt) : o.createdAt;
+      const amount = Number(o.paymentDetails?.freelancerAmount || 0);
+      totalEarnings += amount;
+      return {
+        date: paidAt.toISOString().split('T')[0],
+        service: o.serviceId?.title || 'Service',
+        orderId: o._id.toString().slice(-8),
+        package: o.selectedPackage,
+        amount
+      };
+    });
+
+    // Generate PDF using pdfkit similar to staff report style
+    const PDFDocument = (await import('pdfkit')).default;
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const fileName = `wallet-statement-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(18).text('Wallet Statement', { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Freelancer: ${user.firstName || ''} ${user.lastName || ''}`);
+    doc.text(`Generated: ${new Date().toLocaleString()}`);
+    if (startDate || endDate) {
+      doc.text(`Range: ${startDate || 'Beginning'} to ${endDate || 'Today'}`);
+    }
+    doc.moveDown(0.5);
+    doc.text(`Current Wallet Balance: ${Number(user.walletBalance || 0).toFixed(2)}`);
+    doc.text(`Total Earnings in Period: ${totalEarnings.toFixed(2)}`);
+    doc.moveDown(1);
+
+    // Table header
+    const colX = { date: 40, service: 110, order: 300, pkg: 380, amount: 450 };
+    doc.fontSize(11).font('Helvetica-Bold');
+    doc.text('Date', colX.date, doc.y);
+    doc.text('Service', colX.service, doc.y);
+    doc.text('Order', colX.order, doc.y);
+    doc.text('Pkg', colX.pkg, doc.y);
+    doc.text('Amount', colX.amount, doc.y, { align: 'left' });
+    doc.moveDown(0.3);
+    doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown(0.2);
+    doc.font('Helvetica');
+
+    rows.forEach(r => {
+      const startY = doc.y;
+      doc.text(r.date, colX.date, startY);
+      doc.text(r.service, colX.service, startY, { width: 180 });
+      doc.text(r.orderId, colX.order, startY);
+      doc.text(r.package, colX.pkg, startY);
+      doc.text(r.amount.toFixed(2), colX.amount, startY);
+      doc.moveDown(0.2);
+      // Add simple pagination check
+      if (doc.y > 760) {
+        doc.addPage();
+        doc.font('Helvetica-Bold');
+        doc.text('Date', colX.date, doc.y);
+        doc.text('Service', colX.service, doc.y);
+        doc.text('Order', colX.order, doc.y);
+        doc.text('Pkg', colX.pkg, doc.y);
+        doc.text('Amount', colX.amount, doc.y);
+        doc.moveDown(0.3);
+        doc.moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(0.2);
+        doc.font('Helvetica');
+      }
+    });
+
+    if (rows.length === 0) {
+      doc.text('No paid transactions in this period.', 40, doc.y + 10);
+    }
+
+    doc.end();
+  } catch (error) {
+    console.error('Wallet statement export error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, message: 'Failed to generate wallet statement PDF' });
+    }
+  }
+};
+
 // Get client dashboard statistics
 export const getClientDashboardStats = async (req, res) => {
   try {
@@ -714,5 +832,6 @@ export default {
   activateUser,
   deleteUser,
   getClientDashboardStats,
-  getWalletBalance
+  getWalletBalance,
+  exportWalletStatement
 };
