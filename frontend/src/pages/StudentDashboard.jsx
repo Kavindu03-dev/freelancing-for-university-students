@@ -2849,38 +2849,57 @@ function StudentDashboard() {
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Stats</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Completed Projects</span>
-                <span className="font-bold text-yellow-600">12</span>
+            {stats.loading ? (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <svg className="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>Loading overview...</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Earnings</span>
-                <span className="font-bold text-green-600">$2,800</span>
+            ) : stats.error ? (
+              <div className="text-sm text-red-600">{stats.error}</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Completed Projects</span>
+                  <span className="font-bold text-yellow-600">{stats.completedProjects}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Active Projects</span>
+                  <span className="font-bold text-blue-600">{stats.activeProjects}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Earnings</span>
+                  <span className="font-bold text-green-600">${stats.totalEarnings.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Rating</span>
+                  <span className="font-bold text-yellow-600">{stats.ratingAverage ? stats.ratingAverage.toFixed(2) : '0.00'}/5</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Reviews</span>
+                  <span className="font-bold text-purple-600">{stats.totalReviews}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Client Rating</span>
-                <span className="font-bold text-yellow-600">4.9/5</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Response Time</span>
-                <span className="font-bold text-yellow-600">2 hours</span>
-              </div>
-            </div>
+            )}
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Skills</h3>
             <div className="flex flex-wrap gap-2">
               {studentData?.technicalSkills && Array.isArray(studentData.technicalSkills) ? studentData.technicalSkills.map((skill, index) => (
-                <span key={index} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                <span
+                  key={index}
+                  className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent"
+                >
                   {skill}
                 </span>
               )) : (
                 <>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">React</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Node.js</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Python</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">UI/UX Design</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">React</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">Node.js</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">Python</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">UI/UX Design</span>
                 </>
               )}
             </div>
