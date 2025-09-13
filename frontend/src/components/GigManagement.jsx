@@ -945,7 +945,7 @@ const GigManagement = ({ user }) => {
                   <div className="flex space-x-2">
                     <button
                       onClick={() => openEditForm(gig)}
-                      className="p-2 bg-black bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all duration-200"
+                      className="p-2 border border-gray-300 hover:border-yellow-500 rounded-lg transition-all duration-200 bg-transparent hover:bg-yellow-50"
                       title="Edit Gig"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -954,7 +954,7 @@ const GigManagement = ({ user }) => {
                     </button>
                     <button
                       onClick={() => handleDeleteGig(gig._id)}
-                      className="p-2 bg-black bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-all duration-200"
+                      className="p-2 border border-gray-300 hover:border-red-500 rounded-lg transition-all duration-200 bg-transparent hover:bg-red-50"
                       title="Delete Gig"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -992,11 +992,11 @@ const GigManagement = ({ user }) => {
                     <h5 className="text-sm font-semibold text-gray-900 mb-3">Skills Required</h5>
                     <div className="flex flex-wrap gap-2">
                       {Array.isArray(gig.skills) ? gig.skills.map((skill, index) => (
-                        <span key={index} className="px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-full border border-yellow-200">
+                        <span key={index} className="px-3 py-1 text-yellow-600 text-xs font-medium rounded-full border border-yellow-500 bg-transparent">
                           {skill}
                         </span>
                       )) : (
-                        <span className="px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-full border border-yellow-200">
+                        <span className="px-3 py-1 text-yellow-600 text-xs font-medium rounded-full border border-yellow-500 bg-transparent">
                           {gig.skills}
                         </span>
                       )}
@@ -1013,10 +1013,10 @@ const GigManagement = ({ user }) => {
                         <div key={type} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                                type === 'basic' ? 'bg-green-100 text-green-800' :
-                                type === 'standard' ? 'bg-blue-100 text-blue-800' :
-                                'bg-purple-100 text-purple-800'
+                              <span className={`px-2 py-1 text-xs font-bold rounded-full border ${
+                                type === 'basic' ? 'border-green-500 text-green-600 bg-transparent' :
+                                type === 'standard' ? 'border-blue-500 text-blue-600 bg-transparent' :
+                                'border-purple-500 text-purple-600 bg-transparent'
                               }`}>
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
                               </span>
@@ -1084,11 +1084,11 @@ const GigManagement = ({ user }) => {
                 {/* Status and Actions */}
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                   <div className="flex items-center space-x-2">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      gig.status === 'approved' ? 'bg-green-100 text-green-800' :
-                      gig.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      gig.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full border ${
+                      gig.status === 'approved' ? 'border-green-500 text-green-600 bg-transparent' :
+                      gig.status === 'pending' ? 'border-yellow-500 text-yellow-600 bg-transparent' :
+                      gig.status === 'rejected' ? 'border-red-500 text-red-600 bg-transparent' :
+                      'border-gray-400 text-gray-600 bg-transparent'
                     }`}>
                       {gig.status ? gig.status.charAt(0).toUpperCase() + gig.status.slice(1) : 'Draft'}
                     </span>

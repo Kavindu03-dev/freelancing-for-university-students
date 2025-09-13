@@ -1345,7 +1345,9 @@ function StudentDashboard() {
                   }`}>
                     {opportunity.type}
                   </span>
-                  <span className="text-xs font-bold text-green-600">{opportunity.recommendationScore}% Match</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full border border-green-500 text-green-600 bg-transparent">
+                    {opportunity.recommendationScore}% Match
+                  </span>
                 </div>
                 <h4 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">{opportunity.title}</h4>
                 <p className="text-gray-600 text-xs mb-2">{opportunity.client}</p>
@@ -2849,38 +2851,57 @@ function StudentDashboard() {
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Quick Stats</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Completed Projects</span>
-                <span className="font-bold text-yellow-600">12</span>
+            {stats.loading ? (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <svg className="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>Loading overview...</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Total Earnings</span>
-                <span className="font-bold text-green-600">$2,800</span>
+            ) : stats.error ? (
+              <div className="text-sm text-red-600">{stats.error}</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Completed Projects</span>
+                  <span className="font-bold text-yellow-600">{stats.completedProjects}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Active Projects</span>
+                  <span className="font-bold text-blue-600">{stats.activeProjects}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Earnings</span>
+                  <span className="font-bold text-green-600">${stats.totalEarnings.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Rating</span>
+                  <span className="font-bold text-yellow-600">{stats.ratingAverage ? stats.ratingAverage.toFixed(2) : '0.00'}/5</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Reviews</span>
+                  <span className="font-bold text-purple-600">{stats.totalReviews}</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Client Rating</span>
-                <span className="font-bold text-yellow-600">4.9/5</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Response Time</span>
-                <span className="font-bold text-yellow-600">2 hours</span>
-              </div>
-            </div>
+            )}
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Skills</h3>
             <div className="flex flex-wrap gap-2">
               {studentData?.technicalSkills && Array.isArray(studentData.technicalSkills) ? studentData.technicalSkills.map((skill, index) => (
-                <span key={index} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                <span
+                  key={index}
+                  className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent"
+                >
                   {skill}
                 </span>
               )) : (
                 <>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">React</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Node.js</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Python</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">UI/UX Design</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">React</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">Node.js</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">Python</span>
+                  <span className="px-3 py-1 border border-yellow-500 text-yellow-600 rounded-full text-sm font-medium bg-transparent">UI/UX Design</span>
                 </>
               )}
             </div>
@@ -3537,14 +3558,14 @@ function StudentDashboard() {
                               <h3 className="text-2xl font-bold text-gray-900">
                                 {app.postId?.title || 'Job Post Title'}
                               </h3>
-                              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                                  app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
-                                  app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                                  app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
-                                  app.status === 'Declined' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
+                              <span className={`px-3 py-1 text-sm font-medium rounded-full border bg-transparent ${
+                                  app.status === 'Pending' ? 'border-yellow-500 text-yellow-600' :
+                                  app.status === 'Under Review' ? 'border-blue-500 text-blue-600' :
+                                  app.status === 'Accepted' ? 'border-green-500 text-green-600' :
+                                  app.status === 'Interview Scheduled' ? 'border-purple-500 text-purple-600' :
+                                  app.status === 'Hired' ? 'border-emerald-500 text-emerald-600' :
+                                  app.status === 'Declined' ? 'border-red-500 text-red-600' :
+                                  'border-gray-400 text-gray-600'
                                 }`}>
                                   {app.status}
                                 </span>
