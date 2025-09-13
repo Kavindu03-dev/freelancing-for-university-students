@@ -1345,7 +1345,9 @@ function StudentDashboard() {
                   }`}>
                     {opportunity.type}
                   </span>
-                  <span className="text-xs font-bold text-green-600">{opportunity.recommendationScore}% Match</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full border border-green-500 text-green-600 bg-transparent">
+                    {opportunity.recommendationScore}% Match
+                  </span>
                 </div>
                 <h4 className="font-bold text-gray-900 text-sm mb-1 line-clamp-2">{opportunity.title}</h4>
                 <p className="text-gray-600 text-xs mb-2">{opportunity.client}</p>
@@ -3556,14 +3558,14 @@ function StudentDashboard() {
                               <h3 className="text-2xl font-bold text-gray-900">
                                 {app.postId?.title || 'Job Post Title'}
                               </h3>
-                              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                  app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  app.status === 'Under Review' ? 'bg-blue-100 text-blue-800' :
-                                  app.status === 'Accepted' ? 'bg-green-100 text-green-800' :
-                                  app.status === 'Interview Scheduled' ? 'bg-purple-100 text-purple-800' :
-                                  app.status === 'Hired' ? 'bg-emerald-100 text-emerald-800' :
-                                  app.status === 'Declined' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
+                              <span className={`px-3 py-1 text-sm font-medium rounded-full border bg-transparent ${
+                                  app.status === 'Pending' ? 'border-yellow-500 text-yellow-600' :
+                                  app.status === 'Under Review' ? 'border-blue-500 text-blue-600' :
+                                  app.status === 'Accepted' ? 'border-green-500 text-green-600' :
+                                  app.status === 'Interview Scheduled' ? 'border-purple-500 text-purple-600' :
+                                  app.status === 'Hired' ? 'border-emerald-500 text-emerald-600' :
+                                  app.status === 'Declined' ? 'border-red-500 text-red-600' :
+                                  'border-gray-400 text-gray-600'
                                 }`}>
                                   {app.status}
                                 </span>
