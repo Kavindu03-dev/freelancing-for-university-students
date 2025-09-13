@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Slideshow from "../components/Slideshow";
 
 function HomePage() {
@@ -8,6 +8,8 @@ function HomePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState([]);
   const searchRef = useRef(null);
+
+  const navigate = useNavigate();
 
   // Available categories
   const categories = [
@@ -69,15 +71,13 @@ function HomePage() {
   const handleCategorySelect = (category) => {
     setSearchQuery(category);
     setShowSuggestions(false);
-    // Here you can add navigation logic to search results page
-    console.log('Selected category:', category);
+    navigate(`/services?search=${encodeURIComponent(category)}`);
   };
 
   // Handle search submission
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      // Here you can add navigation logic to search results page
-      console.log('Searching for:', searchQuery);
+      navigate(`/services?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -113,11 +113,15 @@ function HomePage() {
                   placeholder="What service are you looking for?"
                   className="w-full px-6 py-4 text-lg rounded-full border-2 border-yellow-500 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-yellow-400 backdrop-blur-sm"
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <svg className="w-6 h-6 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  onClick={handleSearch}
+                  aria-label="Search"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full p-3 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </div>
+                </button>
               </div>
               
               {/* Search Suggestions Dropdown */}
@@ -171,6 +175,10 @@ function HomePage() {
                     placeholder="What service are you looking for?"
                     className="w-full px-6 py-4 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 text-lg transition-all duration-300"
                   />
+                  <button
+                    onClick={handleSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-300 text-black rounded-xl px-4 py-2 text-sm font-semibold"
+                  >Search</button>
                   
                   {/* Search Suggestions Dropdown */}
                   {showSuggestions && (
@@ -202,7 +210,7 @@ function HomePage() {
                   <button
                     key={index}
                     onClick={() => handleCategorySelect(category)}
-                    className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded-full text-sm font-medium transition-colors duration-200"
+                    className="px-3 py-1 border border-yellow-400 text-yellow-700 hover:bg-yellow-50 rounded-full text-sm font-medium transition-colors duration-200 bg-transparent"
                   >
                     {category}
                   </button>

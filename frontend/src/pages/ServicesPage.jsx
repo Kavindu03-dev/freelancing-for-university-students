@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 function ServicesPage() {
+  const [searchParams] = useSearchParams();
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -112,6 +113,11 @@ function ServicesPage() {
     }
 
     // Fetch services from backend API
+    // Initialize search query from URL if present
+    const initialSearch = searchParams.get('search');
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
     fetchServices();
   }, []);
 
@@ -541,8 +547,8 @@ function ServicesPage() {
                       <div className="flex items-center space-x-2 mt-1">
                                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                            activeTab === 'gigs'
-                             ? 'bg-yellow-100 text-yellow-800'
-                             : 'bg-yellow-100 text-yellow-800'
+                            ? 'border border-yellow-400 text-yellow-700 bg-transparent'
+                             : 'border border-yellow-400 text-yellow-700 bg-transparent'
                          }`}>
                            {activeTab === 'gigs' ? 'Freelancer Service' : 'Client Job'}
                          </span>
@@ -680,7 +686,7 @@ function ServicesPage() {
             {categories.slice(1, 7).map((category, index) => (
               <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                  <div className="w-12 h-12 border border-yellow-400 bg-transparent rounded-lg flex items-center justify-center mr-3">
                     <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>

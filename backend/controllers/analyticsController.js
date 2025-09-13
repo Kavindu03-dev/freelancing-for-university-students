@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Post from '../models/Post.js';
 import Service from '../models/Service.js';
 import Project from '../models/Project.js';
+import Order from '../models/Order.js';
 
 // Get university performance analytics
 export const getUniversityAnalytics = async (req, res) => {
@@ -468,5 +469,55 @@ export const getAnalyticsSummary = async (req, res) => {
       message: 'Failed to fetch analytics summary',
       error: error.message
     });
+  }
+};
+
+// Freelancer personal overview metrics
+export const getFreelancerOverview = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // Orders where user is freelancer
+    const orders = await Order.find({ freelancerId: userId });
+    const completedOrders = orders.filter(o => o.status === 'Completed');
+    const activeOrders = orders.filter(o => ['In Progress','Review','Revision','Payment Confirmed'].includes(o.status));
+    const totalEarnings = orders.reduce((sum, o) => {
+      // prefer paymentDetails.freelancerAmount if present else proportional from totalAmount (assume 80%)
+      if (o.paymentDetails && typeof o.paymentDetails.freelancerAmount === 'number') {
+        return sum + o.paymentDetails.freelancerAmount;
+      }
+      return sum + (o.totalAmount ? o.totalAmount * 0.8 : 0);
+    }, 0);
+
+    // Services for rating metrics
+    const services = await Service.find({ freelancerId: userId });
+    let ratingAvg = 0; let ratingCount = 0;
+    if (services.length) {
+      let sumWeighted = 0; let totalReviews = 0;
+      services.forEach(s => {
+        if (s.reviews && s.reviews.length) {
+          const serviceReviews = s.reviews.length;
+            totalReviews += serviceReviews;
+            if (typeof s.rating === 'number') {
+              sumWeighted += s.rating * serviceReviews;
+            }
+        }
+      });
+      ratingCount = totalReviews;
+      ratingAvg = totalReviews ? (sumWeighted / totalReviews) : 0;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        completedProjects: completedOrders.length,
+        activeProjects: activeOrders.length,
+        totalEarnings: Number(totalEarnings.toFixed(2)),
+        ratingAverage: Number(ratingAvg.toFixed(2)),
+        totalReviews: ratingCount
+      }
+    });
+  } catch (error) {
+    console.error('Freelancer overview error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch freelancer overview', error: error.message });
   }
 };

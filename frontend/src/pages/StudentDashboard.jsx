@@ -53,13 +53,45 @@ function StudentDashboard() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showProfileImageMenu]);
-  // Mock data
-  const [stats] = useState({
-    completedProjects: 12,
-    activeProjects: 3,
-    totalEarnings: 2800,
-    skillsCount: 8
+  // Dynamic overview stats
+  const [stats, setStats] = useState({
+    completedProjects: 0,
+    activeProjects: 0,
+    totalEarnings: 0,
+    skillsCount: 0,
+    ratingAverage: 0,
+    totalReviews: 0,
+    loading: true,
+    error: null
   });
+
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        const token = localStorage.getItem('userToken');
+        const res = await fetch('/api/freelancer/overview', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Failed to load overview');
+        const d = data.data;
+        setStats(prev => ({
+          ...prev,
+            completedProjects: d.completedProjects,
+            activeProjects: d.activeProjects,
+            totalEarnings: d.totalEarnings,
+            ratingAverage: d.ratingAverage,
+            totalReviews: d.totalReviews,
+            loading: false,
+            error: null
+        }));
+      } catch (e) {
+        console.error('Overview fetch error', e);
+        setStats(prev => ({ ...prev, loading: false, error: e.message || 'Error' }));
+      }
+    };
+    fetchOverview();
+  }, []);
   const [activeProjects] = useState([
     { id: 1, title: "Website Redesign", client: "Tech Corp", status: "In Progress", earnings: 800, progress: 60 },
     { id: 2, title: "Logo Design", client: "Startup Inc", status: "In Progress", earnings: 300, progress: 80 },
@@ -1175,22 +1207,29 @@ function StudentDashboard() {
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.completedProjects}</h3>
-          <p className="text-gray-600">Completed Projects</p>
+          <p className="text-gray-600 text-sm mb-1">Completed Projects</p>
+          <h3 className="text-3xl font-bold text-gray-900">{stats.loading ? '…' : stats.completedProjects}</h3>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-green-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{stats.activeProjects}</h3>
-          <p className="text-gray-600">Active Projects</p>
+          <p className="text-gray-600 text-sm mb-1">Active Projects</p>
+          <h3 className="text-3xl font-bold text-gray-900">{stats.loading ? '…' : stats.activeProjects}</h3>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-purple-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">${stats.totalEarnings}</h3>
-          <p className="text-gray-600">Total Earnings</p>
+          <p className="text-gray-600 text-sm mb-1">Total Earnings</p>
+          <h3 className="text-3xl font-bold text-gray-900">{stats.loading ? '…' : `$${stats.totalEarnings}`}</h3>
+        </div>
+        <div className="bg-white rounded-2xl shadow-xl p-6 border border-yellow-200">
+          <p className="text-gray-600 text-sm mb-1">Rating</p>
+          <h3 className="text-3xl font-bold text-gray-900 flex items-center">{stats.loading ? '…' : `${stats.ratingAverage}`}
+            {!stats.loading && <span className="ml-2 text-yellow-500 text-xl">★</span>}
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">{stats.loading ? '' : `${stats.totalReviews} review${stats.totalReviews === 1 ? '' : 's'}`}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-orange-200">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">{profileCompleteness}%</h3>
-          <p className="text-gray-600">Profile Complete</p>
+          <p className="text-gray-600 text-sm mb-1">Profile Complete</p>
+          <h3 className="text-3xl font-bold text-gray-900">{profileCompleteness}%</h3>
           {profileCompleteness < 100 && (
             <button
               onClick={() => setShowOnboardingWizard(true)}
@@ -1201,6 +1240,9 @@ function StudentDashboard() {
           )}
         </div>
       </div>
+      {stats.error && (
+        <div className="p-4 border border-red-300 bg-red-50 text-red-700 rounded-xl">{stats.error}</div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Active Projects</h3>
@@ -1526,11 +1568,53 @@ function StudentDashboard() {
     }
   }, [activeTab]);
   const [walletSearch, setWalletSearch] = useState("");
+  const [downloadingStatement, setDownloadingStatement] = useState(false);
+  const downloadWalletStatement = async () => {
+    try {
+      setDownloadingStatement(true);
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('You must be logged in to download the statement.');
+        return;
+      }
+      const params = new URLSearchParams();
+      // Potential future date range filters can be appended here
+      const res = await fetch(`/api/users/wallet/statement?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || 'Failed to generate statement');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wallet-statement-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('Download failed: ' + err.message);
+    } finally {
+      setDownloadingStatement(false);
+    }
+  };
   const renderWallet = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold text-gray-900">Wallet</h3>
-        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={downloadWalletStatement}
+            disabled={downloadingStatement}
+            className={`px-4 py-2 rounded-lg font-medium text-white transition-colors duration-200 ${downloadingStatement ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+          >
+            {downloadingStatement ? 'Generating PDF...' : 'Download Statement'}
+          </button>
+        </div>
       </div>
       {/* Wallet Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
