@@ -544,54 +544,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="bg-gradient-to-br from-black to-gray-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-16">What Our Users Say</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-black font-bold text-lg">S</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-lg">Sarah Johnson</h4>
-                  <p className="text-yellow-300">Business Owner</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">"FlexiHire helped me find an amazing web developer who built my e-commerce site perfectly. Highly recommended!"</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-black font-bold text-lg">M</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-lg">Mike Chen</h4>
-                  <p className="text-yellow-300">Student</p>
-                </div>
-              </div>
-                              <p className="text-gray-300 leading-relaxed">"The freelancing platform helped me find amazing talent for my project. The quality of work was exceptional and delivered on time."</p>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-              <div className="flex items-center mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-black font-bold text-lg">E</span>
-                </div>
-                <div>
-                  <h4 className="font-bold text-lg">Emily Rodriguez</h4>
-                  <p className="text-yellow-300">Freelancer</p>
-                </div>
-              </div>
-              <p className="text-gray-300 leading-relaxed">"As a freelancer, FlexiHire has been my go-to platform. Great clients and secure payments make it the best choice."</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white py-20">
         <div className="max-w-5xl mx-auto text-center px-4 sm:px-6 lg:px-8">
