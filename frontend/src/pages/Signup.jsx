@@ -766,14 +766,79 @@ function Signup() {
   ];
 
   const availableSkills = [
+    // Programming Languages
     "React", "Node.js", "Python", "JavaScript", "TypeScript", "Java", "C++", "C#",
-    "PHP", "Ruby", "Go", "Swift", "Kotlin", "Flutter", "React Native", "Vue.js",
-    "Angular", "Django", "Flask", "Express.js", "Laravel", "Spring Boot", "ASP.NET",
-    "MongoDB", "PostgreSQL", "MySQL", "Redis", "GraphQL", "REST API", "Docker",
-    "Kubernetes", "AWS", "Azure", "Google Cloud", "Git", "CI/CD", "Agile",
-    "UI/UX Design", "Figma", "Adobe XD", "Photoshop", "Illustrator", "InDesign",
-    "Content Writing", "Copywriting", "SEO", "Digital Marketing", "Social Media",
-    "Data Analysis", "Machine Learning", "AI", "Blockchain", "Cybersecurity"
+    "PHP", "Ruby", "Go", "Swift", "Kotlin", "Rust", "Scala", "Perl", "R", "MATLAB",
+    "Dart", "Objective-C", "Shell Scripting", "PowerShell", "Lua", "Haskell",
+
+    // Mobile Development
+    "Flutter", "React Native", "Ionic", "Xamarin", "Cordova", "Native Android",
+    "Native iOS", "SwiftUI", "Jetpack Compose", "Expo",
+
+    // Web Frameworks & Libraries
+    "Vue.js", "Angular", "Svelte", "Next.js", "Nuxt.js", "Gatsby", "Express.js",
+    "Laravel", "Django", "Flask", "FastAPI", "Spring Boot", "ASP.NET", "Ruby on Rails",
+    "Symfony", "CodeIgniter", "CakePHP", "Ember.js", "Backbone.js", "jQuery",
+
+    // Databases
+    "MongoDB", "PostgreSQL", "MySQL", "Redis", "Cassandra", "DynamoDB", "Firebase",
+    "SQLite", "Oracle", "SQL Server", "MariaDB", "Elasticsearch", "CouchDB",
+    "Neo4j", "InfluxDB", "TimescaleDB",
+
+    // APIs & Protocols
+    "GraphQL", "REST API", "SOAP", "WebSocket", "gRPC", "JSON-RPC", "OAuth",
+    "JWT", "OpenAPI", "Swagger", "Postman", "Insomnia",
+
+    // DevOps & Cloud
+    "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud", "Heroku", "Vercel",
+    "Netlify", "DigitalOcean", "Linode", "Jenkins", "GitLab CI", "GitHub Actions",
+    "CircleCI", "Travis CI", "Terraform", "Ansible", "Puppet", "Chef",
+
+    // Version Control & Tools
+    "Git", "GitHub", "GitLab", "Bitbucket", "SVN", "Mercurial", "VS Code",
+    "IntelliJ IDEA", "Eclipse", "Xcode", "Android Studio", "Vim", "Emacs",
+
+    // Data Science & ML
+    "Machine Learning", "Deep Learning", "AI", "Data Analysis", "Data Visualization",
+    "Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch", "Keras", "Jupyter",
+    "Tableau", "Power BI", "Looker", "Apache Spark", "Hadoop", "Kafka",
+
+    // Design & Creative
+    "UI/UX Design", "Figma", "Adobe XD", "Sketch", "InVision", "Photoshop",
+    "Illustrator", "InDesign", "After Effects", "Premiere Pro", "Lightroom",
+    "Blender", "Maya", "Cinema 4D", "3ds Max", "ZBrush", "Substance Painter",
+
+    // Marketing & Content
+    "Content Writing", "Copywriting", "SEO", "SEM", "Digital Marketing",
+    "Social Media Marketing", "Email Marketing", "Content Strategy", "Brand Strategy",
+    "Google Analytics", "Google Ads", "Facebook Ads", "Instagram Marketing",
+    "LinkedIn Marketing", "TikTok Marketing", "Influencer Marketing",
+
+    // Business & Management
+    "Project Management", "Agile", "Scrum", "Kanban", "Lean", "Six Sigma",
+    "Business Analysis", "Requirements Gathering", "Stakeholder Management",
+    "Risk Management", "Quality Assurance", "Testing", "Manual Testing",
+    "Automated Testing", "Selenium", "Cypress", "Jest", "Mocha",
+
+    // Cybersecurity
+    "Cybersecurity", "Ethical Hacking", "Penetration Testing", "Network Security",
+    "Web Security", "Cryptography", "Blockchain", "Smart Contracts", "Solidity",
+    "Web3", "DeFi", "NFT", "Metaverse Development",
+
+    // Soft Skills
+    "Communication", "Leadership", "Team Management", "Problem Solving",
+    "Critical Thinking", "Time Management", "Adaptability", "Creativity",
+    "Emotional Intelligence", "Conflict Resolution", "Negotiation",
+
+    // Industry Specific
+    "Healthcare IT", "FinTech", "EdTech", "E-commerce", "SaaS", "IoT",
+    "AR/VR", "Game Development", "Mobile Gaming", "Unity", "Unreal Engine",
+    "Godot", "Game Design", "Level Design", "Sound Design",
+
+    // Emerging Technologies
+    "Quantum Computing", "Edge Computing", "Serverless", "Microservices",
+    "Progressive Web Apps", "Jamstack", "Headless CMS", "Low-Code Development",
+    "No-Code Development", "API Design", "System Architecture", "Scalability"
   ];
 
   // Filtered arrays based on search
@@ -1768,12 +1833,12 @@ function Signup() {
         <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedSkills.map(skill => (
-              <span key={skill} className="px-3 py-1 bg-gray-800 text-white rounded-full text-sm font-medium flex items-center gap-2">
+              <span key={skill} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2">
                 {skill}
                 <button
                   type="button"
                   onClick={() => handleSkillToggle(skill)}
-                  className="text-gray-300 hover:text-white"
+                  className="text-blue-600 hover:text-blue-800"
                 >
                   ×
                 </button>
