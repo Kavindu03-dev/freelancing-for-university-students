@@ -8,6 +8,7 @@ const OrderSuccessPage = () => {
   const [verifying, setVerifying] = useState(true);
   const [verificationResult, setVerificationResult] = useState(null);
   const [error, setError] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
   const sessionId = searchParams.get('session_id');
 
@@ -51,6 +52,35 @@ const OrderSuccessPage = () => {
       setError('Failed to verify payment. Please contact support.');
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!verificationResult?._id) return;
+    try {
+      setDownloading(true);
+      const token = localStorage.getItem('userToken');
+      const res = await fetch(`/api/orders/${verificationResult._id}/receipt/pdf`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to download receipt');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `order-${verificationResult._id}-receipt.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Receipt download error', e);
+      alert(e.message || 'Failed to download receipt');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -152,6 +182,13 @@ const OrderSuccessPage = () => {
           </div>
 
           <div className="space-y-4">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={downloading}
+              className={`block w-full px-6 py-3 rounded-lg font-semibold transition-colors text-sm ${downloading ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+            >
+              {downloading ? 'Preparing Receipt...' : 'Download Receipt PDF'}
+            </button>
             <Link 
               to="/orders" 
               className="block w-full bg-yellow-500 text-black px-6 py-3 rounded-lg font-semibold hover:bg-yellow-400 transition-colors"

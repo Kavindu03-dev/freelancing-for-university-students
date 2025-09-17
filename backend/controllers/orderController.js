@@ -866,3 +866,129 @@ const generateClientOrdersReport = async (req, res) => {
 
 // Re-export including the new function
 export { generateClientOrdersReport };
+
+// ==============================
+// SINGLE ORDER RECEIPT (Client)
+// ==============================
+// GET /api/orders/:orderId/receipt/pdf
+// Only the owning client (or admin) can download. Order must have paymentStatus === 'Paid'.
+const generateOrderReceiptPDF = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const userId = req.user.id;
+        const userType = req.user.userType;
+
+        // Fetch order with related entities
+        const order = await Order.findById(orderId)
+            .populate('clientId', 'firstName lastName email profileImage phoneNumber')
+            .populate('freelancerId', 'firstName lastName email profileImage phoneNumber')
+            .populate('serviceId', 'title category description');
+
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Authorization: only owning client or admin
+        if (order.clientId._id.toString() !== userId && userType !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Access denied' });
+        }
+
+        // Ensure payment completed
+        if (order.paymentStatus !== 'Paid') {
+            return res.status(400).json({ success: false, message: 'Receipt available only for paid orders' });
+        }
+
+        // Prepare PDF
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        const filename = `order-${order._id}-receipt.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        doc.pipe(res);
+
+        // Header / Branding
+        doc.fontSize(22).fillColor('#222').text('Payment Receipt', { align: 'center' });
+        doc.moveDown(0.3);
+        doc.fontSize(10).fillColor('#555').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+        doc.moveDown(1);
+        doc.fillColor('black');
+
+        // Order summary
+        const addSectionTitle = (title) => {
+            doc.moveDown(0.5);
+            doc.fontSize(13).fillColor('#111').text(title, { underline: true });
+            doc.fillColor('black');
+            doc.moveDown(0.2);
+        };
+
+        addSectionTitle('Order Information');
+        doc.fontSize(10).text(`Order ID: ${order._id}`);
+        doc.text(`Service: ${order.serviceId?.title || 'Service Order'}`);
+        doc.text(`Package: ${order.selectedPackage}`);
+        if (order.packageDetails?.description) doc.text(`Package Description: ${order.packageDetails.description}`);
+        doc.text(`Created: ${order.createdAt.toLocaleString()}`);
+        doc.text(`Updated: ${order.updatedAt.toLocaleString()}`);
+        if (order.deadline) doc.text(`Deadline: ${order.deadline.toLocaleDateString()}`);
+        doc.text(`Status: ${order.status}`);
+        doc.text(`Client Status: ${order.clientStatus || '-'}`);
+        doc.text(`Freelancer Status: ${order.freelancerStatus || '-'}`);
+        doc.moveDown(0.3);
+
+        addSectionTitle('Parties');
+        const clientName = order.clientId ? `${order.clientId.firstName} ${order.clientId.lastName}` : 'N/A';
+        const freelancerName = order.freelancerId ? `${order.freelancerId.firstName} ${order.freelancerId.lastName}` : 'N/A';
+        doc.fontSize(10).text(`Client: ${clientName}`);
+        if (order.clientId?.email) doc.text(`Client Email: ${order.clientId.email}`);
+        if (order.clientId?.phoneNumber) doc.text(`Client Phone: ${order.clientId.phoneNumber}`);
+        doc.moveDown(0.2);
+        doc.text(`Freelancer: ${freelancerName}`);
+        if (order.freelancerId?.email) doc.text(`Freelancer Email: ${order.freelancerId.email}`);
+        if (order.freelancerId?.phoneNumber) doc.text(`Freelancer Phone: ${order.freelancerId.phoneNumber}`);
+        doc.moveDown(0.3);
+
+        addSectionTitle('Financials');
+        const basePrice = order.packageDetails?.price || (order.totalAmount || 0);
+        let platformFeeAmount = 0;
+        if (order.paymentDetails?.websiteFee != null) {
+            platformFeeAmount = order.paymentDetails.websiteFee;
+        } else if (order.totalAmount && order.packageDetails?.price) {
+            // Derive fee (approx) if not stored explicitly
+            platformFeeAmount = Number((order.totalAmount - order.packageDetails.price).toFixed(2));
+        }
+        const freelancerAmount = order.paymentDetails?.freelancerAmount != null ? order.paymentDetails.freelancerAmount : (order.totalAmount - platformFeeAmount);
+        doc.fontSize(10).text(`Base Price: $${basePrice}`);
+        doc.text(`Platform Fee: $${platformFeeAmount.toFixed(2)}`);
+        doc.text(`Total Paid: $${order.totalAmount}`);
+        doc.text(`Freelancer Amount (to be / was paid out): $${freelancerAmount.toFixed(2)}`);
+        doc.text(`Payment Method: ${order.paymentMethod || 'Stripe'}`);
+        doc.text(`Payment Status: ${order.paymentStatus}`);
+        if (order.paymentDetails?.paidAt) doc.text(`Payout Date: ${new Date(order.paymentDetails.paidAt).toLocaleString()}`);
+        if (order.paymentDetails?.transactionId) doc.text(`Transaction ID: ${order.paymentDetails.transactionId}`);
+        if (order.stripePaymentIntentId) doc.text(`Stripe Payment Intent: ${order.stripePaymentIntentId}`);
+        if (order.stripeSessionId) doc.text(`Stripe Session: ${order.stripeSessionId}`);
+        doc.moveDown(0.3);
+
+        if (order.requirements) {
+            addSectionTitle('Client Requirements');
+            doc.fontSize(10).text(order.requirements, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right });
+        }
+
+        if (order.reviewSubmitted && order.review) {
+            addSectionTitle('Client Review');
+            doc.fontSize(10).text(`Rating: ${order.review.rating} / 5`);
+            if (order.review.comment) doc.text(`Comment: ${order.review.comment}`);
+        }
+
+        doc.moveDown(1);
+        doc.fontSize(9).fillColor('#555').text('This receipt confirms payment for the above service order. Keep it for your records. If you have any questions, contact support.', { align: 'center' });
+
+        doc.end();
+    } catch (error) {
+        console.error('Generate order receipt error:', error);
+        if (!res.headersSent) {
+            return res.status(500).json({ success: false, message: 'Failed to generate receipt PDF' });
+        }
+        try { res.end(); } catch(_) {}
+    }
+};
+
+export { generateOrderReceiptPDF };
