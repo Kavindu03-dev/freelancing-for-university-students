@@ -8,7 +8,8 @@ import {
     cancelOrder,
     markOrderAsPaidByAdmin,
     sendMoneyToFreelancer,
-    addOrderReview
+    addOrderReview,
+    generateClientOrdersReport
 } from '../controllers/orderController.js';
 import { protect as authUser } from '../middleware/auth.js';
 
@@ -35,5 +36,8 @@ orderRouter.put('/:orderId/send-money-to-freelancer', sendMoneyToFreelancer);
 
 // Client adds review for order (service)
 orderRouter.post('/:orderId/review', addOrderReview);
+
+// Client PDF orders report download
+orderRouter.get('/report/pdf', generateClientOrdersReport);
 
 export default orderRouter;
