@@ -1524,8 +1524,10 @@ function AdminDashboard() {
                   </p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                   <div className="flex items-center space-x-2 mt-1">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      user.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
+                      user.isVerified 
+                        ? 'bg-green-50/40 text-green-700 border-green-200' 
+                        : 'bg-yellow-50/40 text-yellow-700 border-yellow-200'
                     }`}>
                       {user.isVerified ? 'Verified' : 'Unverified'}
                     </span>
@@ -1588,22 +1590,22 @@ function AdminDashboard() {
                     </p>
                     <p className="text-sm text-gray-600 line-clamp-1">{service.description}</p>
                     <div className="flex items-center space-x-2 mt-1">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        service.type === 'gig' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-green-100 text-green-800'
+                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
+                        service.type === 'gig'
+                          ? 'bg-blue-50/40 text-blue-700 border-blue-200'
+                          : 'bg-green-50/40 text-green-700 border-green-200'
                       }`}>
                         {service.type === 'gig' ? 'Gig' : 'Post'}
                       </span>
                       <span className="text-xs text-gray-500">•</span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        service.status === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-800' 
-                          : service.status === 'approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                      <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${
+                        service.status === 'pending'
+                          ? 'bg-yellow-50/40 text-yellow-700 border-yellow-200'
+                          : service.status === 'approved'
+                          ? 'bg-green-50/40 text-green-700 border-green-200'
+                          : 'bg-red-50/40 text-red-700 border-red-200'
                       }`}>
-                        {service.status === 'pending' ? 'Pending' : 
+                        {service.status === 'pending' ? 'Pending' :
                          service.status === 'approved' ? 'Approved' : 'Rejected'}
                       </span>
                     </div>
@@ -2364,41 +2366,41 @@ function AdminDashboard() {
                       </div>
                       {/* Status Display */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.paymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.paymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                          order.paymentStatus === 'Failed' ? 'bg-red-100 text-red-800' :
-                          order.paymentStatus === 'Refunded' ? 'bg-gray-100 text-gray-800' :
-                          'bg-gray-100 text-gray-800'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                          order.paymentStatus === 'Pending' ? 'bg-yellow-50/40 text-yellow-700 border-yellow-200' :
+                          order.paymentStatus === 'Paid' ? 'bg-green-50/40 text-green-700 border-green-200' :
+                          order.paymentStatus === 'Failed' ? 'bg-red-50/40 text-red-700 border-red-200' :
+                          order.paymentStatus === 'Refunded' ? 'bg-gray-50/40 text-gray-700 border-gray-200' :
+                          'bg-gray-50/40 text-gray-700 border-gray-200'
                         }`}>
-                          Buyer: {order.paymentStatus === 'Paid' ? 'paid' : 'not paid'}
+                          Buyer: {order.paymentStatus === 'Paid' ? 'Paid' : 'Not Paid'}
                         </span>
                         {(() => {
                           const hasAdminPayout = Boolean(order?.paymentDetails?.paidAt);
                           const freelancerPaymentStatus = hasAdminPayout ? 'Paid' : 'Pending';
-                          const badgeClass =
-                            freelancerPaymentStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                            freelancerPaymentStatus === 'Paid' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800';
+                            const badgeClass =
+                            freelancerPaymentStatus === 'Pending' ? 'bg-yellow-50/40 text-yellow-700 border-yellow-200' :
+                            freelancerPaymentStatus === 'Paid' ? 'bg-green-50/40 text-green-700 border-green-200' :
+                            'bg-gray-50/40 text-gray-700 border-gray-200';
                           return (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${badgeClass}`}>
                               Freelancer Payment: {freelancerPaymentStatus}
                             </span>
                           );
                         })()}
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.clientStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.clientStatus === 'Delivered' ? 'bg-green-100 text-green-800' :
-                          order.clientStatus === 'Completed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                          order.clientStatus === 'Pending' ? 'bg-yellow-50/40 text-yellow-700 border-yellow-200' :
+                          order.clientStatus === 'Delivered' ? 'bg-green-50/40 text-green-700 border-green-200' :
+                          order.clientStatus === 'Completed' ? 'bg-blue-50/40 text-blue-700 border-blue-200' :
+                          'bg-gray-50/40 text-gray-700 border-gray-200'
                         }`}>
                           Client: {order.clientStatus || 'Pending'}
                         </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.freelancerStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          order.freelancerStatus === 'In Progress' ? 'bg-purple-100 text-purple-800' :
-                          order.freelancerStatus === 'Completed' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                          order.freelancerStatus === 'Pending' ? 'bg-yellow-50/40 text-yellow-700 border-yellow-200' :
+                          order.freelancerStatus === 'In Progress' ? 'bg-purple-50/40 text-purple-700 border-purple-200' :
+                          order.freelancerStatus === 'Completed' ? 'bg-green-50/40 text-green-700 border-green-200' :
+                          'bg-gray-50/40 text-gray-700 border-gray-200'
                         }`}>
                           Freelancer: {order.freelancerStatus || 'Pending'}
                         </span>
@@ -2453,7 +2455,7 @@ function AdminDashboard() {
                         <h4 className="text-lg font-semibold text-gray-900">
                           {order.serviceId?.title || 'Service Title'}
                         </h4>
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Freelancer Payment: Paid</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium border bg-green-50/40 text-green-700 border-green-200">Freelancer Payment: Paid</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                         <div>
@@ -2664,8 +2666,8 @@ function AdminDashboard() {
                       {message.replies.map((reply, replyIndex) => (
                         <div key={replyIndex} className={`rounded-lg p-4 ${
                           reply.senderType === 'admin' 
-                            ? 'bg-yellow-50 border border-yellow-200' 
-                            : 'bg-blue-50 border border-blue-200'
+                            ? 'bg-yellow-50/40 border border-yellow-200' 
+                            : 'bg-blue-50/40 border border-blue-200'
                         }`}>
                           <div className="flex items-center space-x-2 mb-2">
                             <svg className={`w-4 h-4 ${
@@ -2674,7 +2676,7 @@ function AdminDashboard() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                             </svg>
                             <span className={`text-sm font-medium ${
-                              reply.senderType === 'admin' ? 'text-yellow-800' : 'text-blue-800'
+                              reply.senderType === 'admin' ? 'text-yellow-700' : 'text-blue-700'
                             }`}>
                               {reply.senderType === 'admin' ? 'Admin' : 'User'}
                             </span>
@@ -2685,7 +2687,7 @@ function AdminDashboard() {
                             </span>
                           </div>
                           <p className={`whitespace-pre-wrap ${
-                            reply.senderType === 'admin' ? 'text-yellow-900' : 'text-blue-900'
+                            reply.senderType === 'admin' ? 'text-yellow-800' : 'text-blue-800'
                           }`}>
                             {reply.message}
                           </p>

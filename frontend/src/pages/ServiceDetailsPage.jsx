@@ -178,7 +178,7 @@ function ServiceDetailsPage() {
                       {service.type === 'gig' ? service.freelancerName : `${service.clientId?.firstName} ${service.clientId?.lastName}`}
                     </h3>
                     {service.university && (
-                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium">
+                      <span className="bg-transparent border border-yellow-400/50 text-yellow-700 px-2 py-0.5 rounded text-sm font-medium backdrop-blur-sm">
                         {service.university}
                       </span>
                     )}
@@ -483,18 +483,33 @@ function ServiceDetailsPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* Pricing Card */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6 sticky top-24">
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
               {service.type === 'gig' ? (
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-bold text-gray-800">
-                      ${service.price}
-                    </h3>
-                    <span className="text-gray-600">
-                      {service.deliveryTime} {service.deliveryUnit || 'Days'} delivery
-                    </span>
-                  </div>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
+                  <h3 className="text-xl font-bold text-gray-800 mb-4">Packages</h3>
+                  {packages && Object.keys(packages).length > 0 ? (
+                    <div className="space-y-4">
+                      {Object.entries(packages).map(([key, pkg]) => (
+                        <div
+                          key={key}
+                          className={`border rounded-lg p-4 transition-all cursor-pointer ${selectedPackage === key ? 'border-yellow-500 shadow-md bg-yellow-50' : 'border-gray-200 hover:border-yellow-400'}`}
+                          onClick={() => setSelectedPackage(key)}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-800">{pkg.name}</h4>
+                            <span className="text-gray-800 font-bold">${pkg.price}</span>
+                          </div>
+                          <p className="text-gray-600 text-sm mb-2 line-clamp-3">{pkg.description}</p>
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>{pkg.deliveryTime} {pkg.deliveryUnit || 'Days'} delivery</span>
+                            <span>{pkg.revisions} revision{pkg.revisions !== 1 ? 's' : ''}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-600 text-sm">No packages configured.</div>
+                  )}
                 </div>
               ) : (
                 <div className="mb-6">
@@ -515,9 +530,8 @@ function ServiceDetailsPage() {
                   onClick={handleOrderNow}
                   className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-3 px-6 rounded-lg font-semibold transition-colors"
                 >
-                  {service.type === 'gig' ? 'Order Now' : 'Apply Now'}
+                  {service.type === 'gig' ? `Order ${packages[selectedPackage]?.name || ''}` : 'Apply Now'}
                 </button>
-                
                 <button
                   onClick={() => setShowContactModal(true)}
                   className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3 px-6 rounded-lg font-semibold transition-colors"
