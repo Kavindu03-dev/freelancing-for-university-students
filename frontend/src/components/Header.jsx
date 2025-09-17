@@ -281,7 +281,7 @@ function Header() {
               </button>
               <div
                 ref={servicesMenuRef}
-                className={`absolute left-0 mt-2 w-56 rounded-xl border border-gray-700 bg-gray-900/95 backdrop-blur-md shadow-xl ring-1 ring-black/40 overflow-hidden transform origin-top transition-all duration-150 ${
+                className={`absolute left-0 top-full w-56 rounded-xl border border-gray-700 bg-gray-900/95 backdrop-blur-md shadow-xl ring-1 ring-black/40 overflow-hidden transform origin-top transition-all duration-150 ${
                   isServicesOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
                 }`}
                 role="menu"
