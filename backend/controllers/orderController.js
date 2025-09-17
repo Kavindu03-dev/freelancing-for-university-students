@@ -727,3 +727,142 @@ export {
 };
 
 export { addOrderReview };
+
+// ==============================
+// PDF REPORT GENERATION (Client)
+// ==============================
+import PDFDocument from 'pdfkit';
+
+// Generate PDF report of authenticated client's orders
+// GET /api/orders/report/pdf
+// Query params (optional): status=Completed|Pending|In Progress, from=YYYY-MM-DD, to=YYYY-MM-DD
+const generateClientOrdersReport = async (req, res) => {
+    try {
+        if (req.user.userType !== 'client') {
+            return res.status(403).json({ success: false, message: 'Only clients can download their orders report' });
+        }
+
+        const clientId = req.user.id;
+        const { status, from, to } = req.query;
+
+        const filter = { clientId };
+        if (status) {
+            filter.status = status; // overall status
+        }
+        if (from || to) {
+            filter.createdAt = {};
+            if (from) filter.createdAt.$gte = new Date(from);
+            if (to) {
+                const toDate = new Date(to);
+                // include the entire day
+                toDate.setHours(23,59,59,999);
+                filter.createdAt.$lte = toDate;
+            }
+        }
+
+        const orders = await Order.find(filter)
+            .populate('freelancerId', 'firstName lastName email')
+            .populate('serviceId', 'title category')
+            .sort({ createdAt: -1 });
+
+        // Create pdf doc
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+
+        const filename = `orders-report-${new Date().toISOString().slice(0,10)}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Pipe document
+        doc.pipe(res);
+
+        // Title
+        doc.fontSize(20).text('Client Orders Report', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(10).fillColor('#555').text(`Generated: ${new Date().toLocaleString()}`, { align: 'center' });
+        doc.moveDown(1);
+        doc.fillColor('black');
+
+        // Filter summary
+        doc.fontSize(12).text('Filters Applied:', { underline: true });
+        doc.fontSize(10).list([
+            `Status: ${status || 'All'}`,
+            `From: ${from || 'N/A'}`,
+            `To: ${to || 'N/A'}`,
+            `Total Orders: ${orders.length}`
+        ]);
+        doc.moveDown(1);
+
+        if (!orders.length) {
+            doc.fontSize(14).text('No orders found for the selected filters.', { align: 'center' });
+            doc.end();
+            return; // response already being streamed
+        }
+
+        // Table header like section
+        const drawDivider = () => {
+            doc.moveTo(doc.page.margins.left, doc.y).lineTo(doc.page.width - doc.page.margins.right, doc.y).strokeColor('#cccccc').stroke();
+        };
+
+        orders.forEach((order, idx) => {
+            if (idx > 0) {
+                doc.moveDown(0.5);
+                drawDivider();
+                doc.moveDown(0.5);
+            }
+
+            const freelancerName = order.freelancerId ? `${order.freelancerId.firstName} ${order.freelancerId.lastName}` : 'N/A';
+            doc.fontSize(12).fillColor('#222').text(`${idx + 1}. ${order.serviceId?.title || 'Service Order'} (${order.selectedPackage} package)`, { continued: false });
+            doc.moveDown(0.2);
+            doc.fontSize(9).fillColor('#555').text(`Order ID: ${order._id}`);
+            doc.fontSize(9).text(`Created: ${order.createdAt.toLocaleDateString()}  |  Updated: ${order.updatedAt.toLocaleDateString()}`);
+            doc.fontSize(9).text(`Freelancer: ${freelancerName}`);
+            doc.fontSize(9).text(`Status (Overall): ${order.status} | Client: ${order.clientStatus || '-'} | Freelancer: ${order.freelancerStatus || '-'}`);
+            doc.fontSize(9).text(`Payment: ${order.paymentStatus} (${order.paymentMethod || 'N/A'})`);
+            doc.fontSize(9).text(`Amount: $${order.totalAmount}`);
+            if (order.deadline) {
+                doc.fontSize(9).text(`Deadline: ${order.deadline.toLocaleDateString()}`);
+            }
+            if (order.requirements) {
+                doc.moveDown(0.2);
+                doc.fontSize(9).fillColor('#000').text('Requirements:', { underline: true });
+                doc.fontSize(9).fillColor('#333').text(order.requirements, { width: doc.page.width - doc.page.margins.left - doc.page.margins.right });
+            }
+            if (order.reviewSubmitted && order.review) {
+                doc.moveDown(0.2);
+                doc.fontSize(9).fillColor('#000').text(`Review: ${order.review.rating} / 5`);
+                doc.fontSize(9).fillColor('#333').text(order.review.comment || '', { width: doc.page.width - doc.page.margins.left - doc.page.margins.right });
+            }
+
+            // New page if nearing bottom
+            if (doc.y > doc.page.height - 100) {
+                doc.addPage();
+            }
+        });
+
+        // Summary Section
+        doc.addPage();
+        doc.fontSize(16).fillColor('#222').text('Summary', { underline: true });
+        const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const byStatus = orders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {});
+        doc.moveDown(0.5);
+        doc.fontSize(11).fillColor('#000').text(`Total Orders: ${orders.length}`);
+        doc.fontSize(11).text(`Total Amount: $${totalRevenue.toFixed(2)}`);
+        doc.moveDown(0.5);
+        doc.fontSize(12).text('Orders by Status:', { underline: true });
+        Object.entries(byStatus).forEach(([s, count]) => {
+            doc.fontSize(10).text(`- ${s}: ${count}`);
+        });
+
+        doc.end();
+    } catch (error) {
+        console.error('Generate orders report error:', error);
+        // If headers not sent, send JSON error; otherwise, end stream
+        if (!res.headersSent) {
+            return res.status(500).json({ success: false, message: 'Failed to generate PDF report' });
+        }
+        try { res.end(); } catch(_) {}
+    }
+};
+
+// Re-export including the new function
+export { generateClientOrdersReport };

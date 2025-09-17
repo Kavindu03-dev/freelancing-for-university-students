@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { logout, isAuthenticated, getUserData } from "../utils/auth";
 import Logo from "../assets/Logo.png";
@@ -8,6 +8,10 @@ function Header() {
   const [userData, setUserData] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // Services dropdown state
+  const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const servicesButtonRef = useRef(null);
+  const servicesMenuRef = useRef(null);
 
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
@@ -157,6 +161,55 @@ function Header() {
     }
   };
 
+  // Close services dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (isServicesOpen) {
+        if (
+          servicesMenuRef.current && !servicesMenuRef.current.contains(e.target) &&
+          servicesButtonRef.current && !servicesButtonRef.current.contains(e.target)
+        ) {
+          setIsServicesOpen(false);
+        }
+      }
+    }
+    function handleEsc(e) {
+      if (e.key === 'Escape') setIsServicesOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isServicesOpen]);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setIsServicesOpen(false);
+  }, [location.pathname]);
+
+  const openServices = () => setIsServicesOpen(true);
+  const closeServices = () => setIsServicesOpen(false);
+  const toggleServices = () => setIsServicesOpen(o => !o);
+
+  const handleServicesKeyDown = (e) => {
+    if (['Enter', ' '].includes(e.key)) {
+      e.preventDefault();
+      toggleServices();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!isServicesOpen) setIsServicesOpen(true);
+      setTimeout(() => {
+        const first = servicesMenuRef.current?.querySelector('a');
+        first && first.focus();
+      }, 0);
+    } else if (e.key === 'Escape') {
+      closeServices();
+      servicesButtonRef.current?.focus();
+    }
+  };
+
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       isScrolled 
@@ -190,16 +243,78 @@ function Header() {
               Home
             </Link>
             
-            <Link 
-              to="/services" 
-              className={`px-3 py-2 rounded-md text-base font-semibold transition-all duration-200 ${
-                isActiveLink('/services') 
-                  ? 'text-yellow-400 bg-yellow-400/10 border-b-2 border-yellow-400 shadow-lg' 
-                  : 'text-white hover:text-yellow-400'
-              }`}
+            {/* Services Dropdown (Desktop) */}
+            <div 
+              className="relative hidden lg:block"
+              onMouseEnter={openServices}
+              onMouseLeave={closeServices}
             >
-              Services
-            </Link>
+              <button
+                ref={servicesButtonRef}
+                type="button"
+                aria-haspopup="true"
+                aria-expanded={isServicesOpen}
+                onClick={(e) => {
+                  // If already open, treat click on label (not on a submenu) as navigation to default gigs tab
+                  if (isServicesOpen) {
+                    closeServices();
+                    // navigate to gigs default
+                    window.location.href = '/services?tab=gigs';
+                  } else {
+                    toggleServices();
+                  }
+                }}
+                onKeyDown={handleServicesKeyDown}
+                className={`px-3 py-2 rounded-md text-base font-semibold transition-all duration-200 flex items-center gap-1 ${
+                  isActiveLink('/services')
+                    ? 'text-yellow-400 bg-yellow-400/10 border-b-2 border-yellow-400 shadow-lg'
+                    : 'text-white hover:text-yellow-400'
+                }`}
+              >
+                Services
+                <svg
+                  className={`w-4 h-4 transition-transform duration-200 ${isServicesOpen ? 'rotate-180' : ''}`}
+                  fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div
+                ref={servicesMenuRef}
+                className={`absolute left-0 mt-2 w-56 rounded-xl border border-gray-700 bg-gray-900/95 backdrop-blur-md shadow-xl ring-1 ring-black/40 overflow-hidden transform origin-top transition-all duration-150 ${
+                  isServicesOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+                }`}
+                role="menu"
+                aria-label="Services submenu"
+              >
+                <div className="py-2">
+                  <Link
+                    to="/services?tab=gigs"
+                    onClick={closeServices}
+                    role="menuitem"
+                    className="flex items-start gap-3 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  >
+                    <span className="mt-0.5">🚀</span>
+                    <span>
+                      <span className="block font-medium text-yellow-400">Gigs</span>
+                      <span className="block text-xs text-gray-400">Browse freelancer services</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/services?tab=posts"
+                    onClick={closeServices}
+                    role="menuitem"
+                    className="flex items-start gap-3 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  >
+                    <span className="mt-0.5">💼</span>
+                    <span>
+                      <span className="block font-medium text-yellow-400">Job Post</span>
+                      <span className="block text-xs text-gray-400">Client job postings</span>
+                    </span>
+                  </Link>
+                </div>
+              </div>
+            </div>
 
 
             
@@ -408,17 +523,52 @@ function Header() {
             >
               Home
             </Link>
-            <Link 
-              to="/services" 
-              onClick={closeMobileMenu} 
-              className={`block px-3 py-2 text-base font-medium rounded-md transition-all duration-200 ${
-                isActiveLink('/services') 
-                  ? 'text-yellow-400 bg-yellow-500/20 border-l-4 border-yellow-400 shadow-lg' 
-                  : 'text-white hover:text-yellow-400 hover:bg-yellow-500/20'
-              }`}
-            >
-              Services
-            </Link>
+            {/* Mobile Services Accordion */}
+            <div className="border border-yellow-500/30 rounded-md overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setIsServicesOpen(o => !o)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-base font-medium transition-all duration-200 ${
+                  isActiveLink('/services') ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
+                }`}
+                aria-haspopup="true"
+                aria-expanded={isServicesOpen}
+              >
+                <span>Services</span>
+                <svg
+                  className={`w-5 h-5 transition-transform duration-200 ${isServicesOpen ? 'rotate-180' : ''}`}
+                  fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isServicesOpen && (
+                <div className="bg-black/60 backdrop-blur-sm border-t border-yellow-500/20">
+                  <Link
+                    to="/services?tab=gigs"
+                    onClick={() => { closeMobileMenu(); setIsServicesOpen(false); }}
+                    className="flex items-start gap-3 px-5 py-3 text-sm text-gray-200 hover:bg-yellow-500/10"
+                  >
+                    <span className="mt-0.5">🚀</span>
+                    <span>
+                      <span className="block font-medium text-yellow-400">Gigs</span>
+                      <span className="block text-xs text-gray-400">Freelancer services</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/services?tab=posts"
+                    onClick={() => { closeMobileMenu(); setIsServicesOpen(false); }}
+                    className="flex items-start gap-3 px-5 py-3 text-sm text-gray-200 hover:bg-yellow-500/10"
+                  >
+                    <span className="mt-0.5">💼</span>
+                    <span>
+                      <span className="block font-medium text-yellow-400">Job Post</span>
+                      <span className="block text-xs text-gray-400">Client job postings</span>
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
 
             <Link 
               to="/resources" 

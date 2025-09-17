@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 
 function ServicesPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -16,7 +17,7 @@ function ServicesPage() {
   const [isClient, setIsClient] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('gigs'); // New state for active tab
+  const [activeTab, setActiveTab] = useState('gigs'); // 'gigs' | 'posts'
   const [isTabSwitching, setIsTabSwitching] = useState(false); // New state for tab switching animation
 
   // Form state for posting a job
@@ -101,25 +102,34 @@ function ServicesPage() {
     }
   ];
 
+  // Initialize from URL
   useEffect(() => {
-    // Load user data from localStorage
     const userData = JSON.parse(localStorage.getItem('user'));
     setUser(userData);
-    
     if (userData) {
       setIsAdmin(userData.userType === 'admin');
       setIsFreelancer(userData.userType === 'freelancer');
       setIsClient(userData.userType === 'client');
     }
-
-    // Fetch services from backend API
-    // Initialize search query from URL if present
     const initialSearch = searchParams.get('search');
-    if (initialSearch) {
-      setSearchQuery(initialSearch);
+    if (initialSearch) setSearchQuery(initialSearch);
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'gigs' || tabParam === 'posts') {
+      setActiveTab(tabParam);
     }
     fetchServices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep URL in sync when activeTab changes
+  useEffect(() => {
+    const current = searchParams.get('tab');
+    if (activeTab && current !== activeTab) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('tab', activeTab);
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [activeTab, searchParams, setSearchParams]);
 
   // Function to fetch services from backend
   const fetchServices = async () => {
@@ -288,7 +298,7 @@ function ServicesPage() {
 
   // Get services based on active tab
   const getTabServices = () => {
-    if (activeTab === 'gigs') {
+  if (activeTab === 'gigs') {
       return filteredServices.filter(service => service.type === 'gig');
     } else {
       return filteredServices.filter(service => service.type === 'job');
@@ -299,11 +309,11 @@ function ServicesPage() {
 
   // Function to handle tab switching with animation
   const handleTabSwitch = (newTab) => {
-    if (newTab === activeTab) return;
+  if (newTab === activeTab) return;
     
     setIsTabSwitching(true);
     setTimeout(() => {
-      setActiveTab(newTab);
+  setActiveTab(newTab);
       setIsTabSwitching(false);
     }, 150);
   };

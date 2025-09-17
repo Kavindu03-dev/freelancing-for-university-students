@@ -74,6 +74,8 @@ function ClientDashboard() {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [ordersError, setOrdersError] = useState(null);
+  // Download report state (simple)
+  const [downloadingReport, setDownloadingReport] = useState(false);
   // Review feature state
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewOrderId, setReviewOrderId] = useState(null);
@@ -314,6 +316,39 @@ function ClientDashboard() {
       console.error('Error fetching orders:', err);
     } finally {
       setLoadingOrders(false);
+    }
+  };
+
+  // Download PDF report of orders
+  const handleDownloadOrdersReport = async () => {
+    try {
+      setDownloadingReport(true);
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please sign in again.');
+        return;
+      }
+      const res = await fetch('/api/orders/report/pdf', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to generate report');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders-report-${new Date().toISOString().slice(0,10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download report error', e);
+      alert(e.message || 'Failed to download report');
+    } finally {
+      setDownloadingReport(false);
     }
   };
 
@@ -2601,6 +2636,28 @@ function ClientDashboard() {
           <h2 className="text-3xl font-bold text-gray-900">My Orders</h2>
           <div className="flex items-center space-x-4">
             <span className="text-gray-600">Total Orders: {orders.length}</span>
+            <button
+              onClick={handleDownloadOrdersReport}
+              disabled={downloadingReport || loadingOrders || orders.length === 0}
+              className={`px-4 py-2 bg-green-500 text-white rounded-lg flex items-center space-x-2 hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed`}
+            >
+              {downloadingReport ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V2C5.373 2 2 5.373 2 12h2zm2 5.291A7.962 7.962 0 014 12H2c0 3.042 1.135 5.824 3 7.938l1-2.647z" />
+                  </svg>
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                  </svg>
+                  <span>Download Report</span>
+                </>
+              )}
+            </button>
             <button
               onClick={fetchOrders}
               disabled={loadingOrders}
