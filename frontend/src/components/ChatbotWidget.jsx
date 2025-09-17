@@ -76,7 +76,7 @@ function ChatbotWidget() {
     <div className="fixed z-50 right-4 bottom-4">
       {/* Panel */}
       {isOpen && (
-        <div className="mb-3 w-[340px] sm:w-[360px] rounded-2xl shadow-2xl border border-gray-200 bg-white overflow-hidden animate-scale-in">
+        <div className="absolute right-0 bottom-16 w-[340px] sm:w-[360px] rounded-2xl shadow-2xl border border-gray-200 bg-white overflow-hidden animate-scale-in">
           <div className="px-4 py-3 bg-black text-white flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-black font-bold">F</div>
