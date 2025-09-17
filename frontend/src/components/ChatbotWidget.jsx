@@ -85,15 +85,17 @@ function ChatbotWidget() {
                 <p className="text-xs text-gray-300">Ask about the platform</p>
               </div>
             </div>
-            <button
-              aria-label="Close chatbot"
-              className="p-1.5 rounded-lg hover:bg-white/10 transition"
-              onClick={() => setIsOpen(false)}
-            >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center h-8">
+              <button
+                aria-label="Close chatbot"
+                className="p-1.5 rounded-lg hover:bg-white/10 transition"
+                onClick={() => setIsOpen(false)}
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Conversation */}
@@ -172,5 +174,3 @@ function ChatbotWidget() {
 }
 
 export default ChatbotWidget;
-
-
