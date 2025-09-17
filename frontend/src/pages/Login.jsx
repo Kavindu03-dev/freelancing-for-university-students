@@ -135,7 +135,7 @@ function Login() {
           navigate(redirectTo);
         } else {
           // Default redirect based on user type
-          if (userType === 'admin') {
+          if (userType === 'admin') { 
             navigate('/admin/dashboard');
           } else if (userType === 'universityStaff') {
             navigate('/staff/dashboard');
@@ -385,15 +385,7 @@ function Login() {
           </form>
         </div>
 
-        {/* Sign Up Link */}
-        <div className="text-center">
-          <p className="text-gray-700">
-            Don't have an account?{" "}
-            <Link to="/join" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors duration-200">
-              Sign up for free
-            </Link>
-          </p>
-        </div>
+
         </div>
       </div>
     </div>

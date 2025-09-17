@@ -86,9 +86,6 @@ function AdminLogin() {
 
       <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <span className="text-black font-bold text-3xl">A</span>
-          </div>
           <h2 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent mb-2">
             Admin Login
           </h2>
@@ -164,42 +161,7 @@ function AdminLogin() {
 
 
 
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-            <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-lg">
-              <p className="text-sm text-blue-800 font-bold">
-                🔑 <strong>ADMIN LOGIN CREDENTIALS:</strong>
-              </p>
-              <p className="text-sm text-blue-800 mt-2">
-                <strong>Email:</strong> admin@gmail.com<br/>
-                <strong>Password:</strong> admin123
-              </p>
-              <p className="text-xs text-blue-700 mt-2 italic">
-                These credentials are stored in the database
-              </p>
-            </div>
-            
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-700 mb-2">
-                <strong>Test Navigation:</strong>
-              </p>
-              <button
-                onClick={() => {
-                  console.log('🧪 Testing manual navigation...');
-                  navigate('/admin/dashboard');
-                }}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-              >
-                🧪 Test Go to Dashboard
-              </button>
-            </div>
-            
-            <button
-              onClick={() => navigate('/')}
-              className="text-yellow-600 hover:text-yellow-700 font-medium transition-colors duration-300"
-            >
-              ← Back to Home
-            </button>
-          </div>
+
         </div>
       </div>
     </div>
@@ -207,4 +169,3 @@ function AdminLogin() {
 }
 
 export default AdminLogin;
-
