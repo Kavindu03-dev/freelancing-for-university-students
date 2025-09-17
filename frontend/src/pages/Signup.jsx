@@ -1157,12 +1157,12 @@ function Signup() {
         <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400" ref={skillDropdownRef}>
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedSkills.map(skill => (
-              <span key={skill} className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium flex items-center gap-2">
+              <span key={skill} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2">
                 {skill}
                 <button
                   type="button"
                   onClick={() => handleSkillToggle(skill)}
-                  className="text-yellow-600 hover:text-yellow-800"
+                  className="text-blue-600 hover:text-blue-800"
                 >
                   ×
                 </button>
@@ -1400,20 +1400,20 @@ function Signup() {
                       Preferred Skills
                     </label>
                     <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {selectedSkills.map(skill => (
-                          <span key={skill} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2">
-                            {skill}
-                    <button
-                      type="button"
-                              onClick={() => handleSkillToggle(skill)}
-                              className="text-green-600 hover:text-green-800"
-                            >
-                              ×
-                    </button>
-                          </span>
-                        ))}
-                  </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {selectedSkills.map(skill => (
+              <span key={skill} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium flex items-center gap-2">
+                {skill}
+                <button
+                  type="button"
+                  onClick={() => handleSkillToggle(skill)}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
                       <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-32 overflow-y-auto">
                         {availableSkills.map(skill => (
                           <button
@@ -1768,12 +1768,12 @@ function Signup() {
         <div className="border border-gray-300 rounded-lg p-4 focus-within:ring-2 focus-within:ring-yellow-400">
           <div className="flex flex-wrap gap-2 mb-3">
             {selectedSkills.map(skill => (
-              <span key={skill} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium flex items-center gap-2">
+              <span key={skill} className="px-3 py-1 bg-gray-800 text-white rounded-full text-sm font-medium flex items-center gap-2">
                 {skill}
                 <button
                   type="button"
                   onClick={() => handleSkillToggle(skill)}
-                  className="text-green-600 hover:text-green-800"
+                  className="text-gray-300 hover:text-white"
                 >
                   ×
                 </button>
@@ -1886,7 +1886,7 @@ function Signup() {
                   onClick={() => setUserType(type.value)}
                   className={`p-4 border-2 rounded-xl text-center transition-all duration-200 ${
                     userType === type.value
-                      ? 'border-yellow-500 bg-yellow-50 text-yellow-700'
+                      ? 'border-yellow-500 bg-yellow-50 text-black'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
                   }`}
                 >
@@ -2129,4 +2129,3 @@ function Signup() {
 }
 
 export default Signup;
-
