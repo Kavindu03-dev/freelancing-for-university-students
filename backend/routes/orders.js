@@ -9,7 +9,8 @@ import {
     markOrderAsPaidByAdmin,
     sendMoneyToFreelancer,
     addOrderReview,
-    generateClientOrdersReport
+    generateClientOrdersReport,
+    generateOrderReceiptPDF
 } from '../controllers/orderController.js';
 import { protect as authUser } from '../middleware/auth.js';
 
@@ -39,5 +40,8 @@ orderRouter.post('/:orderId/review', addOrderReview);
 
 // Client PDF orders report download
 orderRouter.get('/report/pdf', generateClientOrdersReport);
+
+// Single paid order receipt download
+orderRouter.get('/:orderId/receipt/pdf', generateOrderReceiptPDF);
 
 export default orderRouter;

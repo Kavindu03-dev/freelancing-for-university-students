@@ -402,7 +402,7 @@ function HomePage() {
           <h2 className="text-4xl font-bold text-center mb-16 text-white">Browse by Category</h2>
           
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-            {[
+            {[ 
               { 
                 name: 'Programming & Tech', 
                 image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=200&h=200&fit=crop&crop=center',
@@ -524,17 +524,21 @@ function HomePage() {
                 color: 'from-green-400 to-green-500' 
               }
             ].map((category, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 text-center cursor-pointer border border-gray-200 hover:border-yellow-400 transform hover:-translate-y-1">
+              <Link
+                key={index}
+                to={`/services?tab=gigs&category=${encodeURIComponent(category.name)}`}
+                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 text-center border border-gray-200 hover:border-yellow-400 transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-yellow-300/50"
+              >
                 <div className="w-16 h-16 rounded-xl overflow-hidden mx-auto mb-4">
-                  <img 
-                    src={category.image} 
+                  <img
+                    src={category.image}
                     alt={category.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
                 <h3 className="font-semibold text-gray-800 text-sm">{category.name}</h3>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -117,19 +117,37 @@ function ServicesPage() {
     if (tabParam === 'gigs' || tabParam === 'posts') {
       setActiveTab(tabParam);
     }
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      // Decode and set category if present
+      setSelectedCategory(categoryParam);
+    }
     fetchServices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep URL in sync when activeTab changes
   useEffect(() => {
-    const current = searchParams.get('tab');
-    if (activeTab && current !== activeTab) {
-      const newParams = new URLSearchParams(searchParams);
+    const currentTab = searchParams.get('tab');
+    const currentCategory = searchParams.get('category');
+    let needsUpdate = false;
+    const newParams = new URLSearchParams(searchParams);
+    if (activeTab && currentTab !== activeTab) {
       newParams.set('tab', activeTab);
+      needsUpdate = true;
+    }
+    if (selectedCategory && selectedCategory !== 'All' && currentCategory !== selectedCategory) {
+      newParams.set('category', selectedCategory);
+      needsUpdate = true;
+    }
+    if (selectedCategory === 'All' && currentCategory) {
+      newParams.delete('category');
+      needsUpdate = true;
+    }
+    if (needsUpdate) {
       setSearchParams(newParams, { replace: true });
     }
-  }, [activeTab, searchParams, setSearchParams]);
+  }, [activeTab, selectedCategory, searchParams, setSearchParams]);
 
   // Function to fetch services from backend
   const fetchServices = async () => {

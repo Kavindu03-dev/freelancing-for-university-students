@@ -352,6 +352,36 @@ function ClientDashboard() {
     }
   };
 
+  // Download single order receipt PDF
+  const handleDownloadOrderReceipt = async (orderId) => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        alert('Please sign in again.');
+        return;
+      }
+      const res = await fetch(`/api/orders/${orderId}/receipt/pdf`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to download receipt');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `order-${orderId}-receipt.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download receipt error', e);
+      alert(e.message || 'Failed to download receipt');
+    }
+  };
+
   const createPostAPI = async (postData) => {
     try {
       setLoading(true);
@@ -2817,6 +2847,14 @@ function ClientDashboard() {
                         className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 font-medium text-sm rounded-lg"
                       >
                         Rate & Review
+                      </button>
+                    )}
+                    {order.paymentStatus === 'Paid' && (
+                      <button
+                        onClick={() => handleDownloadOrderReceipt(order._id)}
+                        className="px-4 py-2 text-white bg-green-600 hover:bg-green-700 font-medium text-sm rounded-lg"
+                      >
+                        Receipt PDF
                       </button>
                     )}
                     {/* Rating display removed per requirement */}

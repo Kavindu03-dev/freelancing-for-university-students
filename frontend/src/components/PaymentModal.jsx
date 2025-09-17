@@ -168,17 +168,7 @@ const PaymentModal = ({ isOpen, onClose, service, selectedPackage }) => {
                 {service.freelancerName} • {service.category}
               </p>
               
-              {/* Debug Info - Remove in production */}
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                <p className="text-xs text-yellow-800">
-                  <strong>Debug Info:</strong><br/>
-                  Service ID: {service._id}<br/>
-                  isActive: {String(service.isActive)}<br/>
-                  Status: {service.status}<br/>
-                  Has Packages: {service.packages ? 'Yes' : 'No'}<br/>
-                  Selected Package: {selectedPackage}
-                </p>
-              </div>
+              {/* Debug info removed for production */}
               
               {packageDetails && (
                                  <div className="bg-gray-50 p-4 rounded-lg mb-4 transition-all duration-300 hover:bg-gray-100 hover:shadow-md transform hover:-translate-y-1">
