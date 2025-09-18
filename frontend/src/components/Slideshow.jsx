@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Slideshow() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const navigate = useNavigate();
 
   const slides = [
     {
@@ -11,7 +13,8 @@ function Slideshow() {
       description: "From web developers to graphic designers, find the right expert for your project.",
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80",
       cta: "Hire Now",
-      color: "from-yellow-400 to-yellow-500"
+      color: "from-yellow-400 to-yellow-500",
+      target: "/services"
     },
     {
       id: 2,
@@ -20,7 +23,8 @@ function Slideshow() {
       description: "Join thousands of freelancers who are already earning on FlexiHire.",
       image: "https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
       cta: "Start Earning",
-      color: "from-yellow-600 to-yellow-700"
+      color: "from-yellow-600 to-yellow-700",
+      target: "/join"
     },
     {
       id: 3,
@@ -29,7 +33,8 @@ function Slideshow() {
       description: "Our secure payment system ensures you get paid for your work, every time.",
       image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
       cta: "Learn More",
-      color: "from-yellow-400 to-yellow-600"
+      color: "from-yellow-400 to-yellow-600",
+      target: "/about"
     }
   ];
 
@@ -90,7 +95,10 @@ function Slideshow() {
                     <p className="text-lg md:text-xl mb-8 text-gray-300 leading-relaxed">
                       {slide.description}
                     </p>
-                    <button className={`bg-gradient-to-r ${slide.color} hover:opacity-90 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
+                    <button
+                      onClick={() => navigate(slide.target)}
+                      className={`bg-gradient-to-r ${slide.color} hover:opacity-90 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}
+                    >
                       {slide.cta}
                     </button>
                   </div>

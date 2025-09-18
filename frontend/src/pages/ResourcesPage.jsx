@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 function ResourcesPage() {
   const navigate = useNavigate();
@@ -498,31 +498,7 @@ function ResourcesPage() {
         </div>
       </section>
 
-      {/* Newsletter Signup */}
-      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold mb-6">Stay Updated</h2>
-          <p className="text-xl mb-8 text-gray-300">
-            Get the latest freelancing tips, resources, and opportunities delivered to your inbox
-          </p>
-          
-          <div className="max-w-md mx-auto">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:border-yellow-500"
-              />
-              <button className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold transition-colors duration-300">
-                Subscribe
-              </button>
-            </div>
-            <p className="text-sm text-gray-400 mt-3">
-              No spam, unsubscribe at any time
-            </p>
-          </div>
-        </div>
-      </section>
+      
 
     </div>
   );
