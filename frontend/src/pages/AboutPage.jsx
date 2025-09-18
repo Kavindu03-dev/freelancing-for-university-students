@@ -17,7 +17,7 @@ function AboutPage() {
             </p>
             <div className="flex justify-center space-x-4">
               <Link
-                to="/signup"
+                to="/join"
                 className="bg-yellow-500 text-black px-8 py-3 rounded-full font-semibold hover:bg-yellow-400 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 Join Now
@@ -370,13 +370,13 @@ function AboutPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              to="/signup"
+              to="/join"
               className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold transition-all duration-300 transform hover:scale-105"
             >
               Start Freelancing
             </Link>
             <Link
-              to="/signup"
+              to="/signin"
               className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-full font-semibold transition-all duration-300"
             >
               Hire Talent
