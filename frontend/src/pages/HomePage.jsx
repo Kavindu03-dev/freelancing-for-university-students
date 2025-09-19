@@ -163,147 +163,7 @@ function HomePage() {
       {/* Slideshow Section */}
       <Slideshow />
 
-      {/* Popular Services */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center mb-16 text-gray-800">Popular Services</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Web Development */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Web Development</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Custom websites, e-commerce, and web applications</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $50</p>
-            </div>
 
-            {/* Graphic Design */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Graphic Design</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Logos, branding, and visual content</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $30</p>
-            </div>
-
-            {/* Content Writing */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Content Writing</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Blog posts, articles, and copywriting</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $25</p>
-            </div>
-
-            {/* Mobile Development */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Mobile Development</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">iOS and Android apps with modern UI/UX</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $75</p>
-            </div>
-
-            {/* Digital Marketing */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Digital Marketing</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">SEO, social media, and PPC campaigns</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $40</p>
-            </div>
-
-            {/* Video & Animation */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Video & Animation</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Promotional videos, animations, and editing</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $60</p>
-            </div>
-
-            {/* Data Analysis */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Data Analysis</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Business intelligence and data visualization</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $55</p>
-            </div>
-
-            {/* UI/UX Design */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">UI/UX Design</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">User interface and experience design</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $45</p>
-            </div>
-
-            {/* Translation */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Translation</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Professional translation and localization</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $20</p>
-            </div>
-
-            {/* Voice Over */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Voice Over</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Professional voice recording and narration</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $35</p>
-            </div>
-
-            {/* Business Consulting */}
-            <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 border border-yellow-200 hover:border-yellow-400 transform hover:-translate-y-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold mb-3 text-gray-800">Business Consulting</h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">Strategic planning and business development</p>
-              <p className="text-yellow-600 font-bold text-lg">Starting at $80</p>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* How It Works */}
       <section className="bg-gradient-to-br from-gray-100 to-gray-200 py-20">
@@ -469,17 +329,19 @@ function HomePage() {
               <Link
                 key={index}
                 to={`/services?tab=gigs&category=${encodeURIComponent(category.name)}`}
-                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 text-center border border-gray-200 hover:border-yellow-400 transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-yellow-300/50"
+                className="group bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 text-center border border-gray-200 hover:border-yellow-400 transform hover:-translate-y-2 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300/50 overflow-hidden"
               >
-                <div className="w-16 h-16 rounded-xl overflow-hidden mx-auto mb-4">
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden mx-auto mb-4 shadow-lg group-hover:shadow-xl transition-shadow duration-300">
                   <img
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     loading="lazy"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </div>
-                <h3 className="font-semibold text-gray-800 text-sm">{category.name}</h3>
+                <h3 className="font-bold text-gray-800 text-sm leading-tight group-hover:text-yellow-600 transition-colors duration-300">{category.name}</h3>
+                <div className="mt-2 w-0 group-hover:w-full h-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300 mx-auto"></div>
               </Link>
             ))}
           </div>
