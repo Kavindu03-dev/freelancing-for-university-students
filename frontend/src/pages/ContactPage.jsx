@@ -241,15 +241,15 @@ function ContactPage() {
       icon: '📞',
       title: 'Phone Support',
       description: 'Speak directly with our team',
-      contact: '+1 (555) 123-4567',
-      responseTime: 'Mon-Fri, 9AM-6PM EST'
+      contact: '+94 (11) 123-4567',
+      responseTime: 'Mon-Fri, 9AM-6PM'
     },
     {
       icon: '📍',
       title: 'Office Address',
       description: 'Visit us in person',
-      contact: '123 Business Street, Suite 100',
-      responseTime: 'San Francisco, CA 94105'
+      contact: '123 Business Street, Kandy',
+      responseTime: 'Kandy, Sri Lanka'
     }
   ];
 
