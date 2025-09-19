@@ -2135,7 +2135,7 @@ function AdminDashboard() {
                 <p className="text-gray-600 text-sm">Job opportunities posted by clients</p>
                       </div>
                     </div>
-            <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+            <span className="bg-transparent text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
               {posts.filter(post => post.status === 'pending').length} Pending
                     </span>
                       </div>
@@ -2151,7 +2151,7 @@ function AdminDashboard() {
                         <span className="text-yellow-600 font-medium">${post.budget}</span>
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           post.status === 'pending' 
-                            ? 'bg-orange-100 text-orange-800' 
+                            ? 'bg-transparent text-orange-800' 
                             : post.status === 'approved' || post.status === 'active'
                         ? 'bg-green-100 text-green-800' 
                         : 'bg-red-100 text-red-800'
@@ -2919,9 +2919,9 @@ function AdminDashboard() {
                   <div key={uni.name} className="flex items-center space-x-4">
                     <div className="w-32 text-sm font-medium text-gray-700 truncate">{uni.name}</div>
                     <div className="flex-1 bg-gray-200 rounded-full h-4">
-                      <div 
-                        className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-4 rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
+                      <div
+                        className="bg-transparent h-4 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%`, border: '1px solid rgba(250, 204, 21, 0.45)' }}
                       ></div>
                     </div>
                     <div className="w-20 text-sm font-medium text-gray-900">${uni.revenue.toLocaleString()}</div>
