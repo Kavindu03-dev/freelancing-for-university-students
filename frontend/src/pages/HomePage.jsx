@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Slideshow from "../components/Slideshow";
+import BackgroundSlideshow from "../components/BackgroundSlideshow";
 
 function HomePage() {
-  // Search state
+  // Search state for hero section
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState([]);
@@ -11,7 +12,7 @@ function HomePage() {
 
   const navigate = useNavigate();
 
-  // Available categories
+  // Available categories for search suggestions
   const categories = [
     'Programming & Tech',
     'Design & Creative',
@@ -92,18 +93,19 @@ function HomePage() {
       {/* Header is now rendered globally in App.jsx */}
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative text-white min-h-screen flex items-start pt-20 overflow-hidden">
+        <BackgroundSlideshow />
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            <h1 className="text-6xl md:text-8xl font-bold mb-6">
               Find the Perfect Freelancer
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-2xl md:text-4xl text-gray-300 mb-16 max-w-4xl mx-auto">
               Connect with talented professionals for your projects
             </p>
-            
+
             {/* Search Bar */}
-            <div className="max-w-2xl mx-auto mb-8" ref={searchRef}>
+            <div className="max-w-3xl mx-auto mb-16" ref={searchRef}>
               <div className="relative">
                 <input
                   type="text"
@@ -111,14 +113,14 @@ function HomePage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="What service are you looking for?"
-                  className="w-full px-6 py-4 text-lg rounded-full border-2 border-yellow-500 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-yellow-400 backdrop-blur-sm"
+                  className="w-full px-8 py-5 text-xl rounded-full border-2 border-yellow-500 bg-white/10 text-white placeholder-white/70 focus:outline-none focus:border-yellow-400 backdrop-blur-sm"
                 />
                 <button
                   onClick={handleSearch}
                   aria-label="Search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full p-3 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full p-4 transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
@@ -144,11 +146,11 @@ function HomePage() {
                 </div>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/services" className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
+              <Link to="/services" className="bg-yellow-500 hover:bg-yellow-400 text-black px-12 py-5 rounded-full text-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
                 Hire a Freelancer
               </Link>
-              <Link to="/join" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 rounded-full font-semibold transition-all duration-300">
+              <Link to="/join" className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-12 py-5 rounded-full text-xl font-bold transition-all duration-300">
                 Join as Freelancer
               </Link>
             </div>
@@ -160,66 +162,6 @@ function HomePage() {
 
       {/* Slideshow Section */}
       <Slideshow />
-
-      {/* Search Section */}
-      <section className="bg-gray-100 py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl shadow-2xl p-8 border border-yellow-300">
-                          <div className="flex flex-col lg:flex-row gap-6 items-center">
-                <div className="w-full relative" ref={searchRef}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="What service are you looking for?"
-                    className="w-full px-6 py-4 border-2 border-yellow-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 text-lg transition-all duration-300"
-                  />
-                  <button
-                    onClick={handleSearch}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-yellow-400 hover:bg-yellow-300 text-black rounded-xl px-4 py-2 text-sm font-semibold"
-                  >Search</button>
-                  
-                  {/* Search Suggestions Dropdown */}
-                  {showSuggestions && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border-2 border-yellow-300 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
-                      {filteredCategories.map((category, index) => (
-                        <div
-                          key={index}
-                          onClick={() => handleCategorySelect(category)}
-                          className="px-6 py-3 hover:bg-yellow-50 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="flex items-center">
-                            <svg className="w-5 h-5 text-yellow-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <span className="text-gray-800 font-medium">{category}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            
-            {/* Popular Categories Quick Access */}
-            <div className="mt-6 pt-6 border-t border-yellow-200">
-              <p className="text-gray-600 text-sm mb-3">Popular categories:</p>
-              <div className="flex flex-wrap gap-2">
-                {['Web Development', 'Graphic Design', 'Content Writing', 'Digital Marketing', 'Mobile Development'].map((category, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleCategorySelect(category)}
-                    className="px-3 py-1 border border-yellow-400 text-yellow-700 hover:bg-yellow-50 rounded-full text-sm font-medium transition-colors duration-200 bg-transparent"
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Popular Services */}
       <section className="py-20 bg-white">
