@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from 'react-router-dom';
 import Logo from "../assets/Logo.png";
 
 function Footer() {
@@ -18,29 +19,25 @@ function Footer() {
           <div>
             <h4 className="font-bold text-lg mb-6">For Clients</h4>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">How to Hire</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Talent Marketplace</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Project Catalog</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Hiring Guide</a></li>
+              <li><Link to="/how-to-hire" className="hover:text-yellow-400 transition-colors duration-200">How to Hire</Link></li>
+              <li><Link to="/services?tab=gigs" className="hover:text-yellow-400 transition-colors duration-200">Buying on FlexiHire</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-bold text-lg mb-6">For Freelancers</h4>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">How to Find Work</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Create a Profile</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Success Stories</a></li>
+              <li><Link to="/how-to-find-work" className="hover:text-yellow-400 transition-colors duration-200">How to Find Work</Link></li>
+              <li><Link to="/join" className="hover:text-yellow-400 transition-colors duration-200">Create a Profile</Link></li>
+              <li><Link to="/services?tab=posts" className="hover:text-yellow-400 transition-colors duration-200">Selling on FlexiHire</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-bold text-lg mb-6">Support</h4>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Help & Support</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Trust & Safety</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Selling on FlexiHire</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Buying on FlexiHire</a></li>
+              <li><Link to="/contact" className="hover:text-yellow-400 transition-colors duration-200">Help & Support</Link></li>
+              <li><Link to="/about" className="hover:text-yellow-400 transition-colors duration-200">Trust & Safety</Link></li>
             </ul>
           </div>
         </div>
