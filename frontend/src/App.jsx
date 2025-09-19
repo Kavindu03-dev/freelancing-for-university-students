@@ -12,6 +12,8 @@ import HomePage from "./pages/HomePage";
 
 import AboutPage from "./pages/AboutPage";
 import ServicesPage from "./pages/ServicesPage";
+import HowToHire from "./pages/HowToHire";
+import HowToFindWork from "./pages/HowToFindWork";
 
 import ResourcesPage from "./pages/ResourcesPage";
 import ContactPage from "./pages/ContactPage";
@@ -62,6 +64,8 @@ function AppContent() {
 
         <Route path="/about" element={<AboutPage />} />
         <Route path="/services" element={<ServicesPage />} />
+  <Route path="/how-to-hire" element={<HowToHire />} />
+  <Route path="/how-to-find-work" element={<HowToFindWork />} />
 
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/contact" element={<ContactPage />} />
