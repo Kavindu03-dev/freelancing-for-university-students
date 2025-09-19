@@ -5,14 +5,14 @@ function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-20">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-black via-gray-900 to-black text-white py-16">
-        <div className="absolute inset-0 bg-black opacity-10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-to-b from-green-900 via-green-700 to-green-500 text-white py-12 relative">
+        <div className="absolute inset-0 bg-black/50"></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 animate-fade-in">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">
               About FlexiHire
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-gray-300 mb-6 max-w-4xl mx-auto">
               Connecting talented freelancers with innovative projects worldwide
             </p>
             <div className="flex justify-center space-x-4">
