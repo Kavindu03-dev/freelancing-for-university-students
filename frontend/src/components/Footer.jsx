@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from 'react-router-dom';
 import Logo from "../assets/Logo.png";
 
 function Footer() {
@@ -19,7 +20,7 @@ function Footer() {
             <h4 className="font-bold text-lg mb-6">For Clients</h4>
             <ul className="space-y-3 text-gray-400">
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">How to Hire</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Buying on FlexiHire</a></li>
+              <li><Link to="/services?tab=gigs" className="hover:text-yellow-400 transition-colors duration-200">Buying on FlexiHire</Link></li>
             </ul>
           </div>
           
@@ -28,15 +29,15 @@ function Footer() {
             <ul className="space-y-3 text-gray-400">
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">How to Find Work</a></li>
               <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Create a Profile</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Selling on FlexiHire</a></li>
+              <li><Link to="/services?tab=posts" className="hover:text-yellow-400 transition-colors duration-200">Selling on FlexiHire</Link></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-bold text-lg mb-6">Support</h4>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Help & Support</a></li>
-              <li><a href="#" className="hover:text-yellow-400 transition-colors duration-200">Trust & Safety</a></li>
+              <li><Link to="/contact" className="hover:text-yellow-400 transition-colors duration-200">Help & Support</Link></li>
+              <li><Link to="/about" className="hover:text-yellow-400 transition-colors duration-200">Trust & Safety</Link></li>
             </ul>
           </div>
         </div>
