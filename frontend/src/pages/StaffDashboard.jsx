@@ -1191,7 +1191,7 @@ function StaffDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{resource.readTime}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {resource.featured ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-transparent text-yellow-800">
                         Featured
                       </span>
                     ) : (
@@ -1346,7 +1346,7 @@ function StaffDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{student.gpa}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      student.status === 'Verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      (student.status === 'Verified' || student.status === 'Pending') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                     }`}>
                       {student.status}
                     </span>
@@ -1366,15 +1366,15 @@ function StaffDashboard() {
   const renderVerification = () => (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-6 border border-yellow-200 hover:border-yellow-400">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">Student Verification Requests</h3>
-            <p className="text-gray-600 mt-1">Review and respond to student verification requests</p>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">Student Verification Requests</h3>
+              <p className="text-gray-600 mt-1">Review and respond to student verification requests</p>
+            </div>
+            <span className="bg-transparent text-black px-4 py-2 rounded-xl text-sm font-medium">
+              {verificationRequests.filter(req => req.status === 'pending').length} Pending
+            </span>
           </div>
-          <span className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-xl text-sm font-medium">
-            {verificationRequests.filter(req => req.status === 'pending').length} Pending
-          </span>
-        </div>
 
         {loadingVerificationRequests ? (
           <div className="text-center py-8">
@@ -1404,7 +1404,7 @@ function StaffDashboard() {
                           {request.firstName} {request.lastName}
                         </h4>
                         <p className="text-yellow-600 font-medium">{request.email}</p>
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-transparent text-black">
                           Pending Verification
                         </span>
                       </div>
@@ -1776,10 +1776,10 @@ function StaffDashboard() {
           <div className="bg-white rounded-2xl shadow-xl p-6">
             <h3 className="text-xl font-bold text-gray-800 mb-4">Responsibilities</h3>
             <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Student Verification</span>
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Academic Oversight</span>
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Data Analytics</span>
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">Institutional Support</span>
+              <span className="px-3 py-1 bg-transparent text-yellow-800 rounded-full text-sm font-medium">Student Verification</span>
+              <span className="px-3 py-1 bg-transparent text-yellow-800 rounded-full text-sm font-medium">Academic Oversight</span>
+              <span className="px-3 py-1 bg-transparent text-yellow-800 rounded-full text-sm font-medium">Data Analytics</span>
+              <span className="px-3 py-1 bg-transparent text-yellow-800 rounded-full text-sm font-medium">Institutional Support</span>
             </div>
           </div>
         </div>
