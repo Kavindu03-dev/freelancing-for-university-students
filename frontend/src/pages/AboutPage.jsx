@@ -100,19 +100,19 @@ function AboutPage() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
             {/* Team Member 1 */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
               <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80" 
-                  alt="CEO" 
+                <img
+                  src="/src/assets/profilepic.jpg"
+                  alt="CEO"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Alex Johnson</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Member 1</h3>
                 <p className="text-yellow-600 mb-3">CEO & Founder</p>
                 <p className="text-gray-600 text-sm">
                   Visionary leader with 10+ years in tech entrepreneurship, passionate about connecting global talent.
@@ -123,15 +123,15 @@ function AboutPage() {
             {/* Team Member 2 */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
               <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80" 
-                  alt="CTO" 
+                <img
+                  src="/src/assets/profilepic.jpg"
+                  alt="CTO"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Sarah Chen</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Member 2</h3>
                 <p className="text-yellow-600 mb-3">CTO</p>
                 <p className="text-gray-600 text-sm">
                   Tech innovator with expertise in AI and machine learning, building the future of work platforms.
@@ -142,18 +142,56 @@ function AboutPage() {
             {/* Team Member 3 */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
               <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80" 
-                  alt="Head of Operations" 
+                <img
+                  src="/src/assets/profilepic.jpg"
+                  alt="Head of Operations"
                   className="w-full h-64 object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Michael Rodriguez</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Member 3</h3>
                 <p className="text-yellow-600 mb-3">Head of Operations</p>
                 <p className="text-gray-600 text-sm">
                   Operations expert ensuring seamless experiences for freelancers and clients worldwide.
+                </p>
+              </div>
+            </div>
+
+            {/* Team Member 4 */}
+            <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
+              <div className="relative">
+                <img
+                  src="/src/assets/profilepic.jpg"
+                  alt="Member 4"
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Member 4</h3>
+                <p className="text-yellow-600 mb-3">Team Member</p>
+                <p className="text-gray-600 text-sm">
+                  Dedicated team member contributing to FlexiHire's mission of connecting talent worldwide.
+                </p>
+              </div>
+            </div>
+
+            {/* Team Member 5 */}
+            <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
+              <div className="relative">
+                <img
+                  src="/src/assets/profilepic.jpg"
+                  alt="Member 5"
+                  className="w-full h-64 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Member 5</h3>
+                <p className="text-yellow-600 mb-3">Team Member</p>
+                <p className="text-gray-600 text-sm">
+                  Passionate team member working towards building the future of freelance work.
                 </p>
               </div>
             </div>
