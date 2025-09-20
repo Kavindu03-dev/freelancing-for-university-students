@@ -11,6 +11,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true,
 });
 
+
 const seedAdminUser = async () => {
   try {
     // Check if admin user already exists
