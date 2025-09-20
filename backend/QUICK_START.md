@@ -26,6 +26,7 @@ npm install
 
 ## **Step 2: Setup Database (2 minutes)**
 
+
 ### 2.1 Start MongoDB
 ```bash
 # Windows
