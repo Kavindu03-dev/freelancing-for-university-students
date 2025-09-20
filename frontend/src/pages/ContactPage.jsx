@@ -302,7 +302,7 @@ function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {contactInfo.map((info, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div key={index} className="bg-white rounded-xl shadow-lg shadow-green-500/20 p-10 text-center hover:shadow-xl hover:shadow-green-500/30 transition-all duration-300 transform hover:-translate-y-1">
                 <div className="text-4xl mb-4">{info.icon}</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">{info.title}</h3>
                 <p className="text-gray-600 mb-3">{info.description}</p>
