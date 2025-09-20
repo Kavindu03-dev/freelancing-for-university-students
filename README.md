@@ -1,240 +1,380 @@
-# Skills Management System
+# FlexiHire - Freelancing Platform for University Students
 
+A comprehensive freelancing platform designed specifically for university students to connect with clients, showcase their skills, and gain real-world experience through freelance projects.
 
-A comprehensive skills management system for the freelancing platform, allowing administrators to manage skills and displaying them in the public skills tab.
+## 🌟 Overview
 
-## Overview
+FlexiHire is a full-stack web application that bridges the gap between talented university students and clients seeking quality freelance services. The platform provides a secure, user-friendly environment for students to build their portfolios while helping clients find reliable young talent for their projects.
 
-This system provides:
-- **Admin Dashboard**: A dedicated skills tab for administrators to add, edit, and manage skills
-- **Public Display**: Skills are automatically displayed in the frontend skills tab
-- **RESTful API**: Full CRUD operations for skills management
-- **Database Integration**: MongoDB-based storage with Mongoose schemas
+### Key Features
 
-## Features
+- **🔐 Multi-Role Authentication**: Support for Students, Freelancers, Clients, and Administrators
+- **📋 Project Management**: Complete project lifecycle from posting to delivery
+- **💬 Real-time Messaging**: Built-in messaging system for seamless communication
+- **📊 Admin Dashboard**: Comprehensive admin panel for platform management
+- **🎨 Modern UI/UX**: Responsive design with smooth animations and transitions
+- **🔒 Secure Payments**: Integrated payment system with escrow protection
+- **📱 Mobile-First**: Fully responsive design for all devices
 
-### Admin Features
-- ✅ Add new skills with name, description, category, icon, average price, and popularity
-- ✅ Edit existing skills
-- ✅ Delete skills (soft delete)
-- ✅ View all skills in a organized table
-- ✅ Categorize skills by industry sectors
+## 🏗️ Architecture
 
-### Public Features
-- ✅ View all available skills
-- ✅ Skills grouped by category
-- ✅ Display skill details including popularity and average pricing
-- ✅ Responsive design for all devices
+### Tech Stack
 
-## Technical Implementation
+**Frontend:**
+- React 18 with Vite
+- Tailwind CSS for styling
+- React Router for navigation
+- Axios for API communication
+- JWT for authentication
 
-### Backend (Node.js + Express + MongoDB)
+**Backend:**
+- Node.js with Express.js
+- MongoDB with Mongoose ODM
+- JWT authentication
+- RESTful API design
+- File upload handling (CVs, portfolios, images)
 
-#### Models
-- **`Skill.js`**: Mongoose schema with fields:
-  - `name`: Skill name (unique, required)
-  - `description`: Detailed description
-  - `category`: Skill category (e.g., Programming & Tech, Design & Creative)
-  - `icon`: Emoji or icon representation
-  - `avgPrice`: Average hourly rate
-  - `popularity`: Popularity score (0-100)
-  - `isActive`: Soft delete flag
-  - `createdBy`: Admin reference
-  - `timestamps`: Created/updated timestamps
+**Database:**
+- MongoDB Atlas (cloud) or local MongoDB
+- Collections: Users, Projects, Messages, Applications, Resources, etc.
 
-#### Controllers
-- **`skillController.js`**: Handles all skill-related operations:
-  - `getAllSkills`: Retrieve all active skills
-  - `getSkillsByCategory`: Get skills by specific category
-  - `createSkill`: Add new skill (admin only)
-  - `updateSkill`: Modify existing skill (admin only)
-  - `deleteSkill`: Soft delete skill (admin only)
-  - `getSkillStats`: Get skill statistics
+## 📁 Project Structure
 
-#### Routes
-- **`skills.js`**: API endpoints:
-  - `GET /api/skills`: Public access to all skills
-  - `GET /api/skills/category/:category`: Skills by category
-  - `GET /api/skills/stats`: Skill statistics
-  - `POST /api/skills`: Create skill (admin only)
-  - `PUT /api/skills/:id`: Update skill (admin only)
-  - `DELETE /api/skills/:id`: Delete skill (admin only)
+```
+freelancing-for-university-students/
+├── backend/
+│   ├── controllers/          # Business logic controllers
+│   ├── models/              # MongoDB schemas
+│   ├── routes/              # API route definitions
+│   ├── middleware/          # Authentication & validation
+│   ├── uploads/             # File storage (CVs, images)
+│   ├── scripts/             # Database seeding scripts
+│   └── server.js            # Main server file
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── pages/          # Page components
+│   │   ├── utils/          # Helper functions
+│   │   └── assets/         # Static assets (images, icons)
+│   ├── public/             # Public static files
+│   └── index.html          # Main HTML template
+└── README.md
+```
 
-#### Middleware
-- **`authenticateAdmin`**: Protects admin-only routes
-- **JWT-based authentication**: Secure admin operations
+## 🚀 Features
 
-### Frontend (React)
+### For Students/Freelancers
+- ✅ Create professional profiles with portfolio showcase
+- ✅ Browse and apply for freelance projects
+- ✅ Real-time messaging with clients
+- ✅ Track application status and project progress
+- ✅ Secure payment processing
+- ✅ Build reputation through reviews and ratings
 
-#### Admin Dashboard
-- **Skills Tab**: New tab in admin dashboard
-- **Add Skill Modal**: Form for creating new skills
-- **Skills Table**: Display all skills with edit/delete actions
-- **Category Management**: Predefined skill categories
+### For Clients
+- ✅ Post projects with detailed requirements
+- ✅ Browse freelancer profiles and portfolios
+- ✅ Review applications and hire talent
+- ✅ Manage project milestones and payments
+- ✅ Rate and review completed work
 
-#### Public Skills Page
-- **Dynamic Loading**: Fetches skills from API
-- **Category Grouping**: Skills organized by category
-- **Responsive Design**: Mobile-friendly layout
-- **Loading States**: User feedback during data fetching
+### For Administrators
+- ✅ User management and moderation
+- ✅ Project oversight and dispute resolution
+- ✅ Platform analytics and reporting
+- ✅ Content management and announcements
+- ✅ System configuration and maintenance
 
-## Setup Instructions
+## 🛠️ Installation & Setup
 
 ### Prerequisites
-- Node.js (v14+)
-- MongoDB
-- npm or yarn
+- Node.js (v16 or higher)
+- MongoDB (local or Atlas)
+- npm or yarn package manager
+- Git
 
 ### Backend Setup
-1. Navigate to backend directory:
+
+1. **Clone and navigate to backend:**
    ```bash
    cd backend
-   ```
-
-2. Install dependencies:
-   ```bash
    npm install
    ```
 
-3. Set up environment variables:
-   ```bash
-   # Create .env file
-   MONGODB_URI=mongodb://localhost:27017/freelancing-platform
-   JWT_SECRET=your-secret-key
+2. **Environment Configuration:**
+   Create `.env` file in backend directory:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/flexihire
+   JWT_SECRET=your-super-secret-jwt-key
+   PORT=5000
+   NODE_ENV=development
    ```
 
-4. Seed the database:
+3. **Database Setup:**
    ```bash
-   # Create admin user first
-   node seedAdmin.js
-   
-   # Then seed skills
-   node seedSkills.js
+   # Create admin user
+   node scripts/seedAdmin.js
+
+   # Seed sample data (optional)
+   node scripts/seedUsers.js
+   node scripts/seedPosts.js
+   node scripts/seedResources.js
    ```
 
-5. Start the server:
+4. **Start Backend Server:**
    ```bash
    npm start
+   # Server runs on http://localhost:5000
    ```
 
 ### Frontend Setup
-1. Navigate to frontend directory:
+
+1. **Navigate to frontend:**
    ```bash
    cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
    npm install
    ```
 
-3. Start development server:
+2. **Start Development Server:**
    ```bash
    npm run dev
+   # Frontend runs on http://localhost:5173
    ```
 
-## Usage Guide
+### Production Deployment
 
-### For Administrators
+1. **Build Frontend:**
+   ```bash
+   cd frontend
+   npm run build
+   ```
 
-1. **Access Admin Dashboard**
+2. **Start Production Server:**
+   ```bash
+   cd backend
+   npm start
+   ```
+
+## 📖 Usage Guide
+
+### Getting Started
+
+1. **Admin Setup:**
    - Login with admin credentials (admin@gmail.com / admin123)
-   - Navigate to the "Skills" tab
+   - Access admin dashboard at `/admin`
 
-2. **Add New Skill**
-   - Click "Add New Skill" button
-   - Fill in skill details:
-     - Name: Unique skill identifier
-     - Description: Detailed explanation
-     - Category: Select from predefined options
-     - Icon: Emoji representation
-     - Average Price: Hourly rate
-     - Popularity: Score from 0-100
-   - Click "Add Skill" to save
+2. **User Registration:**
+   - Students can register as freelancers
+   - Clients can post projects
+   - Choose appropriate user type during signup
 
-3. **Manage Existing Skills**
-   - View all skills in the table
-   - Edit skills using the "Edit" button
-   - Delete skills using the "Delete" button (soft delete)
+3. **Project Workflow:**
+   - Clients post projects with requirements
+   - Freelancers browse and apply
+   - Clients review applications and hire
+   - Work completed through milestones
+   - Secure payments via escrow
 
-### For Users
+### Key Pages & Features
 
-1. **View Skills**
-   - Navigate to the "Skills" tab in the main navigation
-   - Browse skills by category
-   - View skill details and pricing information
+- **🏠 Home Page**: Platform overview with featured projects
+- **👥 About Us**: Company mission and team information
+- **💼 Services**: Browse available freelance services
+- **📚 Resources**: Educational content and guides
+- **📞 Contact**: Support and inquiry forms
+- **👤 Profile**: User dashboard and settings
+- **💬 Messages**: Real-time communication system
 
-## API Endpoints
+## 🔌 API Documentation
 
-### Public Endpoints
+### Authentication Endpoints
 ```
-GET /api/skills              # Get all skills
-GET /api/skills/category/:category  # Get skills by category
-GET /api/skills/stats        # Get skill statistics
-```
-
-### Admin-Protected Endpoints
-```
-POST /api/skills             # Create new skill
-PUT /api/skills/:id          # Update skill
-DELETE /api/skills/:id       # Delete skill
+POST /api/auth/register     # User registration
+POST /api/auth/login        # User login
+POST /api/auth/logout       # User logout
+GET  /api/auth/profile      # Get user profile
 ```
 
-## Data Flow
+### Project Management
+```
+GET    /api/projects        # Get all projects
+POST   /api/projects        # Create new project
+GET    /api/projects/:id    # Get project details
+PUT    /api/projects/:id    # Update project
+DELETE /api/projects/:id    # Delete project
+```
 
-1. **Admin adds skill** → Backend validates → MongoDB stores → Frontend updates
-2. **Public views skills** → Frontend fetches from API → Backend queries MongoDB → Returns skills data
-3. **Skills displayed** → Grouped by category → Rendered in responsive grid
+### User Management
+```
+GET    /api/users           # Get all users (admin)
+GET    /api/users/:id       # Get user profile
+PUT    /api/users/:id       # Update user profile
+DELETE /api/users/:id       # Delete user (admin)
+```
 
-## Security Features
+### Messaging System
+```
+GET    /api/messages        # Get user messages
+POST   /api/messages        # Send new message
+PUT    /api/messages/:id    # Mark as read
+DELETE /api/messages/:id    # Delete message
+```
 
-- **Admin Authentication**: JWT-based admin verification
+## 🔒 Security Features
+
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: bcrypt for secure password storage
 - **Input Validation**: Server-side validation for all inputs
-- **Soft Deletes**: Skills are marked inactive rather than permanently removed
 - **CORS Protection**: Cross-origin request handling
+- **Rate Limiting**: Protection against abuse
+- **File Upload Security**: Secure file handling with validation
 
-## Future Enhancements
+## 🎨 Design System
 
-- **Skill Search**: Full-text search functionality
-- **Skill Analytics**: Usage statistics and trends
-- **Bulk Operations**: Import/export skills from CSV
-- **Skill Recommendations**: AI-powered skill suggestions
-- **Skill Verification**: Admin approval workflow for user-submitted skills
+### Color Palette
+- **Primary**: Yellow (#FCD34D) - Brand color
+- **Secondary**: Green (#10B981) - Accent color
+- **Background**: Gray variations (#F9FAFB, #F3F4F6)
+- **Text**: Dark gray (#1F2937) and light gray (#6B7280)
 
-## Troubleshooting
+### Typography
+- **Primary Font**: System font stack
+- **Headings**: Bold weights for hierarchy
+- **Body Text**: Regular weight for readability
 
-### Common Issues
+### Components
+- **Buttons**: Consistent styling with hover effects
+- **Cards**: Shadow and border variations
+- **Forms**: Validation states and error handling
+- **Navigation**: Responsive header with mobile menu
 
-1. **Skills not loading**
-   - Check if backend server is running
-   - Verify MongoDB connection
-   - Check browser console for errors
+## 📊 Database Schema
 
-2. **Admin authentication fails**
-   - Ensure admin user exists in database
-   - Verify JWT_SECRET in environment
-   - Check token expiration
+### Core Collections
 
-3. **Database connection issues**
-   - Verify MongoDB is running
-   - Check connection string in .env
-   - Ensure database exists
-
-### Debug Mode
-
-Enable debug logging by setting:
-```bash
-DEBUG=app:*
+**Users:**
+```javascript
+{
+  name: String,
+  email: String,
+  password: String,
+  role: ['student', 'freelancer', 'client', 'admin'],
+  profile: {
+    avatar: String,
+    bio: String,
+    skills: [String],
+    portfolio: [String]
+  },
+  isVerified: Boolean,
+  createdAt: Date
+}
 ```
 
-## Contributing
+**Projects:**
+```javascript
+{
+  title: String,
+  description: String,
+  budget: Number,
+  category: String,
+  status: ['open', 'in-progress', 'completed', 'cancelled'],
+  clientId: ObjectId,
+  freelancerId: ObjectId,
+  applications: [ObjectId],
+  createdAt: Date
+}
+```
 
-1. Follow the existing code structure
-2. Use ES6 module syntax for new files
-3. Maintain consistent error handling
-4. Add appropriate validation and error messages
-5. Test all endpoints before submitting
+**Messages:**
+```javascript
+{
+  senderId: ObjectId,
+  receiverId: ObjectId,
+  content: String,
+  projectId: ObjectId,
+  isRead: Boolean,
+  createdAt: Date
+}
+```
 
-## License
+## 🧪 Testing
 
-This project is part of the Freelancing Platform for University Students.
+### Running Tests
+```bash
+# Backend tests
+cd backend
+npm test
+
+# Frontend tests
+cd frontend
+npm test
+```
+
+### Test Coverage
+- Unit tests for utility functions
+- Integration tests for API endpoints
+- E2E tests for critical user flows
+
+## 🚀 Deployment
+
+### Environment Variables
+```env
+# Backend
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=your-production-secret
+PORT=5000
+
+# Frontend
+VITE_API_URL=https://your-api-domain.com
+```
+
+### Docker Deployment
+```dockerfile
+# Build commands
+docker build -t flexihire-backend .
+docker build -t flexihire-frontend .
+
+# Run containers
+docker-compose up -d
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -m 'Add new feature'`
+4. Push to branch: `git push origin feature/new-feature`
+5. Create Pull Request
+
+### Development Guidelines
+- Follow ESLint configuration
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Maintain code quality standards
+
+## 📝 License
+
+This project is developed for educational purposes as part of the Freelancing Platform for University Students initiative.
+
+## 📞 Support
+
+For support and questions:
+- 📧 Email: support@flexihire.com
+- 💬 Live Chat: Available on the platform
+- 📱 Phone: +94 (11) 123-4567
+
+## 🔄 Future Roadmap
+
+- [ ] Mobile app development (React Native)
+- [ ] Advanced AI-powered matching
+- [ ] Video call integration
+- [ ] Advanced analytics dashboard
+- [ ] Multi-language support
+- [ ] Blockchain-based escrow system
+- [ ] Integration with learning platforms
+
+---
+
+**Built with ❤️ for university students worldwide**
