@@ -47,7 +47,7 @@ function BackgroundSlideshow() {
             className="absolute inset-0 bg-cover bg-center scale-110"
             style={{ backgroundImage: `url(${slide.image})` }}
           />
-          <div className="absolute inset-0 bg-black/70"></div>
+          <div className="absolute inset-0 bg-black/50"></div>
         </div>
       ))}
     </div>
