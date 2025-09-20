@@ -11,7 +11,7 @@ function Slideshow() {
       title: "Find the Perfect Freelancer",
       subtitle: "Connect with talented professionals worldwide",
       description: "From web developers to graphic designers, find the right expert for your project.",
-      image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2071&q=80",
+      image: "/src/assets/1.jpg",
       cta: "Hire Now",
       color: "from-yellow-400 to-yellow-500",
       target: "/services"
@@ -21,7 +21,7 @@ function Slideshow() {
       title: "Build Your Freelance Career",
       subtitle: "Start earning with your skills",
       description: "Join thousands of freelancers who are already earning on FlexiHire.",
-      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      image: "/src/assets/3.jpg",
       cta: "Start Earning",
       color: "from-yellow-600 to-yellow-700",
       target: "/join"
@@ -31,7 +31,7 @@ function Slideshow() {
       title: "Secure Payments",
       subtitle: "Safe and reliable transactions",
       description: "Our secure payment system ensures you get paid for your work, every time.",
-      image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      image: "/src/assets/2.jpg",
       cta: "Learn More",
       color: "from-yellow-400 to-yellow-600",
       target: "/about"
