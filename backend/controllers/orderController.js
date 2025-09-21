@@ -66,6 +66,14 @@ const placeOrderStripe = async (req, res) => {
                 message: "Service is not available for orders"
             });
         }
+
+        // Check if the user is trying to order their own service
+        if (service.freelancerId.toString() === clientId) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot order your own service"
+            });
+        }
         
         // Ensure service has required fields
         if (!service.packages || Object.keys(service.packages).length === 0) {
