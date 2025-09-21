@@ -13,7 +13,6 @@ function Footer() {
               alt="Logo" 
               className="h-12 w-auto mb-6"
             />
-            
             <p className="text-gray-400 leading-relaxed">Connecting talented freelancers with amazing opportunities worldwide.</p>
           </div>
           
@@ -45,6 +44,7 @@ function Footer() {
         
         <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
           <p>&copy; 2025 All rights reserved.</p>
+           <p>&copy; 2025 All rights reserved.</p>
         </div>
       </div>
     </footer>
