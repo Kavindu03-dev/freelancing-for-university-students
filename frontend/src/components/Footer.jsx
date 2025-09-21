@@ -13,6 +13,7 @@ function Footer() {
               alt="Logo" 
               className="h-12 w-auto mb-6"
             />
+            
             <p className="text-gray-400 leading-relaxed">Connecting talented freelancers with amazing opportunities worldwide.</p>
           </div>
           
