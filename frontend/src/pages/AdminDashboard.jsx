@@ -274,6 +274,7 @@ function AdminDashboard() {
   const [resourceDifficulty, setResourceDifficulty] = useState('');
   const [showAddResourceModal, setShowAddResourceModal] = useState(false);
   const [showEditResourceModal, setShowEditResourceModal] = useState(false);
+  const [showViewResourceModal, setShowViewResourceModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
   const [newResource, setNewResource] = useState({
     title: '',
@@ -533,6 +534,11 @@ function AdminDashboard() {
   const handleEditResource = (resource) => {
     setSelectedResource(resource);
     setShowEditResourceModal(true);
+  };
+
+  const handleViewResource = (resource) => {
+    setSelectedResource(resource);
+    setShowViewResourceModal(true);
   };
 
   const handleUpdateResource = async (e) => {
@@ -3484,7 +3490,7 @@ function AdminDashboard() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-3">
                       <button onClick={() => handleEditResource(resource)} className="text-blue-600 hover:text-blue-900 font-medium transition-colors duration-200">Edit</button>
-                      <button onClick={() => handleDeleteResource(resource._id)} className="text-yellow-600 hover:text-yellow-800 font-medium transition-colors duration-200">Soft Delete</button>
+                      <button onClick={() => handleViewResource(resource)} className="text-gray-700 hover:text-black font-medium transition-colors duration-200">View</button>
                       <button onClick={() => handlePermanentDeleteResource(resource._id)} className="text-red-600 hover:text-red-900 font-medium transition-colors duration-200">Delete</button>
                     </div>
                   </td>
@@ -3637,6 +3643,77 @@ function AdminDashboard() {
                 <button type="button" onClick={() => { setShowEditResourceModal(false); setSelectedResource(null); }} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-3 rounded-xl font-medium transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">Cancel</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* View Resource Modal */}
+      {showViewResourceModal && selectedResource && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Resource Details</h3>
+              <button onClick={() => { setShowViewResourceModal(false); setSelectedResource(null); }} className="text-gray-400 hover:text-gray-600 transition-colors duration-200"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Title</p>
+                <p className="text-lg font-semibold text-gray-900">{selectedResource.title}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Description</p>
+                <p className="text-gray-800 whitespace-pre-line">{selectedResource.description}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Category</p>
+                  <p className="font-medium">{selectedResource.category}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Type</p>
+                  <p className="font-medium">{selectedResource.type}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Difficulty</p>
+                  <p className="font-medium">{selectedResource.difficulty}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Read Time</p>
+                  <p className="font-medium">{selectedResource.readTime}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(selectedResource.tags) ? selectedResource.tags : (selectedResource.tags || '').split(',').map(t => t.trim()).filter(Boolean)).map((tag, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-700">{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Link</p>
+                {selectedResource.link ? (
+                  <a href={selectedResource.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-words">{selectedResource.link}</a>
+                ) : (
+                  <p className="text-gray-400">-</p>
+                )}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Featured</p>
+                <p className="font-medium">{selectedResource.featured ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Created By</p>
+                {selectedResource.createdBy ? (
+                  <p className="font-medium">{selectedResource.createdBy.name || ((selectedResource.createdBy.firstName && selectedResource.createdBy.lastName) ? `${selectedResource.createdBy.firstName} ${selectedResource.createdBy.lastName}` : 'Unknown')}</p>
+                ) : (
+                  <p className="text-gray-400">Unknown</p>
+                )}
+              </div>
+              <div className="pt-4">
+                <button onClick={() => { setShowViewResourceModal(false); setSelectedResource(null); }} className="w-full bg-gray-900 hover:bg-black text-white px-6 py-3 rounded-xl font-medium transition-all duration-300">Close</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
